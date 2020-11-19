@@ -43,3 +43,5 @@ msbuild.ProjectImports.zip
 StyleCop.Cache
 UpgradeLog.htm
 .idea
+.rest/
+/storagr1.db
