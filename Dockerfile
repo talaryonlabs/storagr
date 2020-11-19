@@ -7,9 +7,9 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
 WORKDIR /src
-COPY ["Storagr.csproj", ""]
+COPY ["src/Storagr/Storagr.csproj", ""]
 RUN dotnet restore "./Storagr.csproj"
-COPY . .
+COPY src/Storagr/. .
 WORKDIR "/src/."
 RUN dotnet build "Storagr.csproj" -c Release -o /app/build
 

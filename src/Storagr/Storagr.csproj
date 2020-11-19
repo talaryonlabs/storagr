@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Include=".github\workflows\dotnet-core.yml" />
       <Content Include=".rest\auth-test.http" />
       <Content Include=".rest\batch-test.http" />
       <Content Include=".rest\hash-password.http" />
@@ -25,6 +26,19 @@
       <Content Include=".rest\http-client.private.env.json" />
       <Content Include=".rest\transfer-test.http" />
       <Content Include=".rest\user-test.http" />
+      <Content Remove=".github\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove=".github\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove=".github\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove=".github\**" />
     </ItemGroup>
 
 
