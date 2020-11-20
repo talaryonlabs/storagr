@@ -1,22 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices.ComTypes;
-using System.Runtime.Serialization;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Net.Http.Headers;
-using System.IO;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Storagr.Client.Models;
+using Storagr.IO;
 
 namespace Storagr
 {
     public class StoragrOptions<T> : IOptions<T> where T : class
     {
         T IOptions<T>.Value => (T)(object)this;
+    }
+
+    public static class StoragrConverter
+    {
+        public static BatchAction ToBatchAction(StoreRequest request) => new BatchAction()
+        {
+            Href = request.Url,
+            Header = request.Header,
+            ExpiresAt = request.ExpiresAt,
+            ExpiresIn = request.ExpiresIn
+        };
     }
 
 

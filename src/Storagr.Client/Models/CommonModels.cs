@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace Storagr.Controllers.Models
+namespace Storagr.Client.Models
 {
     [DataContract]
     public class RefData

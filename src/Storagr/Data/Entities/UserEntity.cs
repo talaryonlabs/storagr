@@ -1,6 +1,6 @@
-﻿using Dapper.Contrib.Extensions;
-using Microsoft.AspNetCore.Identity;
-using Storagr.Controllers.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+using Dapper.Contrib.Extensions;
+using Storagr.Client.Models;
 
 namespace Storagr.Data.Entities
 {
@@ -13,5 +13,13 @@ namespace Storagr.Data.Entities
         public string Username { get; set; }
         public string Role { get; set; }
         public string Mail { get; set; }
+        
+        public static implicit operator UserModel([NotNull] UserEntity entity) => new UserModel()
+        {
+            UserId = entity.UserId,
+            Username = entity.Username,
+            Mail = entity.Mail,
+            Role = entity.Role
+        };
     }
 }

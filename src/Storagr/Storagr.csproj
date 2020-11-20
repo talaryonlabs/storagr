@@ -41,5 +41,9 @@
       <None Remove=".github\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Storagr.Client\Storagr.Client.csproj" />
+    </ItemGroup>
+
 
 </Project>

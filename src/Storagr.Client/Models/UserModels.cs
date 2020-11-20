@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
-using Storagr.Data.Entities;
 
-namespace Storagr.Controllers.Models
+namespace Storagr.Client.Models
 {
     [DataContract]
     public class UserModel
@@ -12,14 +11,6 @@ namespace Storagr.Controllers.Models
         [DataMember(Name = "username")] public string Username;
         [DataMember(Name = "mail")] public string Mail;
         [DataMember(Name = "role")] public string Role;
-
-        public static implicit operator UserModel([NotNull] UserEntity entity) => new UserModel()
-        {
-            UserId = entity.UserId,
-            Username = entity.Username,
-            Mail = entity.Mail,
-            Role = entity.Role
-        };
     }
     
     [DataContract]

@@ -1,12 +1,9 @@
 ﻿using System;
-using System.IO;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
-using Storagr.Controllers.Models;
+using Storagr.Client.Models;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.IO;
@@ -76,7 +73,8 @@ namespace Storagr.Controllers
             await Request.Body.CopyToAsync(stream, _bufferSize);
         }
 
-        [HttpPost("{oid}")]
+        // TODO remove this
+        /*[HttpPost("{oid}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
@@ -114,6 +112,6 @@ namespace Storagr.Controllers
             });
             
             return Ok();
-        }
+        }*/
     }
 }

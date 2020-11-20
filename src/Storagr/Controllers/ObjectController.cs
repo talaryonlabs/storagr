@@ -2,9 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Controllers.Models;
+using Storagr.Client.Models;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.IO;
@@ -70,6 +69,22 @@ namespace Storagr.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get([FromRoute] string rid, [FromRoute] string oid)
         {
+            var obj = await _objectService.Get(rid, oid);
+            if (obj == null)
+                return NotFound();
+
+            return Ok((ObjectModel)obj);
+        }
+        
+        [HttpPost("v/{oid}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Verify([FromRoute] string rid, [FromRoute] string oid, [FromQuery] ObjectVerifyRequest verifyRequest)
+        {
+            if (oid != verifyRequest.ObjectId)
+                return BadRequest();
+            
             var obj = await _objectService.Get(rid, oid);
             if (obj == null)
                 return NotFound();

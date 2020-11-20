@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr", "src\Storagr\Stor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Tests", "tests\Storagr.Tests\Storagr.Tests.csproj", "{89198B77-2F22-4F31-9412-775EA44C740E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Client", "src\Storagr.Client\Storagr.Client.csproj", "{21138A8E-932E-4583-A12C-96C96EAA4FF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{89198B77-2F22-4F31-9412-775EA44C740E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{89198B77-2F22-4F31-9412-775EA44C740E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89198B77-2F22-4F31-9412-775EA44C740E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

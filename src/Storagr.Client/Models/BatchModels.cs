@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using Storagr.Data.Entities;
-using Storagr.IO;
 
-namespace Storagr.Controllers.Models
+namespace Storagr.Client.Models
 {
     [DataContract]
     public enum BatchOperation
@@ -42,14 +40,6 @@ namespace Storagr.Controllers.Models
         [DataMember(Name = "header")] public IDictionary<string, string> Header { get; set; }
         [DataMember(Name = "expires_in")] public int ExpiresIn { get; set; }
         [DataMember(Name = "expires_at")] public DateTime ExpiresAt { get; set; }
-
-        public static implicit operator BatchAction(StoreRequest request) => new BatchAction()
-        {
-            Href = request.Url,
-            Header = request.Header,
-            ExpiresAt = request.ExpiresAt,
-            ExpiresIn = request.ExpiresIn
-        };
     }
 
     [DataContract]

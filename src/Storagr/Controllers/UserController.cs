@@ -1,12 +1,8 @@
-﻿using System.IO;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Controllers.Models;
-using Storagr.Data.Entities;
+using Storagr.Client.Models;
 using Storagr.Security;
 using Storagr.Security.Authenticators;
 using Storagr.Services;

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Controllers.Models;
+using Storagr.Client.Models;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.IO;
@@ -93,7 +91,7 @@ namespace Storagr.Controllers
                     Authenticated = true,
                     Actions = new BatchActionList()
                     {
-                        Download = (BatchAction)request
+                        Download = StoragrConverter.ToBatchAction(request)
                     }
                 };
             });
@@ -135,8 +133,8 @@ namespace Storagr.Controllers
                     Authenticated = true,
                     Actions = new BatchActionList()
                     {
-                        Upload = (BatchAction)uploadRequest,
-                        Verify = (BatchAction)verifyRequest
+                        Upload = StoragrConverter.ToBatchAction(uploadRequest),
+                        Verify = StoragrConverter.ToBatchAction(verifyRequest)
                     }
                 };
             });

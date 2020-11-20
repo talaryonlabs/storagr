@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Data.Entities;
 
-namespace Storagr.Controllers.Models
+namespace Storagr.Client.Models
 {
     [DataContract]
     public class LockModel
@@ -15,17 +12,6 @@ namespace Storagr.Controllers.Models
         [DataMember(Name = "path")] public string Path;
         [DataMember(Name = "locked_at")] public DateTime LockedAt;
         [DataMember(Name = "owner")] public OwnerData Owner;
-
-        public static implicit operator LockModel([NotNull] LockEntity entity) => new LockModel()
-        {
-            LockId = entity.LockId,
-            Path = entity.Path,
-            LockedAt = entity.LockedAt,
-            Owner = new OwnerData()
-            {
-                Name = entity.Owner.Username
-            }
-        };
     }
 
     [DataContract]

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Data.Entities;
 
-namespace Storagr.Controllers.Models
+namespace Storagr.Client.Models
 {
     [DataContract]
     public class ObjectModel
@@ -13,13 +11,6 @@ namespace Storagr.Controllers.Models
         [DataMember(Name = "oid", IsRequired = true)] public string ObjectId;
         [DataMember(Name = "repositoryId", IsRequired = true)] public string RepositoryId;
         [DataMember(Name = "size", IsRequired = true)] public long Size;
-        
-        public static implicit operator ObjectModel([NotNull] ObjectEntity entity) => new ObjectModel()
-        {
-            ObjectId = entity.ObjectId,
-            RepositoryId = entity.RepositoryId,
-            Size =  entity.Size
-        };
     }
     
     [DataContract]
@@ -38,10 +29,10 @@ namespace Storagr.Controllers.Models
         [DataMember(Name = "next_cursor")] public string NextCursor;
     }
     
-    
-    
-    
-    
-    
-    
+    [DataContract]
+    public class ObjectVerifyRequest
+    {
+        [DataMember(Name = "oid")] public string ObjectId;
+        [DataMember(Name = "size")] public long Size;
+    }
 }

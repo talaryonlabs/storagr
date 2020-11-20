@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -47,9 +48,11 @@ namespace Storagr.Services
     {
         private readonly JwtSecurityTokenHandler _securityTokenHandler;
         private readonly TokenServiceOptions _options;
+        private readonly IDistributedCache _cache;
 
-        public TokenService(IOptions<TokenServiceOptions> optionsAccessor)
+        public TokenService(IOptions<TokenServiceOptions> optionsAccessor, IDistributedCache cache)
         {
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
             _securityTokenHandler = new JwtSecurityTokenHandler();
         }
