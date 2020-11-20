@@ -33,7 +33,7 @@ namespace Storagr.Controllers
         
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(ObjectListResponse))]
-        [ProducesResponseType(404, Type = typeof(Error))]
+        [ProducesResponseType(404, Type = typeof(StoragrError))]
         public async Task<IActionResult> List([FromRoute] string rid, [FromQuery] ObjectListRequest request)
         {
             var repository = await _backend.Get<RepositoryEntity>(rid);

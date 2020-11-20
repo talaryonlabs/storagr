@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -13,7 +12,12 @@ using Microsoft.Extensions.Options;
 
 namespace Storagr.Data
 {
-    public static class SqliteBackendService
+    public class SqliteBackendOptions : StoragrOptions<SqliteBackendOptions>
+    {
+        public string DataSource { get; set; }
+    }
+
+    public static class SqliteBackendExtension
     {
         public static IServiceCollection AddSqliteBackend(this IServiceCollection services, Action<SqliteBackendOptions> configureOptions)
         {
@@ -23,13 +27,6 @@ namespace Storagr.Data
                 .AddSingleton<SqliteBackend>()
                 .AddSingleton<IBackendAdapter>(x => x.GetRequiredService<SqliteBackend>());
         }
-    }
-
-    public class SqliteBackendOptions : IOptions<SqliteBackendOptions>
-    {
-        public string DataSource { get; set; }
-        
-        SqliteBackendOptions IOptions<SqliteBackendOptions>.Value => this;
     }
     
     public class SqliteBackend : IDisposable, IBackendAdapter

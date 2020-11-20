@@ -40,10 +40,10 @@ namespace Storagr.Controllers
 
         [HttpPost()]
         [ProducesResponseType(200, Type = typeof(BatchResponse))]
-        [ProducesResponseType(403, Type = typeof(Error))]
+        [ProducesResponseType(403, Type = typeof(StoragrError))]
         [ProducesResponseType(404, Type = typeof(RepositoryNotFoundError))]
-        [ProducesResponseType(422, Type = typeof(Error))]
-        [ProducesResponseType(500, Type = typeof(Error))]
+        [ProducesResponseType(422, Type = typeof(StoragrError))]
+        [ProducesResponseType(500, Type = typeof(StoragrError))]
         public async Task<IActionResult> Batch([FromRoute] string rid, [FromBody] BatchRequest request)
         {
             var repository = await _backend.Get<RepositoryEntity>(rid);

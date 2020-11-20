@@ -36,16 +36,30 @@ namespace Storagr.Controllers
                 .SetSlidingExpiration(TimeSpan.FromMinutes(30))
                 .SetAbsoluteExpiration(TimeSpan.FromMinutes(120));
         }
+
+        [HttpGet("yolo")]
+        [AllowAnonymous]
+        public IActionResult Yolo()
+        {
+            return Ok(new LockModel()
+            {
+                LockedAt = DateTime.Now
+            });
+        }
         
         [HttpGet]
         [ProducesResponseType(typeof(LockListResponse),200)]
         [ProducesResponseType(403)]
-        [ProducesResponseType(typeof(Error), 500)]
+        [ProducesResponseType(typeof(StoragrError), 500)]
         public async Task<IActionResult> ListLocks([FromRoute] string rid, [FromQuery] LockListRequest request)
         {
             // TODO only if authorized
             // TODO only if read access
             // TODO consider the "refspec" property in request
+            
+            var repository = await _backend.Get<RepositoryEntity>(rid);
+            if (repository == null)
+                return NotFound(new RepositoryNotFoundError());
 
             var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor, request.LockId, request.Path);
             var list = locks.ToList();
@@ -61,6 +75,10 @@ namespace Storagr.Controllers
         public async Task<IActionResult> VerifyLocks([FromRoute] string rid, [FromBody] LockVerifyListRequest request)
         {
             // TODO only if write access
+            
+            var repository = await _backend.Get<RepositoryEntity>(rid);
+            if (repository == null)
+                return NotFound(new RepositoryNotFoundError());
 
             var user = await _userService.GetAuthenticatedUser();
             var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor);
@@ -78,11 +96,18 @@ namespace Storagr.Controllers
         [ProducesResponseType(201)]
         [ProducesResponseType(409)]
         [ProducesResponseType(403)]
+        [ProducesResponseType(404)]
         [ProducesResponseType(500)]
         public async Task<IActionResult> CreateLock([FromRoute] string rid, [FromBody] LockRequest lockRequest)
         {
             // TODO only if authorized
             // TODO consider "ref" property in request
+            
+            var repository = await _backend.Get<RepositoryEntity>(rid);
+            if (repository == null)
+                return NotFound(new RepositoryNotFoundError());
+            
+            
             LockEntity lockEntity;
 
             var cacheKey = $"LOCK:{rid}:{lockRequest.Path}";
@@ -97,9 +122,10 @@ namespace Storagr.Controllers
             {
                 return Conflict(new LockAlreadyExistsError(lockEntity));
             }
+
             if ((lockEntity = await _lockService.Create(rid, lockRequest.Path)) == null)
             {
-                return StatusCode(500, new Error());
+                return StatusCode(500, new StoragrError());
             }
 
             var obj = (LockModel) lockEntity;
@@ -107,7 +133,7 @@ namespace Storagr.Controllers
                 await _cache.SetAsync($"LOCK:{rid}:{obj.Path}", (cacheData = StoragrHelper.SerializeObject(obj)), _cacheEntryOptions);
                 await _cache.SetAsync($"LOCK:{rid}:{obj.LockId}", cacheData, _cacheEntryOptions);
             }
-            return Created("", new LockResponse() { Lock = obj }); // TODO uri?
+            return Created("", new LockResponse() { Lock = obj });
             
         }
 
@@ -119,9 +145,12 @@ namespace Storagr.Controllers
         {
             // TODO only if authorized
             // TODO only if write access
-            // TODO only delete own locks OR with force=true argument > 403
             // TODO consider "ref" property in request
 
+            var repository = await _backend.Get<RepositoryEntity>(rid);
+            if (repository == null)
+                return NotFound(new RepositoryNotFoundError());
+            
             LockModel obj = default;
             
             var cacheData = await _cache.GetAsync($"LOCK:{rid}:{id}");
@@ -138,10 +167,14 @@ namespace Storagr.Controllers
                 }
             }
             if (obj == null)
-                return StatusCode(500, new Error()
+                return StatusCode(500, new StoragrError()
                 {
                     Message = "Lock with id " + id + " not found."
                 });
+
+            var user = await _userService.GetAuthenticatedUser();
+            if (!unlockRequest.Force && obj.Owner.Name != user.Username) // only delete own locks OR with force=true argument
+                return Forbid();
             
             await _cache.RemoveAsync($"LOCK:{rid}:{obj.LockId}");
             await _cache.RemoveAsync($"LOCK:{rid}:{obj.Path}");

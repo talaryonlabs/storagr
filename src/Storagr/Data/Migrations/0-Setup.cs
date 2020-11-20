@@ -1,9 +1,9 @@
 ﻿using FluentMigrator;
 
-namespace Storagr
+namespace Storagr.Data.Migrations
 {
-    [Migration(0, "initial setup")]
-    public class InitialSetup : Migration
+    [Migration(0, "Init")]
+    public class Setup : Migration
     {
         public override void Up()
         {

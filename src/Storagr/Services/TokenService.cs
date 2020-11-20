@@ -1,10 +1,8 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net;
 using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
@@ -19,28 +17,40 @@ namespace Storagr.Services
 
         TokenData Get(string token);
     }
+    
+    public class TokenServiceOptions : StoragrOptions<TokenServiceOptions>
+    {
+        public TokenValidationParameters ValidationParameters { get; set; }
+        public string Secret { get; set; }
+        public int Expiration { get; set; }
+    }
 
     public class TokenData
     {
         public string UniqueId { get; set; }
         public string Role { get; set; }
     }
+
+    public static class TokenServiceExtension
+    {
+        public static IServiceCollection AddTokenService(this IServiceCollection services, Action<TokenServiceOptions> configureOptions)
+        {
+            return services
+                .AddOptions()
+                .Configure(configureOptions)
+                .AddSingleton<TokenService>()
+                .AddSingleton<ITokenService>(x => x.GetRequiredService<TokenService>());
+        }
+    }
     
     public class TokenService : ITokenService, IDisposable
     {
-        private readonly JwtBearerOptions _bearerOptions;
-        private readonly SigningCredentials _signingCredentials;
         private readonly JwtSecurityTokenHandler _securityTokenHandler;
+        private readonly TokenServiceOptions _options;
 
-        private readonly int _expiresIn;
-
-        public TokenService(IOptionsMonitor<JwtBearerOptions> optionsAccessor)
+        public TokenService(IOptions<TokenServiceOptions> optionsAccessor)
         {
-            if((_bearerOptions = optionsAccessor.Get(JwtBearerDefaults.AuthenticationScheme)) == null)
-                throw new ArgumentNullException(nameof(optionsAccessor));
-            
-            _expiresIn = 3600; // TODO time from a global config
-            _signingCredentials = new SigningCredentials(_bearerOptions.TokenValidationParameters.IssuerSigningKey, SecurityAlgorithms.HmacSha256);
+            _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
             _securityTokenHandler = new JwtSecurityTokenHandler();
         }
 
@@ -54,11 +64,11 @@ namespace Storagr.Services
                 new Claim(JwtRegisteredClaimNames.Jti, StoragrHelper.UUID())
             };
             var token = new JwtSecurityToken(
-                issuer: _bearerOptions.TokenValidationParameters.ValidIssuer,
-                audience: _bearerOptions.TokenValidationParameters.ValidAudience,
+                issuer: _options.ValidationParameters.ValidIssuer,
+                audience: _options.ValidationParameters.ValidAudience,
                 claims: claims,
-                expires: DateTime.Now.AddSeconds(_expiresIn),
-                signingCredentials: _signingCredentials
+                expires: DateTime.Now.AddSeconds(_options.Expiration),
+                signingCredentials: new SigningCredentials(_options.ValidationParameters.IssuerSigningKey, SecurityAlgorithms.HmacSha256)
             );
             return _securityTokenHandler.WriteToken(token);
         }
@@ -73,7 +83,7 @@ namespace Storagr.Services
             ClaimsPrincipal principal;
             try
             {
-                principal = _securityTokenHandler.ValidateToken(token, _bearerOptions.TokenValidationParameters, out var validatedToken);
+                principal = _securityTokenHandler.ValidateToken(token, _options.ValidationParameters, out var validatedToken);
             }
             catch (Exception)
             {

@@ -10,14 +10,12 @@ using Storagr.Services;
 
 namespace Storagr.IO
 {
-    public sealed class LocalStoreOptions : IOptions<LocalStoreOptions>
+    public sealed class LocalStoreOptions : StoragrOptions<LocalStoreOptions>
     {
         public string RootPath { get; set; }
-
-        LocalStoreOptions IOptions<LocalStoreOptions>.Value => this;
     }
-    
-    public static class LocalStoreService
+
+    public static class LocalStoreExtension
     {
         public static IServiceCollection AddLocalStore(this IServiceCollection services, Action<LocalStoreOptions> configureOptions)
         {
@@ -28,7 +26,7 @@ namespace Storagr.IO
                 .AddSingleton<IStoreAdapter>(x => x.GetRequiredService<LocalStore>());
         }
     }
-    
+
     public sealed class LocalStoreObject : StoreObject
     {
         public string Name;

@@ -5,7 +5,7 @@ using Storagr.Controllers.Models;
 namespace Storagr
 {
     [DataContract]
-    public class Error
+    public class StoragrError
     {
         public int Code;
         
@@ -13,12 +13,12 @@ namespace Storagr
         [DataMember(Name = "message")] public string Message;
         [DataMember(Name = "documentation_url")] public string DocumentationUrl;
 
-        public Error() : this(500, "Unkown Error")
+        public StoragrError() : this(500, "Unkown Error")
         {
             DocumentationUrl = "https://github.com/talaryonstudios/storagr";
         }
 
-        public Error(int code, string message)
+        public StoragrError(int code, string message)
         {
             Code = code;
             Message = message;
@@ -26,7 +26,7 @@ namespace Storagr
     }
 
     [DataContract]
-    public class LockAlreadyExistsError : Error
+    public class LockAlreadyExistsError : StoragrError
     {
         [DataMember(Name = "lock")] public LockModel Lock;
         
@@ -36,21 +36,14 @@ namespace Storagr
         }
     }
 
-    public class NotAuthorizedError : Error
-    {
-        public NotAuthorizedError() : base(403, "Not authorized")
-        {
-        }
-    }
-
-    public class InvalidBatchOperationError : Error
+    public class InvalidBatchOperationError : StoragrError
     {
         public InvalidBatchOperationError() : base(500, "Invalid operation - only 'upload' or 'download' are supported.")
         {
         }
     }
 
-    public class RepositoryNotFoundError : Error
+    public class RepositoryNotFoundError : StoragrError
     {
         public RepositoryNotFoundError() : base(404, "Repository not found.")
         {

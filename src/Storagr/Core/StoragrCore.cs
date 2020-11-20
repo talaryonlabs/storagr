@@ -14,22 +14,12 @@ using Newtonsoft.Json;
 
 namespace Storagr
 {
-    public class LfsMediaTypeHeader : MediaTypeHeaderValue
+    public class StoragrOptions<T> : IOptions<T> where T : class
     {
-        public LfsMediaTypeHeader() : base("application/vnd.git-lfs+json") { }
+        T IOptions<T>.Value => (T)(object)this;
     }
 
 
-    public class StoragrOptions : IOptions<StoragrOptions>
-    {
-        StoragrOptions IOptions<StoragrOptions>.Value => this;
-    }
-
-    public class StoragrCacheOptions : StoragrOptions
-    {
-        
-    }
-    
     public static class StoragrHelper
     {
         [Pure]
@@ -50,6 +40,27 @@ namespace Storagr
         public static string UUID()
         {
             return Guid.NewGuid().ToString();
+        }
+    }
+    
+    public class StoragerMediaTypeHeader : MediaTypeHeaderValue
+    {
+        public StoragerMediaTypeHeader() : base("application/vnd.git-lfs+json") { }
+    }
+    
+    public class StoragrRepositoryNotFoundException : Exception
+    {
+        public StoragrRepositoryNotFoundException()
+            : base($"Repository not found!")
+        {
+        }
+    }
+    
+    public class StoragrLockExistsException : Exception
+    {
+        public StoragrLockExistsException()
+            : base($"Lock exists!")
+        {
         }
     }
 }

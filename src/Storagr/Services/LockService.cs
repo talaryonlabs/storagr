@@ -39,7 +39,7 @@ namespace Storagr.Services
             var repository = await _backend.Get<RepositoryEntity>(repositoryId);
             if (repository == null)
             {
-                throw null; // TODO RepositoryNotFound! make exception
+                throw new StoragrRepositoryNotFoundException();
             }
             
             var existingLock = _backend.Get<LockEntity>(q =>
@@ -48,7 +48,7 @@ namespace Storagr.Services
             });
             if (existingLock != null)
             {
-                throw null; // TODO Lock exists! make exception
+                throw new StoragrLockExistsException();
             }
             
             var user = await _userService.GetAuthenticatedUser();

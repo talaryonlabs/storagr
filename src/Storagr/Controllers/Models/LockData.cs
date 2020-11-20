@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -12,14 +13,14 @@ namespace Storagr.Controllers.Models
     {
         [DataMember(Name = "id")] public string LockId;
         [DataMember(Name = "path")] public string Path;
-        [DataMember(Name = "locked_at")] public string LockedAt;
+        [DataMember(Name = "locked_at")] public DateTime LockedAt;
         [DataMember(Name = "owner")] public OwnerData Owner;
 
         public static implicit operator LockModel([NotNull] LockEntity entity) => new LockModel()
         {
             LockId = entity.LockId,
             Path = entity.Path,
-            LockedAt = entity.LockedAt.ToString(CultureInfo.CurrentCulture), // TODO return correct string
+            LockedAt = entity.LockedAt,
             Owner = new OwnerData()
             {
                 Name = entity.Owner.Username

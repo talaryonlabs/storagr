@@ -18,33 +18,6 @@ using Storagr.Services;
 
 namespace Storagr.Security
 {
-    public static class BasicAuthenticationExtensions
-    {
-        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder) =>
-            AddBasic(builder, BasicAuthenticationDefaults.AuthenticationScheme, null, _ => { });
-        
-        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, string authenticationScheme) =>
-            AddBasic(builder, authenticationScheme, null, _ => { });
-        
-        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, Action<AuthenticationSchemeOptions> configureOptions) =>
-            AddBasic(builder, BasicAuthenticationDefaults.AuthenticationScheme, null, configureOptions);
-        
-        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, string authenticationScheme, Action<AuthenticationSchemeOptions> configureOptions) =>
-            AddBasic(builder, authenticationScheme, null, configureOptions);
-        
-        // ReSharper disable once MemberCanBePrivate.Global
-        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, string authenticationScheme, string displayName, Action<AuthenticationSchemeOptions> configureOptions)
-        {
-            // builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IPostConfigureOptions<AuthenticationSchemeOptions>, JwtBearerPostConfigureOptions>());
-            return builder.AddScheme<BasicAuthenticationOptions, BasicAuthenticationHandler>(authenticationScheme, displayName, configureOptions);
-        }
-    }
-
-    public class BasicAuthenticationOptions : AuthenticationSchemeOptions
-    {
-        
-    }
-    
     public static class BasicAuthenticationDefaults
     {
         /// <summary>
@@ -53,6 +26,31 @@ namespace Storagr.Security
         public const string AuthenticationScheme = "Basic";
     }
     
+    public class BasicAuthenticationOptions : AuthenticationSchemeOptions
+    {
+        
+    }
+
+    public static class BasicAuthenticationExtension
+    {
+        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder) =>
+            AddBasic(builder, BasicAuthenticationDefaults.AuthenticationScheme, null, _ => { });
+    
+        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, string authenticationScheme) =>
+            AddBasic(builder, authenticationScheme, null, _ => { });
+    
+        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, Action<AuthenticationSchemeOptions> configureOptions) =>
+            AddBasic(builder, BasicAuthenticationDefaults.AuthenticationScheme, null, configureOptions);
+    
+        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, string authenticationScheme, Action<AuthenticationSchemeOptions> configureOptions) =>
+            AddBasic(builder, authenticationScheme, null, configureOptions);
+    
+        public static AuthenticationBuilder AddBasic(this AuthenticationBuilder builder, string authenticationScheme, string displayName, Action<BasicAuthenticationOptions> configureOptions)
+        {
+            return builder.AddScheme<BasicAuthenticationOptions, BasicAuthenticationHandler>(authenticationScheme, displayName, configureOptions);
+        }
+    }
+
     public class BasicAuthenticationHandler : AuthenticationHandler<BasicAuthenticationOptions>
     {
         private readonly IUserService _userService;

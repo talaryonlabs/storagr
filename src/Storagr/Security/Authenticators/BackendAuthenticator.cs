@@ -10,7 +10,7 @@ using Storagr.Data.Entities;
 
 namespace Storagr.Security.Authenticators
 {
-    public static class BackendAuthenticatorService
+    public static class BackendAuthenticatorExtension
     {
         public static IServiceCollection AddBackendAuthenticator(this IServiceCollection services)
         {
@@ -19,7 +19,7 @@ namespace Storagr.Security.Authenticators
                 .AddSingleton<IAuthenticationAdapter>(x => x.GetRequiredService<BackendAuthenticator>());
         }
     }
-
+    
     public class BackendAuthenticator : IAuthenticationAdapter
     {
         [Table("_backendAuth")]
