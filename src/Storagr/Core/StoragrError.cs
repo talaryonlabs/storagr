@@ -1,5 +1,5 @@
 ﻿using System.Runtime.Serialization;
-using Storagr.Client.Models;
+using Storagr.Shared.Data;
 
 namespace Storagr
 {

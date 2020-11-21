@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
-using Storagr.Client.Models;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.Services;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Controllers
 {
@@ -33,16 +34,6 @@ namespace Storagr.Controllers
                 .SetAbsoluteExpiration(TimeSpan.FromMinutes(120));
         }
 
-        [HttpGet("yolo")]
-        [AllowAnonymous]
-        public IActionResult Yolo()
-        {
-            return Ok(new LockModel()
-            {
-                LockedAt = DateTime.Now
-            });
-        }
-        
         [HttpGet]
         [ProducesResponseType(typeof(LockListResponse),200)]
         [ProducesResponseType(403)]

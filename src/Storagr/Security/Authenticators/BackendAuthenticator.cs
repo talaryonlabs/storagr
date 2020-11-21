@@ -7,19 +7,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Storagr.Data;
 using Storagr.Data.Entities;
+using Storagr.Shared;
 
 namespace Storagr.Security.Authenticators
 {
-    public static class BackendAuthenticatorExtension
-    {
-        public static IServiceCollection AddBackendAuthenticator(this IServiceCollection services)
-        {
-            return services
-                .AddSingleton<BackendAuthenticator>()
-                .AddSingleton<IAuthenticationAdapter>(x => x.GetRequiredService<BackendAuthenticator>());
-        }
-    }
-    
     public class BackendAuthenticator : IAuthenticationAdapter
     {
         [Table("_backendAuth")]

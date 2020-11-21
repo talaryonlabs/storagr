@@ -1,20 +1,17 @@
 using System;
-using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Logging;
 using Storagr.Shared;
 
-
-namespace Storagr
+namespace Storagr.Store
 {
     public class Startup
     {
         private readonly StoragrSettings _storagrSettings;
-        
+
         public Startup(IConfiguration configuration)
         {
             _storagrSettings = new StoragrSettings(configuration);
@@ -23,18 +20,16 @@ namespace Storagr
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddStoragrCore(_storagrSettings);
-            services.AddStoragrCache(_storagrSettings.CacheSettings);
-            services.AddStoragrBackend(_storagrSettings.BackendSettings);
-            services.AddStoragrStore(_storagrSettings.StoreSettings);
+            services.AddStoreCore(_storagrSettings);
+            services.AddStoreCache(_storagrSettings.CacheSettings);
+            services.AddStoreServices(_storagrSettings.StoreSettings);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IMigrationRunner migrationRunner)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
-                IdentityModelEventSource.ShowPII = true;
                 app.UseDeveloperExceptionPage();
             }
 
@@ -42,12 +37,7 @@ namespace Storagr
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
-            
-            migrationRunner.MigrateUp();
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Tests", "tests\Stor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Client", "src\Storagr.Client\Storagr.Client.csproj", "{21138A8E-932E-4583-A12C-96C96EAA4FF6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Store", "src\Storagr.Store\Storagr.Store.csproj", "{9C41EB8B-E3DF-4EE5-8077-9ADF7884C714}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Shared", "src\Storagr.Shared\Storagr.Shared.csproj", "{EE2D661E-9C37-4421-8C49-250A1BE720E7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21138A8E-932E-4583-A12C-96C96EAA4FF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C41EB8B-E3DF-4EE5-8077-9ADF7884C714}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C41EB8B-E3DF-4EE5-8077-9ADF7884C714}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C41EB8B-E3DF-4EE5-8077-9ADF7884C714}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C41EB8B-E3DF-4EE5-8077-9ADF7884C714}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE2D661E-9C37-4421-8C49-250A1BE720E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE2D661E-9C37-4421-8C49-250A1BE720E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE2D661E-9C37-4421-8C49-250A1BE720E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE2D661E-9C37-4421-8C49-250A1BE720E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

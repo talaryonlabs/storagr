@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Storagr.Data;
 using Storagr.Data.Entities;
+using Storagr.Shared;
 
 namespace Storagr.Services
 {

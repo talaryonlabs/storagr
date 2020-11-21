@@ -3,33 +3,60 @@ using System.Threading.Tasks;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.IO;
+using Storagr.Shared;
 
 namespace Storagr.Services
 {
     public interface IObjectService
     {
+        Task<ObjectEntity> Create(string repositoryId, string objectId, long size);
+
+        Task<RepositoryEntity> Get(string repositoryId);
         Task<ObjectEntity> Get(string repositoryId, string objectId);
         Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, params string[] objectIds);
         Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId);
 
+        Task Delete(string repositoryId);
         Task Delete(string repositoryId, string objectId);
-        Task DeleteAll(string repositoryId);
+
+        Task<StoragrAction> NewVerifyRequest(string repositoryId, string objectId);
+        Task<StoragrAction> NewUploadRequest(string repositoryId, string objectId);
+        Task<StoragrAction> NewDownloadRequest(string repositoryId, string objectId);
     }
     
     public class ObjectService : IObjectService
     {
-        private readonly IBackendAdapter _backend;
-        private readonly IStoreAdapter _store;
+        private readonly IBackendAdapter _backendAdapter;
+        private readonly IStoreAdapter _storeAdapter;
+        private readonly IUserService _userService;
 
-        public ObjectService(IBackendAdapter backend, IStoreAdapter store)
+        public ObjectService(IBackendAdapter backendAdapter, IStoreAdapter storeAdapter, IUserService userService)
         {
-            _backend = backend;
-            _store = store;
+            _backendAdapter = backendAdapter;
+            _storeAdapter = storeAdapter;
+            _userService = userService;
         }
 
-        public async Task<ObjectEntity> Get(string repositoryId, string objectId)
+        public async Task<ObjectEntity> Create(string repositoryId, string objectId, long size)
         {
-            return await _backend.Get<ObjectEntity>(q =>
+            var entity = await Get(repositoryId, objectId);
+            if (entity != null)
+                throw null; // TODO ObjectAlreadyExistsException
+
+            await _backendAdapter.Insert(entity = new ObjectEntity()
+            {
+                RepositoryId = repositoryId,
+                ObjectId = objectId,
+                Size = size
+            });
+            return entity;
+        }
+
+        public Task<RepositoryEntity> Get(string repositoryId) => _backendAdapter.Get<RepositoryEntity>(repositoryId);
+
+        public Task<ObjectEntity> Get(string repositoryId, string objectId)
+        {
+            return _backendAdapter.Get<ObjectEntity>(q =>
             {
                 q.Where(f =>
                 {
@@ -40,9 +67,9 @@ namespace Storagr.Services
             });
         }
 
-        public async Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, params string[] objectIds)
+        public Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, params string[] objectIds)
         {
-            return await _backend.GetAll<ObjectEntity>(q =>
+            return _backendAdapter.GetAll<ObjectEntity>(q =>
             {
                 q.Where(f =>
                 {
@@ -53,9 +80,9 @@ namespace Storagr.Services
             });
         }
 
-        public async Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId)
+        public Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId)
         {
-            return await _backend.GetAll<ObjectEntity>(q =>
+            return _backendAdapter.GetAll<ObjectEntity>(q =>
             {
                 q.Where(f =>
                 {
@@ -64,18 +91,53 @@ namespace Storagr.Services
             });
         }
 
-        public async Task Delete(string repositoryId, string objectId)
+        public async Task Delete(string repositoryId)
         {
-            var obj = await Get(repositoryId, objectId);
-            
-            await _backend.Delete(obj);
+            var entity = await Get(repositoryId);
+            if (entity == null)
+            {
+                throw new StoragrRepositoryNotFoundException();
+            }
+            await _backendAdapter.Delete(entity);
+            await _storeAdapter.Delete(repositoryId);
         }
 
-        public async Task DeleteAll(string repositoryId)
+        public async Task Delete(string repositoryId, string objectId)
         {
-            var list = await GetAll(repositoryId);
+            var entity = await Get(repositoryId, objectId);
+            
+            if (entity == null)
+            {
+                throw null; // TODO ObjectNotFoundException
+            }
+            await _backendAdapter.Delete(entity);
+            await _storeAdapter.Delete(repositoryId, objectId);
+        }
 
-            await _backend.Delete(list);
+        public async Task<StoragrAction> NewVerifyRequest(string repositoryId, string objectId)
+        {
+            var obj = await Get(repositoryId, objectId);
+            if (obj != null) 
+                return null;
+            
+            var token = await _userService.GetAuthenticatedUserToken();
+            return new StoragrAction
+            {
+                Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},
+                ExpiresAt = default,
+                ExpiresIn = 0,
+                Href = $"{repositoryId}/objects/v/{objectId}"
+            };
+        }
+
+        public async Task<StoragrAction> NewUploadRequest(string repositoryId, string objectId)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public async Task<StoragrAction> NewDownloadRequest(string repositoryId, string objectId)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

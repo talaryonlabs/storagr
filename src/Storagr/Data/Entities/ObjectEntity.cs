@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using Dapper.Contrib.Extensions;
-using Storagr.Client.Models;
+using Storagr.Shared.Data;
 
 namespace Storagr.Data.Entities
 {

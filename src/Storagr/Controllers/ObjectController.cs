@@ -3,11 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Client.Models;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.IO;
 using Storagr.Services;
+using Storagr.Shared.Data;
 
 namespace Storagr.Controllers
 {
@@ -18,14 +18,10 @@ namespace Storagr.Controllers
     {
         private readonly IUserService _userService;
         private readonly IObjectService _objectService;
-        private readonly IBackendAdapter _backend;
-        private readonly IStoreAdapter _store;
 
-        public ObjectController(IBackendAdapter backend, IUserService userService, IStoreAdapter store, IObjectService objectService)
+        public ObjectController(IUserService userService, IObjectService objectService)
         {
-            _backend = backend;
             _userService = userService;
-            _store = store;
             _objectService = objectService;
         }
         
@@ -35,7 +31,7 @@ namespace Storagr.Controllers
         [ProducesResponseType(404, Type = typeof(StoragrError))]
         public async Task<IActionResult> List([FromRoute] string rid, [FromQuery] ObjectListRequest request)
         {
-            var repository = await _backend.Get<RepositoryEntity>(rid);
+            var repository = await _objectService.Get(rid);
             if (repository == null)
                 return NotFound(new RepositoryNotFoundError());
             
@@ -84,12 +80,18 @@ namespace Storagr.Controllers
         {
             if (oid != verifyRequest.ObjectId)
                 return BadRequest();
-            
-            var obj = await _objectService.Get(rid, oid);
-            if (obj == null)
-                return NotFound();
 
-            return Ok((ObjectModel)obj);
+            var repository = await _objectService.Get(rid);
+            if (repository == null)
+                return NotFound(new RepositoryNotFoundError());
+
+            // TODO verify with store!
+            // if (!await _store.VerifyObject(repository.RepositoryId, verifyRequest.ObjectId, verifyRequest.Size))
+            //     return BadRequest();
+
+            await _objectService.Create(repository.RepositoryId, verifyRequest.ObjectId, verifyRequest.Size);
+
+            return Ok();
         }
 
         [HttpDelete("o/{oid}")]
@@ -100,7 +102,6 @@ namespace Storagr.Controllers
         {
             try
             {
-                await _store.DeleteObject(rid, oid);
                 await _objectService.Delete(rid, oid);
             }
             catch (Exception e)

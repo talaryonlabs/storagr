@@ -10,8 +10,8 @@
       <PackageReference Include="FluentMigrator" Version="3.2.9" />
       <PackageReference Include="FluentMigrator.Runner" Version="3.2.9" />
       <PackageReference Include="FluentMigrator.Runner.SQLite" Version="3.2.9" />
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.9" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.9" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.10" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.10" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.9" />
       <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="5.0.0" />
       <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.2.0" />
@@ -42,7 +42,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Storagr.Client\Storagr.Client.csproj" />
+      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
     </ItemGroup>
 
 

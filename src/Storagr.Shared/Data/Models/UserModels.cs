@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
-namespace Storagr.Client.Models
+namespace Storagr.Shared.Data
 {
     [DataContract]
     public class UserModel

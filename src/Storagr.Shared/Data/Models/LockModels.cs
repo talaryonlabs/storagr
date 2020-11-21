@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Storagr.Client.Models
+namespace Storagr.Shared.Data
 {
     [DataContract]
     public class LockModel

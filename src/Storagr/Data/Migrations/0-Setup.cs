@@ -16,8 +16,8 @@ namespace Storagr.Data.Migrations
             
             Create.Table("users")
                 .WithColumn("UserId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("AuthAdapter").AsString()
                 .WithColumn("AuthId").AsString()
+                .WithColumn("AuthAdapter").AsString()
                 .WithColumn("Username").AsString()
                 .WithColumn("Mail").AsString()
                 .WithColumn("Role").AsString();
@@ -34,10 +34,10 @@ namespace Storagr.Data.Migrations
 
             Create.Table("locks")
                 .WithColumn("LockId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("Path").AsString()
-                .WithColumn("LockedAt").AsDateTime2()
                 .WithColumn("OwnerId").AsString()
-                .WithColumn("RepositoryId").AsString();
+                .WithColumn("RepositoryId").AsString()
+                .WithColumn("Path").AsString()
+                .WithColumn("LockedAt").AsDateTime2();
         }
 
         public override void Down()

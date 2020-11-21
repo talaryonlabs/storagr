@@ -4,6 +4,7 @@ using System.Text;
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -15,6 +16,8 @@ using Storagr.IO;
 using Storagr.Security;
 using Storagr.Security.Authenticators;
 using Storagr.Services;
+using Storagr.Shared;
+using Storagr.Shared.Security;
 
 namespace Storagr
 {
@@ -22,40 +25,45 @@ namespace Storagr
     {
         public static IServiceCollection AddStoragrCore(this IServiceCollection services, StoragrSettings storagrSettings)
         {
-            var tokenValidationParameters = new TokenValidationParameters()
-            {
-                ValidIssuer = storagrSettings.TokenSettings.Issuer,
-                ValidAudience = storagrSettings.TokenSettings.Audience,
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ClockSkew = TimeSpan.Zero,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(storagrSettings.TokenSettings.Secret)),
-            };
+            var featureProvider = new StoragrFeatureProvider(storagrSettings);
+            var mediaType = new StoragerMediaTypeHeader();
+            var tokenValidationParameters = new StoragrTokenValidationParameters(
+                storagrSettings.TokenSettings.Issuer,
+                storagrSettings.TokenSettings.Audience, 
+                storagrSettings.TokenSettings.Secret);
 
+            services.AddHttpClient();
             services.AddHttpContextAccessor();
-            services.AddControllers();
-            services.AddMvcCore().AddMvcOptions(options =>
-            {
-                var mediaType = new StoragerMediaTypeHeader();
-
-                options.Filters.Add(new ProducesAttribute(mediaType.MediaType.Buffer));
-
-                foreach (var input in options.InputFormatters.OfType<NewtonsoftJsonInputFormatter>())
+            services.AddControllers()
+                .ConfigureApplicationPartManager(apm =>
                 {
-                    input.SupportedMediaTypes.Add(mediaType);
-                }
-
-                foreach (var output in options.OutputFormatters.OfType<NewtonsoftJsonOutputFormatter>())
+                    foreach (var provider in apm.FeatureProviders.OfType<ControllerFeatureProvider>().ToList())
+                    {
+                        apm.FeatureProviders.Remove(provider);
+                    }
+                    apm.FeatureProviders.Add(featureProvider);
+                });
+            services.AddMvcCore()
+                .AddMvcOptions(options =>
                 {
-                    output.SupportedMediaTypes.Add(mediaType);
-                }
-            }).AddNewtonsoftJson(options =>
-            {
-                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
-            });
+                    options.Filters.Add(new ProducesAttribute(mediaType.MediaType.Buffer));
+
+                    foreach (var input in options.InputFormatters.OfType<NewtonsoftJsonInputFormatter>())
+                    {
+                        input.SupportedMediaTypes.Add(mediaType);
+                    }
+
+                    foreach (var output in options.OutputFormatters.OfType<NewtonsoftJsonOutputFormatter>())
+                    {
+                        output.SupportedMediaTypes.Add(mediaType);
+                    }
+
+                })
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                    options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
+                });
 
             services.AddAuthentication("_")
                 .AddPolicyScheme("_", "AuthRouter", options =>
@@ -96,7 +104,7 @@ namespace Storagr
                 options.Expiration = storagrSettings.TokenSettings.Expiration;
             });
 
-            services.AddBackendAuthenticator();
+            services.AddAuthentication<BackendAuthenticator>();
 
             
             services.AddSingleton<IUserService, UserService>();
@@ -147,7 +155,7 @@ namespace Storagr
             switch (backendSettings.Type)
             {
                 case StoragrBackendType.Sqlite:
-                    services.AddSqliteBackend(options =>
+                    services.AddBackend<SqliteBackend, SqliteBackendOptions>(options =>
                     {
                         options.DataSource = backendSettings.DataSource;
                     });
@@ -163,11 +171,8 @@ namespace Storagr
         {
             switch (storeSettings.Type)
             {
-                case StoragrStoreType.Local:
-                    services.AddLocalStore(options =>
-                    {
-                        options.RootPath = storeSettings.RootPath;
-                    });
+                case StoragrStoreType.Storagr:
+                    services.AddStore<StoragrStore>();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

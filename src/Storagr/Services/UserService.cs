@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.Security;
+using Storagr.Shared;
 
 namespace Storagr.Services
 {

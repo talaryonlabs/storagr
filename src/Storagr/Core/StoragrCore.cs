@@ -1,59 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Reflection;
 using System.Text;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Net.Http.Headers;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Storagr.Client.Models;
+using Storagr.Controllers;
 using Storagr.IO;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr
 {
-    public class StoragrOptions<T> : IOptions<T> where T : class
-    {
-        T IOptions<T>.Value => (T)(object)this;
-    }
-
-    public static class StoragrConverter
-    {
-        public static BatchAction ToBatchAction(StoreRequest request) => new BatchAction()
-        {
-            Href = request.Url,
-            Header = request.Header,
-            ExpiresAt = request.ExpiresAt,
-            ExpiresIn = request.ExpiresIn
-        };
-    }
-
-
-    public static class StoragrHelper
-    {
-        [Pure]
-        public static byte[] SerializeObject<T>(T obj)
-        {
-            var p = JsonConvert.SerializeObject(obj);
-            return Encoding.UTF8.GetBytes(p);
-        }
-        [Pure]
-        public static T DeserializeObject<T>(byte[] data)
-        {
-            var p = Encoding.UTF8.GetString(data);
-            return JsonConvert.DeserializeObject<T>(p);
-        }
-
-        // ReSharper disable once InconsistentNaming
-        [Pure]
-        public static string UUID()
-        {
-            return Guid.NewGuid().ToString();
-        }
-    }
-    
-    public class StoragerMediaTypeHeader : MediaTypeHeaderValue
-    {
-        public StoragerMediaTypeHeader() : base("application/vnd.git-lfs+json") { }
-    }
-    
     public class StoragrRepositoryNotFoundException : Exception
     {
         public StoragrRepositoryNotFoundException()
@@ -67,6 +27,21 @@ namespace Storagr
         public StoragrLockExistsException()
             : base($"Lock exists!")
         {
+        }
+    }
+
+    public class StoragrFeatureProvider : ControllerFeatureProvider
+    {
+        private readonly StoragrSettings _settings;
+
+        public StoragrFeatureProvider(StoragrSettings settings)
+        {
+            _settings = settings;
+        }
+        
+        protected override bool IsController(TypeInfo typeInfo)
+        {
+            return base.IsController(typeInfo);
         }
     }
 }

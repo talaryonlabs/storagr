@@ -9,6 +9,7 @@ using Dapper.Contrib.Extensions;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Storagr.Shared;
 
 namespace Storagr.Data
 {
@@ -17,18 +18,6 @@ namespace Storagr.Data
         public string DataSource { get; set; }
     }
 
-    public static class SqliteBackendExtension
-    {
-        public static IServiceCollection AddSqliteBackend(this IServiceCollection services, Action<SqliteBackendOptions> configureOptions)
-        {
-            return services
-                .AddOptions()
-                .Configure(configureOptions)
-                .AddSingleton<SqliteBackend>()
-                .AddSingleton<IBackendAdapter>(x => x.GetRequiredService<SqliteBackend>());
-        }
-    }
-    
     public class SqliteBackend : IDisposable, IBackendAdapter
     {
         #region Class<QueryBuilder>

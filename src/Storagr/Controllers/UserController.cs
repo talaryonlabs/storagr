@@ -2,10 +2,10 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Client.Models;
 using Storagr.Security;
 using Storagr.Security.Authenticators;
 using Storagr.Services;
+using Storagr.Shared.Data;
 
 namespace Storagr.Controllers
 {
@@ -22,36 +22,6 @@ namespace Storagr.Controllers
             _userService = userService;
             _authentication = authentication;
         }
-
-        [AllowAnonymous]
-        [HttpPost("login")]
-        [ProducesResponseType(200, Type = typeof(UserLoginResponse))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        public async Task<IActionResult> Login([FromBody] UserLoginRequest loginRequest)
-        {
-            if (string.IsNullOrEmpty(loginRequest.Username) || string.IsNullOrEmpty(loginRequest.Password))
-                return BadRequest();
-
-            var user = await _userService.Authenticate(loginRequest.Username, loginRequest.Password);
-            if (user == null)
-                return Unauthorized();
-            
-            return Ok(new UserLoginResponse()
-            {
-                Token = user.Token
-            });
-        }
-        
-        [HttpGet("logout")]
-        [ProducesResponseType(200)]
-        public IActionResult Logout()
-        {
-            // TODO logout current user
-            
-            return Ok();
-        }
-
 
         [HttpGet]
         [Authorize(Policy = "Management")]
