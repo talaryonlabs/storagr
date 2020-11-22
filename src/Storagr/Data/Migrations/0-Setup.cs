@@ -1,8 +1,9 @@
 ﻿using FluentMigrator;
+using Storagr.Shared;
 
 namespace Storagr.Data.Migrations
 {
-    [Migration(0, "Init")]
+    [Migration(0, "Setup")]
     public class Setup : Migration
     {
         public override void Up()
@@ -38,6 +39,17 @@ namespace Storagr.Data.Migrations
                 .WithColumn("RepositoryId").AsString()
                 .WithColumn("Path").AsString()
                 .WithColumn("LockedAt").AsDateTime2();
+
+            // Initial Admin User
+            Insert.IntoTable("_backendAuth")
+                .Row(new
+                {
+                    AuthId = StoragrHelper.UUID(),
+                    Username = "admin",
+                    Password = "AQAAAAEAACcQAAAAEGTYFmFw+/mzx8Ef4yq2znUwkl5Y6Bs6ZV7NgINEG8GsomDerF2ZV0GfDIbmtBNhDw==", // _storagr
+                    Mail = "no-mail",
+                    Role = "Admin"
+                });
         }
 
         public override void Down()
