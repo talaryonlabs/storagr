@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Shared.Data;
@@ -18,25 +17,7 @@ namespace Storagr.Store.Controllers
         {
             _storeService = storeService;
         }
-        
-        [HttpPost]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(404)]
-        public IActionResult Create([FromRoute] string repositoryId, [FromBody] StoreObject requestObject)
-        {
-            if (repositoryId != requestObject.RepositoryId)
-                return BadRequest();
-            if (!_storeService.Exists(repositoryId))
-                return NotFound();
 
-            
-            
-            // TODO upload/download request
-            
-            return Ok();
-        }
-        
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(IEnumerable<StoreObject>))]
         [ProducesResponseType(404)]
@@ -45,7 +26,7 @@ namespace Storagr.Store.Controllers
             if (!_storeService.Exists(repositoryId))
                 return NotFound();
 
-            return Ok(_storeService.Get(repositoryId));
+            return Ok(_storeService.List(repositoryId));
         }
 
         [HttpGet("{objectId}")]

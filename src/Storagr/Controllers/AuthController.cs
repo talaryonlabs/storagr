@@ -14,6 +14,11 @@ namespace Storagr.Controllers
     {
         private readonly IUserService _userService;
 
+        public AuthController(IUserService userService)
+        {
+            _userService = userService;
+        }
+
         [AllowAnonymous]
         [HttpPost]
         [ProducesResponseType(200, Type = typeof(UserLoginResponse))]

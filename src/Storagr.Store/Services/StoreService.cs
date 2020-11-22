@@ -15,7 +15,7 @@ namespace Storagr.Store.Services
     public interface IStoreService
     {
         int BufferSize { get; }
-        
+
         bool Exists(string repositoryId);
         bool Exists(string repositoryId, string objectId);
 
@@ -31,7 +31,6 @@ namespace Storagr.Store.Services
         Stream GetDownloadStream(string repositoryId, string objectId);
         Stream GetUploadStream(string repositoryId, string objectId);
         bool FinalizeUpload(string repositoryId, string objectId, long expectedSize);
-        
     }
     
     public class StoreServiceOptions : StoragrOptions<StoreServiceOptions>
@@ -128,7 +127,7 @@ namespace Storagr.Store.Services
         }
         
         public IEnumerable<StoreRepository> List() => 
-            _rootDirectory.EnumerateDirectories("*", SearchOption.TopDirectoryOnly).Select(v => Get(v.Name));
+            _rootDirectory.EnumerateDirectories("*", SearchOption.TopDirectoryOnly).Where(v => !v.Name.StartsWith(".")).Select(v => Get(v.Name));
         public IEnumerable<StoreObject> List(string repositoryId)
         {
             var path = GetRepositoryPath(repositoryId);
@@ -136,7 +135,7 @@ namespace Storagr.Store.Services
                 throw new DirectoryNotFoundException();
             
             return new DirectoryInfo(path)
-                .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                .EnumerateFiles("*", SearchOption.AllDirectories)
                 .Select(v => new StoreObject()
                 {
                     ObjectId = v.Name,
@@ -178,7 +177,7 @@ namespace Storagr.Store.Services
             {
                 throw null; // TODO exception or return null??
             }
-            var key = $"STORE:TMP:{repositoryId}:{objectId}";
+            var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
             var tmp = _cache.GetString(key) ?? CreateTemporaryFile();
             
             _cache.SetString(key, tmp, new DistributedCacheEntryOptions().SetAbsoluteExpiration(_options.Expiration));
@@ -188,7 +187,7 @@ namespace Storagr.Store.Services
 
         public bool FinalizeUpload(string repositoryId, string objectId, long expectedSize)
         {
-            var key = $"STORE:TMP:{repositoryId}:{objectId}";
+            var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
             var path = _cache.GetString(key);
             if (path == null)
             {
@@ -197,10 +196,14 @@ namespace Storagr.Store.Services
             _cache.Remove(key);
             
             var tmp = new FileInfo(path);
-            if (!tmp.Exists || tmp.Length != expectedSize)
+            if (!tmp.Exists)
+                return false;
+            if (tmp.Length != expectedSize)
             {
+                tmp.Delete();
                 return false;
             }
+            
             var file = new FileInfo(GetObjectPath(repositoryId, objectId));
 
             file.Directory?.Create();

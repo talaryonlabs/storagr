@@ -69,7 +69,8 @@ namespace Storagr.Shared
         {
             StoreSettings = new StoragrStoreSettings()
             {
-                RootPath = configuration["STORAGR_STORE_ROOTPATH"] ?? configuration["Storagr:Store:RootPath"]
+                RootPath = configuration["STORAGR_STORE_ROOTPATH"] ?? configuration["Storagr:Store:RootPath"],
+                Host = configuration["STORAGR_STORE_HOST"] ?? configuration["Storagr:Store:Host"]
             };
             
             if (configuration.GetSection("Storagr:Store:Type").Exists())
@@ -110,6 +111,7 @@ namespace Storagr.Shared
     {
         public StoragrStoreType Type { get; set; }
         public string RootPath { get; set; }
+        public string Host { get; set; }
     }
 
     public class StoragrBackendSettings

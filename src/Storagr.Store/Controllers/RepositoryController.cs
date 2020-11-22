@@ -25,7 +25,7 @@ namespace Storagr.Store.Controllers
         {
             return Ok(_storeService.List());
         }
-        
+
         [HttpGet("{repositoryId}")]
         [ProducesResponseType(200, Type = typeof(StoreRepository))]
         [ProducesResponseType(404)]

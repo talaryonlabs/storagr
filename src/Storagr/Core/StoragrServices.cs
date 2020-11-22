@@ -172,7 +172,10 @@ namespace Storagr
             switch (storeSettings.Type)
             {
                 case StoragrStoreType.Storagr:
-                    services.AddStore<StoragrStore>();
+                    services.AddStore<StoragrStore, StoragrStoreOptions>(options =>
+                    {
+                        options.Host = storeSettings.Host;
+                    });
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Storagr.Shared.Data;
 using Storagr.Store.Services;
 
 namespace Storagr.Store.Controllers
@@ -44,36 +45,13 @@ namespace Storagr.Store.Controllers
             await Request.Body.CopyToAsync(stream, _storeService.BufferSize);
         }
 
-        // TODO move this to ObjectService and StoreService
-        /*[HttpPost("{oid}")]
+        [HttpPost]
         [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Verify([FromRoute] string rid, [FromRoute] string oid, [FromBody] StoreVerifyRequest verifyRequest)
+        [ProducesResponseType(500)]
+        public IActionResult Finish([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoreObject verifyObject)
         {
-            if (oid != verifyRequest.ObjectId)
-                return BadRequest();
-
-            var user = await _userService.GetAuthenticatedUser();
-            var key = $"TMPFILE:{rid}:{oid}";
-            var name = await _cache.GetStringAsync(key);
-            if (name == null)
-            {
-                return NotFound();
-            }
-            await _cache.RemoveAsync(key);
-            
-            var file = _store.GetTemporaryFile(name);
-            if (file == null)
-                return NotFound();
-
-            var size = file.Length;
-            if (size != verifyRequest.Size)
-            {
-                file.Delete();
-                return BadRequest();
-            }
-            _store.Save(file, rid, oid);
-        }*/
+            return !_storeService.FinalizeUpload(verifyObject.RepositoryId, verifyObject.ObjectId, verifyObject.Size) ? StatusCode(500) : Ok();
+        }
     }
 }

@@ -2,6 +2,12 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Authors>Talaryon Studios</Authors>
+        <Company>Talaryon Studios</Company>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <FileVersion>1.0.0</FileVersion>
+        <AssemblyOriginatorKeyFile>test.snk</AssemblyOriginatorKeyFile>
+        <PublicSign>false</PublicSign>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,7 +30,7 @@
       <Content Include=".rest\hash-password.http" />
       <Content Include=".rest\http-client.env.json" />
       <Content Include=".rest\http-client.private.env.json" />
-      <Content Include=".rest\transfer-test.http" />
+      <Content Include=".rest\store-test.http" />
       <Content Include=".rest\user-test.http" />
       <Content Remove=".github\**" />
     </ItemGroup>

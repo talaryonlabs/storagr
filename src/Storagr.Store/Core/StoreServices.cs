@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Storagr.Shared;
 using Storagr.Shared.Security;
@@ -90,9 +87,10 @@ namespace Storagr.Store
             {
                 options.RootPath = storeSettings.RootPath;
                 options.BufferSize = 4096;
-                options.Expiration = TimeSpan.FromHours(1);
-                options.ScanInterval = TimeSpan.FromMinutes(30);
+                options.Expiration = TimeSpan.FromHours(12);
+                options.ScanInterval = TimeSpan.FromHours(1);
             });
+            services.AddHostedService<StoreService>();
 
             return services;
         }

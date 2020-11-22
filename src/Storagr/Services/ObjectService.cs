@@ -130,14 +130,14 @@ namespace Storagr.Services
             };
         }
 
-        public async Task<StoragrAction> NewUploadRequest(string repositoryId, string objectId)
+        public Task<StoragrAction> NewUploadRequest(string repositoryId, string objectId)
         {
-            throw new System.NotImplementedException();
+            return _storeAdapter.NewUploadRequest(repositoryId, objectId);
         }
 
-        public async Task<StoragrAction> NewDownloadRequest(string repositoryId, string objectId)
+        public Task<StoragrAction> NewDownloadRequest(string repositoryId, string objectId)
         {
-            throw new System.NotImplementedException();
+            return _storeAdapter.NewDownloadRequest(repositoryId, objectId);
         }
     }
 }

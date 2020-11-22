@@ -14,6 +14,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Storagr.Client\Storagr.Client.csproj" />
+      <ProjectReference Include="..\..\src\Storagr.Store\Storagr.Store.csproj" />
       <ProjectReference Include="..\..\src\Storagr\Storagr.csproj" />
     </ItemGroup>
 

@@ -8,6 +8,8 @@ namespace Storagr.IO
 {
     public interface IStoreAdapter
     {
+        Task<bool> Verify(string repositoryId, string objectId, long expectedSize);
+        
         Task<StoreRepository> Get(string repositoryId);
         Task<IEnumerable<StoreRepository>> GetAll();
         Task Delete(string repositoryId);
