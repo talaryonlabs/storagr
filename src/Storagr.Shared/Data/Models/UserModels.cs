@@ -13,14 +13,14 @@ namespace Storagr.Shared.Data
     }
     
     [DataContract]
-    public class UserLoginRequest
+    public class UserAuthenticationRequest
     {
         [DataMember(Name = "username", IsRequired = true)] public string Username;
         [DataMember(Name = "password", IsRequired = true)] public string Password;
     }
     
     [DataContract]
-    public class UserLoginResponse
+    public class UserAuthenticationResponse
     {
         [DataMember(Name = "token")] public string Token;
     }

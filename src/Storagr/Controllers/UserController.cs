@@ -22,7 +22,36 @@ namespace Storagr.Controllers
             _userService = userService;
             _authentication = authentication;
         }
+        
+        [HttpGet("me")]
+        [ProducesResponseType(200)]
+        public async Task<ActionResult> Test()
+        {
+            var user = await _userService.GetAuthenticatedUser();
+            
+            return Ok($"Hello {user.Username}!");
+        }
 
+        [AllowAnonymous]
+        [HttpPost("authenticate")]
+        [ProducesResponseType(200, Type = typeof(UserAuthenticationResponse))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> Authenticate([FromBody] UserAuthenticationRequest authenticationRequest)
+        {
+            if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
+                return BadRequest();
+
+            var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
+            if (user == null)
+                return Unauthorized();
+            
+            return Ok(new UserAuthenticationResponse()
+            {
+                Token = user.Token
+            });
+        }
+        
         [HttpGet]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(200, Type = typeof(UserListResponse))]
