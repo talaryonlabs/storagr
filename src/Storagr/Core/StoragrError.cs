@@ -27,11 +27,11 @@ namespace Storagr
     [DataContract]
     public class LockAlreadyExistsError : StoragrError
     {
-        [DataMember(Name = "lock")] public StoragrLock StoragrLock;
+        [DataMember(Name = "lock")] public StoragrLock Lock;
         
-        public LockAlreadyExistsError(StoragrLock storagrLock) : base(409, "Lock already exists.")
+        public LockAlreadyExistsError(StoragrLock existingLock) : base(409, "Lock already exists.")
         {
-            StoragrLock = storagrLock;
+            Lock = existingLock;
         }
     }
 
@@ -39,6 +39,16 @@ namespace Storagr
     {
         public InvalidBatchOperationError() : base(500, "Invalid operation - only 'upload' or 'download' are supported.")
         {
+        }
+    }
+
+    public class RepositoryAlreadyExistsError : StoragrError
+    {
+        [DataMember(Name = "repository")] public StoragrRepository Repository;
+        
+        public RepositoryAlreadyExistsError(StoragrRepository existingRepository) : base(409, "Repository already exists.")
+        {
+            Repository = existingRepository;
         }
     }
 
