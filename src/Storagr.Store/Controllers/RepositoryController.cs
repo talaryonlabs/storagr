@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Shared.Data;
-using Storagr.Store.Services;
 
 namespace Storagr.Store.Controllers
 {

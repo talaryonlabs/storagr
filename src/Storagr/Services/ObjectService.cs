@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Storagr.Data.Entities;
 using Storagr.Shared;
@@ -38,7 +39,16 @@ namespace Storagr.Services
             return entity;
         }
 
-        public Task<RepositoryEntity> Get(string repositoryId) => _backendAdapter.Get<RepositoryEntity>(repositoryId);
+        public async Task<RepositoryEntity> Get(string repositoryId)
+        {
+            var entity = await _backendAdapter.Get<RepositoryEntity>(repositoryId);
+            if (entity == null)
+                return null;
+
+            entity.Owner = await _userService.Get(entity.OwnerId);
+
+            return entity;
+        }
 
         public Task<ObjectEntity> Get(string repositoryId, string objectId)
         {
@@ -64,6 +74,18 @@ namespace Storagr.Services
                         .In("ObjectId", objectIds);
                 });
             });
+        }
+
+        public async Task<IEnumerable<RepositoryEntity>> GetAll()
+        {
+            var users = (await _backendAdapter.GetAll<UserEntity>()).ToList();
+            var repositories = (await _backendAdapter.GetAll<RepositoryEntity>()).ToList();
+
+            foreach (var repository in repositories)
+            {
+                repository.Owner = users.Find(v => v.UserId == repository.OwnerId);
+            }
+            return repositories;
         }
 
         public Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId)

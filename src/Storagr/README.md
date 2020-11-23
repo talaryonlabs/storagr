@@ -11,6 +11,11 @@
 #### Authentication
 - /users/authenticate [POST]
 
+### Repositories
+- / [GET] (List Repositories)
+- /:repositoryId [GET]
+- /:repositoryId [DELETE]
+
 ##
 ### Object
 - /:repositoryId/objects [GET]

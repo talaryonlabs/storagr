@@ -12,6 +12,7 @@ namespace Storagr
         Task<RepositoryEntity> Get(string repositoryId);
         Task<ObjectEntity> Get(string repositoryId, string objectId);
         Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, params string[] objectIds);
+        Task<IEnumerable<RepositoryEntity>> GetAll();
         Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId);
 
         Task Delete(string repositoryId);
