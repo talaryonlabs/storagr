@@ -15,9 +15,7 @@ namespace Storagr.Store
     {
         public static IServiceCollection AddStoreCore(this IServiceCollection services, StoragrSettings storagrSettings)
         {
-            var mediaType = new StoragerMediaTypeHeader();
-
-            var test = mediaType.MediaType.Value;
+            var mediaType = new StoragerMediaType();
             
             services.AddMvcCore()
                 .AddMvcOptions(options =>

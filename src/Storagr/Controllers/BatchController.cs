@@ -32,12 +32,12 @@ namespace Storagr.Controllers
         }
 
         [HttpPost()]
-        [ProducesResponseType(200, Type = typeof(BatchResponse))]
+        [ProducesResponseType(200, Type = typeof(StoragrBatchResponse))]
         [ProducesResponseType(403, Type = typeof(StoragrError))]
         [ProducesResponseType(404, Type = typeof(RepositoryNotFoundError))]
         [ProducesResponseType(422, Type = typeof(StoragrError))]
         [ProducesResponseType(500, Type = typeof(StoragrError))]
-        public async Task<IActionResult> Batch([FromRoute] string rid, [FromBody] BatchRequest request)
+        public async Task<IActionResult> Batch([FromRoute] string rid, [FromBody] StoragrBatchRequest request)
         {
             var repository = await _objectService.Get(rid);
             if (repository == null)
@@ -45,14 +45,14 @@ namespace Storagr.Controllers
 
             return request.Operation switch
             {
-                BatchOperation.Download => await Download(repository, request),
-                BatchOperation.Upload => await Upload(repository, request),
+                StoragrBatchOperation.Download => await Download(repository, request),
+                StoragrBatchOperation.Upload => await Upload(repository, request),
                 _ => StatusCode(500, new InvalidBatchOperationError())
             };
         }
 
         [NonAction]
-        private async Task<IActionResult> Download(RepositoryEntity repository, BatchRequest batchRequest)
+        private async Task<IActionResult> Download(RepositoryEntity repository, StoragrBatchRequest batchRequest)
         {
             // TODO consider the "ref" property in request
             // TODO check if user has read access
@@ -66,11 +66,11 @@ namespace Storagr.Controllers
             {
                 if (!objects.Exists(x => x.ObjectId == v.ObjectId))
                 {
-                    return new BatchResponseModel()
+                    return new StoragrBatchResponseObject()
                     {
                         ObjectId = v.ObjectId,
                         Size = v.Size,
-                        Error = new BatchError()
+                        Error = new StoragrBatchError()
                         {
                             Code = 404,
                             Message = "Object not found."
@@ -78,19 +78,18 @@ namespace Storagr.Controllers
                     };
                 }
 
-                var request = await _objectService.NewDownloadRequest(repository.RepositoryId, v.ObjectId);
-                return new BatchResponseModel()
+                return new StoragrBatchResponseObject()
                 {
                     ObjectId = v.ObjectId,
                     Size = v.Size,
                     Authenticated = true,
-                    Actions = new BatchActionList()
+                    Actions = new StoragrActions()
                     {
-                        Download = StoragrConverter.ToBatchAction(request)
+                        Download = await _objectService.NewDownloadAction(repository.RepositoryId, v.ObjectId)
                     }
                 };
             });
-            return Ok(new BatchResponse()
+            return Ok(new StoragrBatchResponse()
             {
                 Transfers = new[] {"basic"},
                 Objects = await Task.WhenAll(responseObjectsAsync)
@@ -98,7 +97,7 @@ namespace Storagr.Controllers
         }
 
         [NonAction]
-        private async Task<IActionResult> Upload(RepositoryEntity repository, BatchRequest batchRequest)
+        private async Task<IActionResult> Upload(RepositoryEntity repository, StoragrBatchRequest batchRequest)
         {
             // TODO consider the "ref" property in request
             // TODO check if user has write access
@@ -113,28 +112,26 @@ namespace Storagr.Controllers
             {
                 if (objects.Exists(x => x.ObjectId == v.ObjectId))
                 {
-                    return new BatchResponseModel()
+                    return new StoragrBatchResponseObject()
                     {
                         ObjectId = v.ObjectId,
                         Size = v.Size
                     };
                 }
 
-                var uploadRequest = await _objectService.NewUploadRequest(repository.RepositoryId, v.ObjectId);
-                var verifyRequest = await _objectService.NewVerifyRequest(repository.RepositoryId, v.ObjectId);
-                return new BatchResponseModel()
+                return new StoragrBatchResponseObject()
                 {
                     ObjectId = v.ObjectId,
                     Size = v.Size,
                     Authenticated = true,
-                    Actions = new BatchActionList()
+                    Actions = new StoragrActions()
                     {
-                        Upload = StoragrConverter.ToBatchAction(uploadRequest),
-                        Verify = StoragrConverter.ToBatchAction(verifyRequest),
+                        Upload = await _objectService.NewUploadAction(repository.RepositoryId, v.ObjectId),
+                        Verify = await _objectService.NewVerifyAction(repository.RepositoryId, v.ObjectId),
                     }
                 };
             });
-            return Ok(new BatchResponse()
+            return Ok(new StoragrBatchResponse()
             {
                 Transfers = new[] {"basic"},
                 Objects = await Task.WhenAll(responseObjectsAsync.ToList())

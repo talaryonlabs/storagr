@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Storagr.Security
+namespace Storagr
 {
     public class AuthenticationRequest
     {

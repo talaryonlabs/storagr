@@ -81,8 +81,8 @@ namespace Storagr.Security
                 return AuthenticateResult.Fail(e);
             }
 
-            var result = await _userService.Authenticate(credentialParams[0], credentialParams[1]);
-            if (result == null)
+            var user = await _userService.Authenticate(credentialParams[0], credentialParams[1]);
+            if (user == null)
             {
                 return AuthenticateResult.Fail("Username or Password invalid.");
             }
@@ -90,13 +90,13 @@ namespace Storagr.Security
             var properties = new AuthenticationProperties();
             properties.StoreTokens(new[]
             {
-                new AuthenticationToken {Name = "access_token", Value = result.Token}
+                new AuthenticationToken {Name = "access_token", Value = user.Token}
             });
 
             var identity = new ClaimsIdentity(new[]
             {
-                new Claim("UniqueId", result.UserId),
-                new Claim(ClaimTypes.Role, result.Role)
+                new Claim("UniqueId", user.UserId),
+                new Claim(ClaimTypes.Role, user.Role)
             }, Scheme.Name);
             
             var principal = new ClaimsPrincipal(identity);

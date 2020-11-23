@@ -17,12 +17,12 @@ namespace Storagr.Data.Entities
         [Computed] public UserEntity Owner { get; set; }
         [Computed] public RepositoryEntity Repository { get; set; }
         
-        public static implicit operator LockModel([NotNull] LockEntity entity) => new LockModel()
+        public static implicit operator StoragrLock([NotNull] LockEntity entity) => new StoragrLock()
         {
             LockId = entity.LockId,
             Path = entity.Path,
             LockedAt = entity.LockedAt,
-            Owner = new OwnerData()
+            Owner = new StoragrOwner()
             {
                 Name = entity.Owner.Username
             }

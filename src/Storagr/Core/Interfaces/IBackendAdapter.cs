@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Storagr.Data
+namespace Storagr
 {
     public interface IBackendAdapter
     {

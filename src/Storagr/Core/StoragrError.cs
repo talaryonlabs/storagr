@@ -27,11 +27,11 @@ namespace Storagr
     [DataContract]
     public class LockAlreadyExistsError : StoragrError
     {
-        [DataMember(Name = "lock")] public LockModel Lock;
+        [DataMember(Name = "lock")] public StoragrLock StoragrLock;
         
-        public LockAlreadyExistsError(LockModel lockModel) : base(409, "Lock already exists.")
+        public LockAlreadyExistsError(StoragrLock storagrLock) : base(409, "Lock already exists.")
         {
-            Lock = lockModel;
+            StoragrLock = storagrLock;
         }
     }
 
@@ -45,6 +45,14 @@ namespace Storagr
     public class RepositoryNotFoundError : StoragrError
     {
         public RepositoryNotFoundError() : base(404, "Repository not found.")
+        {
+            
+        }
+    }
+    
+    public class ObjectNotFoundError : StoragrError
+    {
+        public ObjectNotFoundError() : base(404, "Object not found.")
         {
             
         }

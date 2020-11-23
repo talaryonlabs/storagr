@@ -3,9 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Data;
-using Storagr.Data.Entities;
-using Storagr.IO;
 using Storagr.Services;
 using Storagr.Shared.Data;
 
@@ -13,7 +10,7 @@ namespace Storagr.Controllers
 {
     [ApiController]
     [Authorize]
-    [Route("{rid}/objects")]
+    [Route("{repositoryId}/objects")]
     public class ObjectController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -27,20 +24,20 @@ namespace Storagr.Controllers
         
         
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(ObjectListResponse))]
+        [ProducesResponseType(200, Type = typeof(StoragrObjectListResponse))]
         [ProducesResponseType(404, Type = typeof(StoragrError))]
-        public async Task<IActionResult> List([FromRoute] string rid, [FromQuery] ObjectListRequest request)
+        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListRequest request)
         {
-            var repository = await _objectService.Get(rid);
+            var repository = await _objectService.Get(repositoryId);
             if (repository == null)
                 return NotFound(new RepositoryNotFoundError());
             
             var user = await _userService.GetAuthenticatedUser();
-            var objects = (await _objectService.GetAll(rid));
+            var objects = (await _objectService.GetAll(repositoryId));
 
             var list = objects.ToList();
             if (!list.Any())
-                return Ok(new ObjectListResponse() {Objects = new ObjectModel[0]});
+                return Ok(new StoragrObjectListResponse() {Objects = new StoragrObject[0]});
 
             if (!string.IsNullOrEmpty(request.Cursor))
                 list = list.SkipWhile(v => v.ObjectId != request.Cursor).ToList();
@@ -48,61 +45,57 @@ namespace Storagr.Controllers
             if (request.Limit > 0)
                 list = list.Take(request.Limit).ToList();
 
-            return Ok(new ObjectListResponse()
+            return Ok(new StoragrObjectListResponse()
             {
-                Objects = list.Select(v => new ObjectModel()
+                Objects = list.Select(v => new StoragrObject()
                 {
                     ObjectId = v.ObjectId,
                     Size = v.Size,
-                    RepositoryId = v.RepositoryId
                 }),
                 NextCursor = list.Last().ObjectId
             });
         }
 
-        [HttpGet("o/{oid}")]
-        [ProducesResponseType(200, Type = typeof(ObjectModel))]
+        [HttpGet("{objectId}")]
+        [ProducesResponseType(200, Type = typeof(StoragrObject))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Get([FromRoute] string rid, [FromRoute] string oid)
+        public async Task<IActionResult> Get([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
-            var obj = await _objectService.Get(rid, oid);
+            var obj = await _objectService.Get(repositoryId, objectId);
             if (obj == null)
                 return NotFound();
 
-            return Ok((ObjectModel)obj);
+            return Ok((StoragrObject)obj);
         }
         
-        [HttpPost("v/{oid}")]
+        [HttpPost("{objectId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Verify([FromRoute] string rid, [FromRoute] string oid, [FromQuery] ObjectVerifyRequest verifyRequest)
+        public async Task<IActionResult> Verify([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoragrObjectVerifyRequest verifyRequest)
         {
-            if (oid != verifyRequest.ObjectId)
+            if (objectId != verifyRequest.ObjectId)
                 return BadRequest();
 
-            var repository = await _objectService.Get(rid);
+            var repository = await _objectService.Get(repositoryId);
             if (repository == null)
                 return NotFound(new RepositoryNotFoundError());
 
-            // TODO verify with store!
-            // if (!await _store.VerifyObject(repository.RepositoryId, verifyRequest.ObjectId, verifyRequest.Size))
-            //     return BadRequest();
-
-            await _objectService.Create(repository.RepositoryId, verifyRequest.ObjectId, verifyRequest.Size);
+            if (await _objectService.Create(repository.RepositoryId, verifyRequest.ObjectId, verifyRequest.Size) == null)
+                return NotFound(new ObjectNotFoundError());
 
             return Ok();
         }
 
-        [HttpDelete("o/{oid}")]
+        [HttpDelete("{objectId}")]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(204)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> Delete([FromRoute] string rid, [FromRoute] string oid)
+        public async Task<IActionResult> Delete([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             try
             {
-                await _objectService.Delete(rid, oid);
+                await _objectService.Delete(repositoryId, objectId);
             }
             catch (Exception e)
             {

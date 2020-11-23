@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Storagr.Shared
 {
-    public static class StoragrSharedExtensions
+    public static class StoragrExtensions
     {
         public static IServiceCollection AddSingleton<TService, TImplementation, TOptions>(this IServiceCollection services, Action<TOptions> configureOptions)
             where TService : class

@@ -12,35 +12,6 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Store.Services
 {
-    public interface IStoreService
-    {
-        int BufferSize { get; }
-
-        bool Exists(string repositoryId);
-        bool Exists(string repositoryId, string objectId);
-
-        StoreRepository Get(string repositoryId);
-        StoreObject Get(string repositoryId, string objectId);
-        
-        IEnumerable<StoreRepository> List();
-        IEnumerable<StoreObject> List(string repositoryId);
-        
-        void Delete(string repositoryId);
-        void Delete(string repositoryId, string objectId);
-        
-        Stream GetDownloadStream(string repositoryId, string objectId);
-        Stream GetUploadStream(string repositoryId, string objectId);
-        bool FinalizeUpload(string repositoryId, string objectId, long expectedSize);
-    }
-    
-    public class StoreServiceOptions : StoragrOptions<StoreServiceOptions>
-    {
-        public string RootPath { get; set; }
-        public int BufferSize { get; set; }
-        public TimeSpan Expiration { get; set; }
-        public TimeSpan ScanInterval { get; set; }
-    }
-
     public class StoreService : BackgroundService, IStoreService
     {
         public int BufferSize => _options.BufferSize;
@@ -103,7 +74,7 @@ namespace Storagr.Store.Services
         {
             var path = GetRepositoryPath(repositoryId);
             if (!Directory.Exists(path))
-                throw new DirectoryNotFoundException();
+                throw new RepositoryNotFoundException();
 
             return new StoreRepository()
             {
@@ -116,7 +87,7 @@ namespace Storagr.Store.Services
             var path = GetObjectPath(repositoryId, objectId);
             var file = new FileInfo(path);
             if(!file.Exists)
-                throw new FileNotFoundException();
+                throw new ObjectNotFoundException();
 
             return new StoreObject()
             {
@@ -132,7 +103,7 @@ namespace Storagr.Store.Services
         {
             var path = GetRepositoryPath(repositoryId);
             if (!Directory.Exists(path))
-                throw new DirectoryNotFoundException();
+                throw new RepositoryNotFoundException();
             
             return new DirectoryInfo(path)
                 .EnumerateFiles("*", SearchOption.AllDirectories)
@@ -148,7 +119,7 @@ namespace Storagr.Store.Services
         {
             var path = GetRepositoryPath(repositoryId);
             if (!Directory.Exists(path))
-                throw new DirectoryNotFoundException();
+                throw new RepositoryNotFoundException();
             
             Directory.Delete(path, true);
         }
@@ -156,7 +127,7 @@ namespace Storagr.Store.Services
         {
             var path = GetObjectPath(repositoryId, objectId);
             if (!File.Exists(path))
-                throw new FileNotFoundException();
+                throw new ObjectNotFoundException();
             
             File.Delete(path);
         }
@@ -165,7 +136,7 @@ namespace Storagr.Store.Services
         {
             var path = GetObjectPath(repositoryId, objectId);
             if (!File.Exists(path))
-                throw new FileNotFoundException();
+                throw new ObjectNotFoundException();
 
             return File.OpenRead(path);
         }
@@ -175,7 +146,7 @@ namespace Storagr.Store.Services
             var path = GetObjectPath(repositoryId, objectId);
             if (File.Exists(path))
             {
-                throw null; // TODO exception or return null??
+                throw new ObjectExistsException();
             }
             var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
             var tmp = _cache.GetString(key) ?? CreateTemporaryFile();

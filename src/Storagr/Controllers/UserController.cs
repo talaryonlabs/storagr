@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,65 +24,17 @@ namespace Storagr.Controllers
             _authentication = authentication;
         }
         
-        [HttpGet("me")]
-        [ProducesResponseType(200)]
-        public async Task<ActionResult> Test()
-        {
-            var user = await _userService.GetAuthenticatedUser();
-            
-            return Ok($"Hello {user.Username}!");
-        }
-
-        [AllowAnonymous]
-        [HttpPost("authenticate")]
-        [ProducesResponseType(200, Type = typeof(UserAuthenticationResponse))]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        public async Task<IActionResult> Authenticate([FromBody] UserAuthenticationRequest authenticationRequest)
-        {
-            if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
-                return BadRequest();
-
-            var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
-            if (user == null)
-                return Unauthorized();
-            
-            return Ok(new UserAuthenticationResponse()
-            {
-                Token = user.Token
-            });
-        }
-        
         [HttpGet]
         [Authorize(Policy = "Management")]
-        [ProducesResponseType(200, Type = typeof(UserListResponse))]
-        public async Task<IActionResult> List()
-        {
-            var list = await _userService.GetAll();
-            return Ok(new UserListResponse()
-            {
-                Users = list.Select(v => (UserModel) v).ToList()
-            });
-        }
-        
-        [HttpGet("u/{uid}")]
-        [Authorize(Policy = "Management")]
-        [ProducesResponseType(200, Type = typeof(UserModel))]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> View([FromRoute] string uid)
-        {
-            var user = await _userService.Get(uid);
-            if (user == null)
-                return NotFound();
+        [ProducesResponseType(200, Type = typeof(IEnumerable<StoragrUser>))]
+        public async Task<IActionResult> List() =>
+            Ok((await _userService.GetAll()).Select(v => (StoragrUser) v));
 
-            return Ok((UserModel) user);
-        }
-
-        [HttpPost("create")]
+        [HttpPost]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(201)]
         [ProducesResponseType(501)]
-        public async Task<IActionResult> Create([FromBody] UserCreateRequest createRequest)
+        public async Task<IActionResult> Create([FromBody] StoragrUserRequest createRequest)
         {
             if (!(_authentication is BackendAuthenticator authenticator)) return StatusCode(501);
             
@@ -90,40 +43,74 @@ namespace Storagr.Controllers
 
         }
         
-        [HttpPatch("u/{uid}")] 
-        [Authorize(Policy = "Management")]
+        [HttpGet("me")]
         [ProducesResponseType(200)]
-        public async Task<IActionResult> Modify([FromRoute] string uid, [FromBody] UserModifyRequest modifyRequest)
+        public async Task<ActionResult> Test()
         {
-            var user = await _userService.Get(uid);
+            var user = await _userService.GetAuthenticatedUser();
+            
+            return Ok($"Hello {user.Username}!");
+        }
+        
+        [HttpGet("{userId}")]
+        [Authorize(Policy = "Management")]
+        [ProducesResponseType(200, Type = typeof(StoragrUser))]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> View([FromRoute] string userId)
+        {
+            var user = await _userService.Get(userId);
             if (user == null)
                 return NotFound();
 
-            if (_authentication is BackendAuthenticator authenticator)
-            {
-                await authenticator.Modify(user.AuthId, modifyRequest.Username, modifyRequest.Password, modifyRequest.Mail, modifyRequest.Role);
-            }
-            // TODO modify profile
-            // await _userService.Modify(entity);
+            return Ok((StoragrUser) user);
+        }
+        
+        [HttpPatch("{userId}")] 
+        [Authorize(Policy = "Management")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> Modify([FromRoute] string userId, [FromBody] StoragrUserRequest modifyRequest)
+        {
+            var user = await _userService.Get(userId);
+            if (user == null)
+                return NotFound();
+            
+            // TODO await _userService.Modify(entity);
             
             return Ok();
         }
         
-        [HttpDelete("u/{uid}")]
+        [HttpDelete("{userId}")]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Delete([FromRoute] string uid)
+        public async Task<IActionResult> Delete([FromRoute] string userId)
         {
-            var user = await _userService.Get(uid);
+            var user = await _userService.Get(userId);
             if (user == null)
                 return NotFound();
             
-            if (_authentication is BackendAuthenticator authenticator)
-                await authenticator.Delete(uid);
-            
-            await _userService.Delete(uid);
+            await _userService.Delete(userId);
             return Ok();
+        }
+        
+        [AllowAnonymous]
+        [HttpPost("authenticate")]
+        [ProducesResponseType(200, Type = typeof(StoragrAuthenticationResponse))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> Authenticate([FromBody] StoragrAuthenticationRequest authenticationRequest)
+        {
+            if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
+                return BadRequest();
+
+            var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
+            if (user == null)
+                return Unauthorized();
+
+            return Ok(new StoragrAuthenticationResponse()
+            {
+                Token = user.Token
+            });
         }
     }
 }

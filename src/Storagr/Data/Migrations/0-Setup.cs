@@ -19,6 +19,7 @@ namespace Storagr.Data.Migrations
                 .WithColumn("UserId").AsString().PrimaryKey().NotNullable().Unique()
                 .WithColumn("AuthId").AsString()
                 .WithColumn("AuthAdapter").AsString()
+                .WithColumn("IsEnabled").AsBoolean().WithDefaultValue(true)
                 .WithColumn("Username").AsString()
                 .WithColumn("Mail").AsString()
                 .WithColumn("Role").AsString();
@@ -39,17 +40,6 @@ namespace Storagr.Data.Migrations
                 .WithColumn("RepositoryId").AsString()
                 .WithColumn("Path").AsString()
                 .WithColumn("LockedAt").AsDateTime2();
-
-            // Initial Admin User
-            Insert.IntoTable("_backendAuth")
-                .Row(new
-                {
-                    AuthId = StoragrHelper.UUID(),
-                    Username = "admin",
-                    Password = "AQAAAAEAACcQAAAAEGTYFmFw+/mzx8Ef4yq2znUwkl5Y6Bs6ZV7NgINEG8GsomDerF2ZV0GfDIbmtBNhDw==", // _storagr
-                    Mail = "no-mail",
-                    Role = "Admin"
-                });
         }
 
         public override void Down()

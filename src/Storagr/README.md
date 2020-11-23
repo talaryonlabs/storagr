@@ -1,29 +1,32 @@
 ﻿## API
 
 ### User
-- /users (GET)
-- /users/create (POST)
-- /users/u/{userId} (GET)
-- /users/u/{userId} (PATCH)
-- /users/u/{userId} (DELETE)
+- /users [GET]
+- /users [POST] (Create)
+- /users/me [GET] (Get self)
+- /users/:userId [GET]
+- /users/:userId [PATCH]
+- /users/:userId [DELETE]
 
-### Auth
-- /auth (GET)
-- /auth (POST)
-- /auth/logout (GET)
+#### Authentication
+- /users/authenticate [POST]
 
+##
 ### Object
-- /{repositoryId}/objects (GET)
-- /{repositoryId}/objects/o/{objectId} (GET)
-- /{repositoryId}/objects/o/{objectId} (DELETE)
-- /{repositoryId}/objects/v/{objectId} (POST)
+- /:repositoryId/objects [GET]
+- /:repositoryId/objects/:objectId [GET]
+- /:repositoryId/objects/:objectId [DELETE]
 
-##### Batch
-- /{repositoryId}/objects/batch (POST)
+#### Batch
+- /:repositoryId/objects/batch [POST]
 
+#### Verify
+- /:repositoryId/objects/verify [POST]
 
+##
 ### Locking
-- /{repositoryId}/locks (GET)
-- /{repositoryId}/locks (POST)
-- /{repositoryId}/locks/verify (POST)
-- /{repositoryId}/locks/{lockId}/unlock (POST)
+- /:repositoryId/locks [GET]
+- /:repositoryId/locks [POST]
+- /:repositoryId/locks/verify [POST]
+- /:repositoryId/locks/:lockId [GET]
+- /:repositoryId/locks/:lockId/unlock [POST]

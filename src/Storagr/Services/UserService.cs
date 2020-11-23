@@ -9,45 +9,13 @@ using Microsoft.Extensions.Caching.Distributed;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.Security;
+using Storagr.Security.Authenticators;
 using Storagr.Shared;
 
 namespace Storagr.Services
 {
-    public interface IAuthenticationResult // TODO move to other location ... or replace/rename?
-    {
-        string UserId { get; set; }
-        string Username { get; set; }
-        string Role { get; set; }
-        string Token { get; set; }
-    }
-    
-    public interface IUserService
-    {
-        Task<UserEntity> GetAuthenticatedUser();
-        Task<string> GetAuthenticatedUserToken();
-        
-        Task<UserEntity> GetUserByName(string username);
-        Task<IAuthenticationResult> Authenticate(string username, string password);
-        Task<IAuthenticationResult> Authenticate(string token);
-
-        Task<UserEntity> CreateOrUpdate(string authAdapater, string authId, string username, string mail, string role);
-        Task Modify(UserEntity entity);
-        Task Delete(string userId);
-
-        Task<UserEntity> Get(string userId);
-        Task<IEnumerable<UserEntity>> GetAll();
-    }
-
     public class UserService : IDisposable, IUserService
     {
-        private class AuthenticationResult : IAuthenticationResult
-        {
-            public string UserId { get; set; }
-            public string Username { get; set; }
-            public string Token { get; set; }
-            public string Role { get; set; }
-        }
-        
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthenticationAdapter _authentication;
         private readonly IBackendAdapter _backend;
@@ -65,7 +33,7 @@ namespace Storagr.Services
             _cacheEntryOptions = new DistributedCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(30)); // TODO time from a global config
         }
 
-        public async Task<IAuthenticationResult> Authenticate(string username, string password)
+        public async Task<UserEntity> Authenticate(string username, string password)
         {
             var authenticationResult = await _authentication.Authenticate(new AuthenticationRequest()
             {
@@ -76,41 +44,13 @@ namespace Storagr.Services
                 return null;
             
             var user = await CreateOrUpdate(_authentication.Name, authenticationResult.Id, authenticationResult.Username, authenticationResult.Mail, authenticationResult.Role);
-
-            var token = _tokenService.Generate(new TokenData() {UniqueId = user.UserId, Role = user.Role});
-            if (token == null)
+            if (!(user != null && (user.Token = _tokenService.Generate(new TokenData() {UniqueId = user.UserId, Role = user.Role})) != null))
                 return null;
 
             var data = StoragrHelper.SerializeObject(user);
-            await _cache.SetAsync($"TOKEN:{token}", data, _cacheEntryOptions);
+            await _cache.SetAsync($"TOKEN:{user.Token}", data, _cacheEntryOptions);
 
-            return new AuthenticationResult()
-            {
-                UserId = user.UserId,
-                Username =  user.Username,
-                Role = user.Role,
-                Token = token
-            };
-        }
-
-        public async Task<IAuthenticationResult> Authenticate(string token)
-        {
-            var cachedData = await _cache.GetAsync($"TOKEN:{token}");
-            if (cachedData == null)
-                return null;
-
-            var user = StoragrHelper.DeserializeObject<UserEntity>(cachedData);
-            if (user == null || !_tokenService.Verify(token, new TokenData() {UniqueId = user.UserId}))
-                return null;
-
-            // TODO (optional) refresh token?
-            return new AuthenticationResult()
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                Role = user.Role,
-                Token = token
-            };
+            return user;
         }
 
         public async Task<UserEntity> CreateOrUpdate(string authAdapater, string authId, string username, string mail, string role)
@@ -125,6 +65,7 @@ namespace Storagr.Services
                 await _backend.Insert(user = new UserEntity()
                 {
                     UserId = StoragrHelper.UUID(),
+                    IsEnabled = true,
                     AuthAdapter = authAdapater,
                     AuthId = authId,
                     Username = username,
@@ -144,6 +85,11 @@ namespace Storagr.Services
 
         public async Task Modify(UserEntity entity)
         {
+            if (_authentication is BackendAuthenticator authenticator)
+            {
+                // TODO await authenticator.Modify(user.AuthId, modifyRequest.Username, modifyRequest.Password, modifyRequest.Mail, modifyRequest.Role);
+            }
+            
             await _backend.Update(entity);
         }
 
@@ -188,9 +134,13 @@ namespace Storagr.Services
             return token;
         }
 
-        public async Task<UserEntity> GetUserByName(string username) => await _backend.Get<UserEntity>(x => x.Where(f => f.Equal("Username", username)));
-        
-        public async Task Delete(string userId) => await _backend.Delete(new UserEntity() {UserId = userId});
+        public async Task Delete(string userId)
+        {
+            if (_authentication is BackendAuthenticator authenticator)
+                await authenticator.Delete(userId);
+            
+            await _backend.Delete(new UserEntity() {UserId = userId});
+        }
         
         public void Dispose()
         {

@@ -44,6 +44,7 @@ namespace Storagr
             }
 
             app.UseHttpsRedirection();
+            app.UseResponseCompression();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();

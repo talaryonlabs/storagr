@@ -3,13 +3,7 @@
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class RefData
-    {
-        [DataMember(Name = "name")] public string Name;
-    }
-
-    [DataContract]
-    public class OwnerData
+    public class StoragrOwner
     {
         [DataMember(Name = "name")] public string Name;
     }

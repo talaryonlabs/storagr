@@ -11,40 +11,6 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace Storagr.Services
 {
-    public interface ITokenService
-    {
-        string Generate(TokenData data);
-        string Refresh(string token);
-        bool Verify(string token, TokenData data);
-
-        TokenData Get(string token);
-    }
-    
-    public class TokenServiceOptions : StoragrOptions<TokenServiceOptions>
-    {
-        public TokenValidationParameters ValidationParameters { get; set; }
-        public string Secret { get; set; }
-        public int Expiration { get; set; }
-    }
-
-    public class TokenData
-    {
-        public string UniqueId { get; set; }
-        public string Role { get; set; }
-    }
-
-    public static class TokenServiceExtension
-    {
-        public static IServiceCollection AddTokenService(this IServiceCollection services, Action<TokenServiceOptions> configureOptions)
-        {
-            return services
-                .AddOptions()
-                .Configure(configureOptions)
-                .AddSingleton<TokenService>()
-                .AddSingleton<ITokenService>(x => x.GetRequiredService<TokenService>());
-        }
-    }
-    
     public class TokenService : ITokenService, IDisposable
     {
         private readonly JwtSecurityTokenHandler _securityTokenHandler;

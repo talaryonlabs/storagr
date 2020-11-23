@@ -2,28 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.Shared;
 
 namespace Storagr.Services
 {
-    public interface ILockService
-    {
-        Task<LockEntity> Create(string repositoryId, string path);
-        
-        Task<LockEntity> Get(string repositoryId, string lockId);
-        Task<LockEntity> GetByPath(string repositoryId, string path);
-        Task<IEnumerable<LockEntity>> GetAll(string repositoryId) => 
-            GetAll(repositoryId, -1, null, null, null);
-        Task<IEnumerable<LockEntity>> GetAll(string repositoryId, int limit, string cursor) =>
-            GetAll(repositoryId, limit, cursor, null, null);
-        Task<IEnumerable<LockEntity>> GetAll(string repsitoryId, int limit, string cursor, string lockIdPattern, string pathPattern);
-
-        Task Delete(string repositoryId, string lockId);
-        Task DeleteAll(string repositoryId);
-    }
-    
     public class LockService : ILockService
     {
         private readonly IBackendAdapter _backend;
@@ -40,16 +23,16 @@ namespace Storagr.Services
             var repository = await _backend.Get<RepositoryEntity>(repositoryId);
             if (repository == null)
             {
-                throw new StoragrRepositoryNotFoundException();
+                throw new RepositoryNotFoundException();
             }
             
-            var existingLock = _backend.Get<LockEntity>(q =>
+            var existingLock = await _backend.Get<LockEntity>(q =>
             {
                 q.Where(f => f.Equal("RepositoryId", repositoryId).And().Equal("Path", path));
             });
             if (existingLock != null)
             {
-                throw new StoragrLockExistsException();
+                throw new AlreadyLockedException();
             }
             
             var user = await _userService.GetAuthenticatedUser();
@@ -75,6 +58,9 @@ namespace Storagr.Services
             {
                 q.Where(f => f.Equal("RepositoryId", repositoryId).And().Equal("LockId", lockId));
             });
+            if (lockEntity == null)
+                return null;
+            
             lockEntity.Owner = await _backend.Get<UserEntity>(lockEntity.OwnerId);
             lockEntity.Repository = await _backend.Get<RepositoryEntity>(lockEntity.RepositoryId);
 
@@ -87,6 +73,9 @@ namespace Storagr.Services
             {
                 q.Where(f => f.Equal("RepositoryId", repositoryId).And().Equal("Path", path.Trim()));
             });
+            if (lockEntity == null)
+                return null;
+            
             lockEntity.Owner = await _backend.Get<UserEntity>(lockEntity.OwnerId);
             lockEntity.Repository = await _backend.Get<RepositoryEntity>(lockEntity.RepositoryId);
 
@@ -96,6 +85,9 @@ namespace Storagr.Services
         public async Task<IEnumerable<LockEntity>> GetAll(string repositoryId, int limit, string cursor, string lockIdPattern, string pathPattern)
         {
             var repository = await _backend.Get<RepositoryEntity>(repositoryId);
+            if(repository == null)
+                throw new RepositoryNotFoundException();
+
             var users = (await _backend.GetAll<UserEntity>()).ToList();
             var locks = (await _backend.GetAll<LockEntity>(x =>
             {

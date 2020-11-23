@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Storagr.Shared;
 using Storagr.Shared.Data;
 
-namespace Storagr.IO
+namespace Storagr
 {
     public interface IStoreAdapter
     {
@@ -18,7 +16,7 @@ namespace Storagr.IO
         Task<IEnumerable<StoreObject>> GetAll(string repositoryId);
         Task Delete(string repositoryId, string objectId);
         
-        Task<StoragrAction> NewDownloadRequest(string repositoryId, string objectId);
-        Task<StoragrAction> NewUploadRequest(string repositoryId, string objectId);
+        Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId);
+        Task<StoragrAction> NewUploadAction(string repositoryId, string objectId);
     }
 }

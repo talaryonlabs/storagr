@@ -12,10 +12,9 @@ namespace Storagr.Data.Entities
         [ExplicitKey] public string RepositoryId { get; set; }
         public long Size { get; set; }
         
-        public static implicit operator ObjectModel([NotNull] ObjectEntity entity) => new ObjectModel()
+        public static implicit operator StoragrObject([NotNull] ObjectEntity entity) => new StoragrObject()
         {
             ObjectId = entity.ObjectId,
-            RepositoryId = entity.RepositoryId,
             Size =  entity.Size
         };
     }

@@ -19,7 +19,7 @@ namespace Storagr.IO
     {
         private readonly IUserService _userService;
         private readonly IHttpClientFactory _clientFactory;
-        private readonly StoragerMediaTypeHeader _mediaType;
+        private readonly StoragerMediaType _mediaType;
         private readonly StoragrStoreOptions _options;
 
         public StoragrStore(IOptions<StoragrStoreOptions> optionsAccessor, IUserService userService, IHttpClientFactory clientFactory)
@@ -27,7 +27,7 @@ namespace Storagr.IO
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoragrStoreOptions));
             _userService = userService;
             _clientFactory = clientFactory;
-            _mediaType = new StoragerMediaTypeHeader();
+            _mediaType = new StoragerMediaType();
         }
 
         private HttpClient CreateClient(string token)
@@ -138,7 +138,7 @@ namespace Storagr.IO
             await client.SendAsync(request);
         }
 
-        public async Task<StoragrAction> NewDownloadRequest(string repositoryId, string objectId)
+        public async Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId)
         {
             var obj = await Get(repositoryId, objectId);
             if (obj == null)
@@ -155,7 +155,7 @@ namespace Storagr.IO
             };
         }
 
-        public async Task<StoragrAction> NewUploadRequest(string repositoryId, string objectId)
+        public async Task<StoragrAction> NewUploadAction(string repositoryId, string objectId)
         {
             var obj = await Get(repositoryId, objectId);
             if (obj != null) 

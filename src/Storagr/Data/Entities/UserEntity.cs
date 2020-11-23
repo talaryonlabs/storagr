@@ -10,13 +10,17 @@ namespace Storagr.Data.Entities
         [ExplicitKey] public string UserId { get; set; }
         public string AuthAdapter { get; set; }
         public string AuthId { get; set; }
+        public bool IsEnabled { get; set; }
         public string Username { get; set; }
         public string Role { get; set; }
         public string Mail { get; set; }
         
-        public static implicit operator UserModel([NotNull] UserEntity entity) => new UserModel()
+        [Computed] public string Token { get; set; }
+        
+        public static implicit operator StoragrUser([NotNull] UserEntity entity) => new StoragrUser()
         {
             UserId = entity.UserId,
+            IsEnabled = entity.IsEnabled,
             Username = entity.Username,
             Mail = entity.Mail,
             Role = entity.Role

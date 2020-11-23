@@ -35,10 +35,10 @@ namespace Storagr.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(LockListResponse),200)]
+        [ProducesResponseType(typeof(StoragrLockListResponse),200)]
         [ProducesResponseType(403)]
         [ProducesResponseType(typeof(StoragrError), 500)]
-        public async Task<IActionResult> ListLocks([FromRoute] string rid, [FromQuery] LockListRequest request)
+        public async Task<IActionResult> ListLocks([FromRoute] string rid, [FromQuery] StoragrLockListRequest request)
         {
             // TODO only if authorized
             // TODO only if read access
@@ -51,15 +51,15 @@ namespace Storagr.Controllers
             var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor, request.LockId, request.Path);
             var list = locks.ToList();
             
-            return Ok(new LockListResponse()
+            return Ok(new StoragrLockListResponse()
             {
-                Locks = list.Select(v => (LockModel)v).ToList(),
-                NextCursor = list.Last()?.LockId
+                Locks = list.Select(v => (StoragrLock)v).ToList(),
+                NextCursor = list.LastOrDefault()?.LockId
             });
         }
 
         [HttpPost("verify")]
-        public async Task<IActionResult> VerifyLocks([FromRoute] string rid, [FromBody] LockVerifyListRequest request)
+        public async Task<IActionResult> VerifyLocks([FromRoute] string rid, [FromBody] StoragrLockVerifyListRequest request)
         {
             // TODO only if write access
             
@@ -71,11 +71,11 @@ namespace Storagr.Controllers
             var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor);
             var list = locks.ToList();
 
-            return Ok(new LockVerifyListResponse()
+            return Ok(new StoragrLockVerifyListResponse()
             {
-                Ours = list.Where(v => v.OwnerId == user.UserId).Select(v => (LockModel)v).ToList(),
-                Theirs = list.Where(v => v.OwnerId != user.UserId).Select(v => (LockModel)v).ToList(),
-                NextCursor = list.Last()?.LockId
+                Ours = list.Where(v => v.OwnerId == user.UserId).Select(v => (StoragrLock)v).ToList(),
+                Theirs = list.Where(v => v.OwnerId != user.UserId).Select(v => (StoragrLock)v).ToList(),
+                NextCursor = list.LastOrDefault()?.LockId
             });
         }
         
@@ -85,7 +85,7 @@ namespace Storagr.Controllers
         [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> CreateLock([FromRoute] string rid, [FromBody] LockRequest lockRequest)
+        public async Task<IActionResult> CreateLock([FromRoute] string rid, [FromBody] StoragrLockRequest lockRequest)
         {
             // TODO only if authorized
             // TODO consider "ref" property in request
@@ -102,7 +102,7 @@ namespace Storagr.Controllers
             if (cacheData != null)
             {
                 await _cache.RefreshAsync(cacheKey);
-                return Conflict(new LockAlreadyExistsError(StoragrHelper.DeserializeObject<LockModel>(cacheData)));
+                return Conflict(new LockAlreadyExistsError(StoragrHelper.DeserializeObject<StoragrLock>(cacheData)));
             }
 
             if ((lockEntity = await _lockService.GetByPath(rid, lockRequest.Path)) != null)
@@ -115,12 +115,12 @@ namespace Storagr.Controllers
                 return StatusCode(500, new StoragrError());
             }
 
-            var obj = (LockModel) lockEntity;
+            var obj = (StoragrLock) lockEntity;
             {
                 await _cache.SetAsync($"LOCK:{rid}:{obj.Path}", (cacheData = StoragrHelper.SerializeObject(obj)), _cacheEntryOptions);
                 await _cache.SetAsync($"LOCK:{rid}:{obj.LockId}", cacheData, _cacheEntryOptions);
             }
-            return Created("", new LockResponse() { Lock = obj });
+            return Created("", new StoragrLockResponse() { Lock = obj });
             
         }
 
@@ -128,7 +128,7 @@ namespace Storagr.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(403)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> DeleteLock([FromRoute] string rid, [FromRoute] string id, [FromBody] UnlockRequest unlockRequest)
+        public async Task<IActionResult> DeleteLock([FromRoute] string rid, [FromRoute] string id, [FromBody] StoragrLockUnlockRequest unlockRequest)
         {
             // TODO only if authorized
             // TODO only if write access
@@ -138,12 +138,12 @@ namespace Storagr.Controllers
             if (repository == null)
                 return NotFound(new RepositoryNotFoundError());
             
-            LockModel obj = default;
+            StoragrLock obj = default;
             
             var cacheData = await _cache.GetAsync($"LOCK:{rid}:{id}");
             if (cacheData != null)
             {
-                obj = StoragrHelper.DeserializeObject<LockModel>(cacheData);
+                obj = StoragrHelper.DeserializeObject<StoragrLock>(cacheData);
             }
             if (obj == null)
             {
@@ -167,7 +167,7 @@ namespace Storagr.Controllers
             await _cache.RemoveAsync($"LOCK:{rid}:{obj.Path}");
             await _lockService.Delete(rid, id);
             
-            return Ok(new UnlockResponse()
+            return Ok(new StoragrLockUnlockResponse()
             {
                 Lock = obj
             });

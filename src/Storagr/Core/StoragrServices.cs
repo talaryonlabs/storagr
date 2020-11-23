@@ -3,9 +3,11 @@ using System.Linq;
 using System.Text;
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
@@ -25,8 +27,7 @@ namespace Storagr
     {
         public static IServiceCollection AddStoragrCore(this IServiceCollection services, StoragrSettings storagrSettings)
         {
-            var featureProvider = new StoragrFeatureProvider(storagrSettings);
-            var mediaType = new StoragerMediaTypeHeader();
+            var mediaType = new StoragerMediaType();
             var tokenValidationParameters = new StoragrTokenValidationParameters(
                 storagrSettings.TokenSettings.Issuer,
                 storagrSettings.TokenSettings.Audience, 
@@ -34,15 +35,17 @@ namespace Storagr
 
             services.AddHttpClient();
             services.AddHttpContextAccessor();
-            services.AddControllers()
-                .ConfigureApplicationPartManager(apm =>
+            services.AddControllers();
+            services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+                options.Providers.Add<BrotliCompressionProvider>();
+                options.Providers.Add<GzipCompressionProvider>();
+                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
                 {
-                    foreach (var provider in apm.FeatureProviders.OfType<ControllerFeatureProvider>().ToList())
-                    {
-                        apm.FeatureProviders.Remove(provider);
-                    }
-                    apm.FeatureProviders.Add(featureProvider);
+                    mediaType.MediaType.Value
                 });
+            });
             services.AddMvcCore()
                 .AddMvcOptions(options =>
                 {
@@ -97,7 +100,7 @@ namespace Storagr
                 });
             });
             
-            services.AddTokenService(options =>
+            services.AddSingleton<ITokenService, TokenService, TokenServiceOptions>(options =>
             {
                 options.ValidationParameters = tokenValidationParameters;
                 options.Secret = storagrSettings.TokenSettings.Secret;

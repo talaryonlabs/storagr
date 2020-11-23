@@ -3,9 +3,9 @@
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoreRepository
+    public class StoragrRepository
     {
         [DataMember(Name = "rid")] public string RepositoryId;
-        [DataMember(Name = "used_space")] public long UsedSpace;
+        [DataMember(Name = "owner_uid")] public string OwnerId;
     }
 }
