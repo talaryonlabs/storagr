@@ -1,6 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Storagr.Shared;
 using Storagr.Shared.Data;
 using Storagr.Store.Services;
 
@@ -20,13 +23,13 @@ namespace Storagr.Store.Controllers
 
         [HttpGet]
         [Produces("application/octet-stream")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task Download([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             if (!_storeService.Exists(repositoryId, objectId))
             {
-                Response.StatusCode = 404;
+                Response.StatusCode = StatusCodes.Status404NotFound;
                 Response.ContentLength = 0;
                 return;
             }
@@ -38,19 +41,29 @@ namespace Storagr.Store.Controllers
 
         [HttpPut]
         [Consumes("application/octet-stream")]
-        [ProducesResponseType(200)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task Upload([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
-            await using var stream = _storeService.GetUploadStream(repositoryId, objectId);
-            await Request.Body.CopyToAsync(stream, _storeService.BufferSize);
+            try
+            {
+                await using var stream = _storeService.GetUploadStream(repositoryId, objectId);
+                await Request.Body.CopyToAsync(stream, _storeService.BufferSize);
+            }
+            catch (ObjectAlreadyExistsException e)
+            {
+                Response.StatusCode = StatusCodes.Status409Conflict;
+            }
         }
 
         [HttpPost]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public IActionResult Finish([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoreObject verifyObject)
         {
+            if (!_storeService.Exists(repositoryId))
+                return (ActionResult) new RepositoryNotFoundError();
+            
             return !_storeService.FinalizeUpload(verifyObject.RepositoryId, verifyObject.ObjectId, verifyObject.Size) ? StatusCode(500) : Ok();
         }
     }

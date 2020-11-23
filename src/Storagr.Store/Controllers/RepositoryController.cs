@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Storagr.Shared;
 using Storagr.Shared.Data;
 
 namespace Storagr.Store.Controllers
@@ -18,31 +20,30 @@ namespace Storagr.Store.Controllers
         }
         
         [HttpGet]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<StoreRepository>))]
-        [ProducesResponseType(404)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoreRepository>))]
         public IActionResult List()
         {
             return Ok(_storeService.List());
         }
 
         [HttpGet("{repositoryId}")]
-        [ProducesResponseType(200, Type = typeof(StoreRepository))]
-        [ProducesResponseType(404)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoreRepository))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public IActionResult Get([FromRoute] string repositoryId)
         {
             if (!_storeService.Exists(repositoryId))
-                return NotFound();
+                return (ActionResult) new RepositoryNotFoundError();
 
             return Ok(_storeService.Get(repositoryId));
         }
         
         [HttpDelete("{repositoryId}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public IActionResult Delete([FromRoute] string repositoryId)
         {
             if (!_storeService.Exists(repositoryId))
-                return NotFound();
+                return (ActionResult) new RepositoryNotFoundError();
 
             _storeService.Delete(repositoryId);
             

@@ -17,7 +17,7 @@ namespace Storagr.Shared
         
     }
     
-    public class ObjectExistsException : Exception
+    public class ObjectAlreadyExistsException : Exception
     {
         
     }

@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Data.Entities;
 using Storagr.Services;
@@ -31,23 +32,23 @@ namespace Storagr.Controllers
             return Ok("Batch API");
         }
 
-        [HttpPost()]
-        [ProducesResponseType(200, Type = typeof(StoragrBatchResponse))]
-        [ProducesResponseType(403, Type = typeof(StoragrError))]
-        [ProducesResponseType(404, Type = typeof(RepositoryNotFoundError))]
-        [ProducesResponseType(422, Type = typeof(StoragrError))]
-        [ProducesResponseType(500, Type = typeof(StoragrError))]
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrBatchResponse))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
         public async Task<IActionResult> Batch([FromRoute] string rid, [FromBody] StoragrBatchRequest request)
         {
             var repository = await _objectService.Get(rid);
             if (repository == null)
-                return NotFound(new RepositoryNotFoundError());
+                return (ActionResult) new RepositoryNotFoundError();
 
             return request.Operation switch
             {
                 StoragrBatchOperation.Download => await Download(repository, request),
                 StoragrBatchOperation.Upload => await Upload(repository, request),
-                _ => StatusCode(500, new InvalidBatchOperationError())
+                _ => (ActionResult) new NotImplementedError()
             };
         }
 
@@ -70,11 +71,7 @@ namespace Storagr.Controllers
                     {
                         ObjectId = v.ObjectId,
                         Size = v.Size,
-                        Error = new StoragrBatchError()
-                        {
-                            Code = 404,
-                            Message = "Object not found."
-                        }
+                        Error = new ObjectNotFoundError()
                     };
                 }
 

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Storagr.Services;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -150,7 +148,7 @@ namespace Storagr.IO
             {
                 Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},
                 ExpiresAt = default,
-                ExpiresIn = 0,
+                ExpiresIn = 3600, // 1 hour
                 Href = $"{repositoryId}/transfer/{objectId}"
             };
         }
@@ -166,7 +164,7 @@ namespace Storagr.IO
             {
                 Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},
                 ExpiresAt = default,
-                ExpiresIn = 0,
+                ExpiresIn = 3600, // 1 hour
                 Href = $"{repositoryId}/transfer/{objectId}"
             };
         }

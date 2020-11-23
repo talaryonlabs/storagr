@@ -15,6 +15,12 @@ namespace Storagr.Shared.Data
     {
         [DataMember(Name = "code", IsRequired = true)] public int Code;
         [DataMember(Name = "message", IsRequired = true)] public string Message;
+
+        public static implicit operator StoragrBatchError(StoragrError error) => new StoragrBatchError()
+        {
+            Code = error.Code,
+            Message = error.Message
+        };
     }
     
     [DataContract]

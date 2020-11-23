@@ -24,7 +24,7 @@ namespace Storagr.Services
         {
             var entity = await Get(repositoryId, objectId);
             if (entity != null)
-                throw new ObjectExistsException();
+                throw new ObjectAlreadyExistsException();
 
             if (!await _storeAdapter.Verify(repositoryId, objectId, size))
                 return null;

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Storagr.Data;
@@ -35,18 +36,17 @@ namespace Storagr.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(StoragrLockListResponse),200)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(typeof(StoragrError), 500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLockListResponse))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(StoragrError))]
         public async Task<IActionResult> ListLocks([FromRoute] string rid, [FromQuery] StoragrLockListRequest request)
         {
-            // TODO only if authorized
-            // TODO only if read access
+            // TODO only if authorized -> Forbidden!
+            // TODO only if read access -> Forbidden!
             // TODO consider the "refspec" property in request
             
             var repository = await _backend.Get<RepositoryEntity>(rid);
             if (repository == null)
-                return NotFound(new RepositoryNotFoundError());
+                return (ActionResult) new RepositoryNotFoundError();
 
             var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor, request.LockId, request.Path);
             var list = locks.ToList();
@@ -59,13 +59,15 @@ namespace Storagr.Controllers
         }
 
         [HttpPost("verify")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLockVerifyListResponse))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(StoragrError))]
         public async Task<IActionResult> VerifyLocks([FromRoute] string rid, [FromBody] StoragrLockVerifyListRequest request)
         {
-            // TODO only if write access
+            // TODO only if write access -> Forbidden!
             
             var repository = await _backend.Get<RepositoryEntity>(rid);
             if (repository == null)
-                return NotFound(new RepositoryNotFoundError());
+                return (ActionResult) new RepositoryNotFoundError();
 
             var user = await _userService.GetAuthenticatedUser();
             var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor);
@@ -80,19 +82,19 @@ namespace Storagr.Controllers
         }
         
         [HttpPost]
-        [ProducesResponseType(201)]
-        [ProducesResponseType(409)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(StoragrLockResponse))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
         public async Task<IActionResult> CreateLock([FromRoute] string rid, [FromBody] StoragrLockRequest lockRequest)
         {
-            // TODO only if authorized
+            // TODO only if authorized -> Forbidden!
             // TODO consider "ref" property in request
             
             var repository = await _backend.Get<RepositoryEntity>(rid);
             if (repository == null)
-                return NotFound(new RepositoryNotFoundError());
+                return (ActionResult) new RepositoryNotFoundError();
             
             
             LockEntity lockEntity;
@@ -102,17 +104,17 @@ namespace Storagr.Controllers
             if (cacheData != null)
             {
                 await _cache.RefreshAsync(cacheKey);
-                return Conflict(new LockAlreadyExistsError(StoragrHelper.DeserializeObject<StoragrLock>(cacheData)));
+                return (ActionResult) new LockAlreadyExistsError(StoragrHelper.DeserializeObject<StoragrLock>(cacheData));
             }
 
             if ((lockEntity = await _lockService.GetByPath(rid, lockRequest.Path)) != null)
             {
-                return Conflict(new LockAlreadyExistsError(lockEntity));
+                return (ActionResult) new LockAlreadyExistsError(lockEntity);
             }
 
             if ((lockEntity = await _lockService.Create(rid, lockRequest.Path)) == null)
             {
-                return StatusCode(500, new StoragrError());
+                return (ActionResult) new StoragrError();
             }
 
             var obj = (StoragrLock) lockEntity;
@@ -125,18 +127,18 @@ namespace Storagr.Controllers
         }
 
         [HttpPost("{id}/unlock")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(403)]
-        [ProducesResponseType(500)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLock))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> DeleteLock([FromRoute] string rid, [FromRoute] string id, [FromBody] StoragrLockUnlockRequest unlockRequest)
         {
-            // TODO only if authorized
-            // TODO only if write access
+            // TODO only if authorized -> forbidden!
+            // TODO only if write access -> forbidden!
             // TODO consider "ref" property in request
 
             var repository = await _backend.Get<RepositoryEntity>(rid);
             if (repository == null)
-                return NotFound(new RepositoryNotFoundError());
+                return (ActionResult) new RepositoryNotFoundError();
             
             StoragrLock obj = default;
             
@@ -153,11 +155,9 @@ namespace Storagr.Controllers
                     obj = entity;
                 }
             }
+
             if (obj == null)
-                return StatusCode(500, new StoragrError()
-                {
-                    Message = "Lock with id " + id + " not found."
-                });
+                return (ActionResult) new LockNotFoundError();
 
             var user = await _userService.GetAuthenticatedUser();
             if (!unlockRequest.Force && obj.Owner.Name != user.Username) // only delete own locks OR with force=true argument

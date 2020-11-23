@@ -146,7 +146,7 @@ namespace Storagr.Store.Services
             var path = GetObjectPath(repositoryId, objectId);
             if (File.Exists(path))
             {
-                throw new ObjectExistsException();
+                throw new ObjectAlreadyExistsException();
             }
             var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
             var tmp = _cache.GetString(key) ?? CreateTemporaryFile();
