@@ -2,8 +2,8 @@
 
 namespace Storagr.Shared
 {
-    public class StoragerMediaType : MediaTypeHeaderValue
+    public class StoragrMediaType : MediaTypeHeaderValue
     {
-        public StoragerMediaType() : base("application/vnd.git-lfs+json") { }
+        public StoragrMediaType() : base("application/vnd.git-lfs+json") { }
     }
 }
