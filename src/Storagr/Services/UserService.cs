@@ -18,7 +18,7 @@ using Storagr.Shared;
 
 namespace Storagr.Services
 {
-    public class UserService : IDisposable, IUserService
+    public class UserService : IUserService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAuthenticationAdapter _authentication;
@@ -144,10 +144,6 @@ namespace Storagr.Services
                 await authenticator.Delete(userId);
             
             await _backend.Delete(new UserEntity() {UserId = userId});
-        }
-        
-        public void Dispose()
-        {
         }
     }
 }

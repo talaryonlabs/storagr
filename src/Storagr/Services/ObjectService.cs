@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Storagr.Data.Entities;
@@ -18,6 +19,22 @@ namespace Storagr.Services
             _backendAdapter = backendAdapter;
             _storeAdapter = storeAdapter;
             _userService = userService;
+        }
+
+        public async Task<RepositoryEntity> Create(string repositoryId, string ownerId)
+        {
+            var entity = await Get(repositoryId);
+            if(entity != null)
+                throw new RepositoryAlreadyExistsException();
+
+            await _backendAdapter.Insert(entity = new RepositoryEntity()
+            {
+                RepositoryId = repositoryId,
+                OwnerId = ownerId,
+                SizeLimit = -1
+            });
+            
+            return entity;
         }
 
         public async Task<ObjectEntity> Create(string repositoryId, string objectId, long size)

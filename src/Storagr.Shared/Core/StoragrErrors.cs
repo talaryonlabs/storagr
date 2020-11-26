@@ -96,9 +96,9 @@ namespace Storagr.Shared
     }
     
     [DataContract]
-    public class UserNotFoundError : StoragrError
+    public class AuthenticationError : StoragrError
     {
-        public UserNotFoundError() : base(StatusCodes.Status404NotFound, "User not found.")
+        public AuthenticationError() : base(StatusCodes.Status401Unauthorized, "Authentication failed. Username and Password correct?")
         {
         }
     }
@@ -107,6 +107,14 @@ namespace Storagr.Shared
     public class UsernameOrPasswordMissingError : StoragrError
     {
         public UsernameOrPasswordMissingError() : base(StatusCodes.Status422UnprocessableEntity, "Username or Password missing or empty!")
+        {
+        }
+    }
+    
+    [DataContract]
+    public class UserNotFoundError : StoragrError
+    {
+        public UserNotFoundError() : base(StatusCodes.Status404NotFound, "User not found.")
         {
         }
     }

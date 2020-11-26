@@ -7,7 +7,7 @@ namespace Storagr.Shared
         
     }
 
-    public class RepositoryExistsException : Exception
+    public class RepositoryAlreadyExistsException : Exception
     {
         
     }

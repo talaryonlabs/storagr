@@ -108,8 +108,8 @@ namespace Storagr.Controllers
 
             var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
             if (user == null)
-                return Unauthorized(); // TODO
-
+                return (ActionResult) new AuthenticationError();
+            
             return Ok(new StoragrAuthenticationResponse()
             {
                 Token = user.Token

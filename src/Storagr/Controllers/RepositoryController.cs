@@ -36,8 +36,9 @@ namespace Storagr.Controllers
             var repository = await _objectService.Get(newRepository.RepositoryId);
             if (repository == null)
                 return (ActionResult) new RepositoryAlreadyExistsError(newRepository);
-            
-            // TODO create repository
+
+            if ((repository = await _objectService.Create(newRepository.RepositoryId, newRepository.OwnerId)) == null)
+                return (ActionResult) new StoragrError("Unable to create repository.");
 
             return Created($"/{repository.RepositoryId}", (StoragrRepository)repository);
         }

@@ -7,6 +7,7 @@ namespace Storagr
 {
     public interface IObjectService
     {
+        Task<RepositoryEntity> Create(string repositoryId, string ownerId);
         Task<ObjectEntity> Create(string repositoryId, string objectId, long size);
 
         Task<RepositoryEntity> Get(string repositoryId);

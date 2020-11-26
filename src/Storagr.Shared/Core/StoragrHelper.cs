@@ -65,7 +65,7 @@ namespace Storagr.Shared
                         "m" => TimeSpan.FromMinutes(number),
                         "s" => TimeSpan.FromSeconds(number),
                         "ms" => TimeSpan.FromMilliseconds(number),
-                        _ => throw new NotImplementedException()
+                        _ => throw new FormatException()
                     };
                 }
 

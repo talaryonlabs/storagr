@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -33,33 +34,31 @@ namespace Storagr.Data
             
             public QueryBuilder()
             {
-                _distinct = false;
                 _selector = "*";
                 _limit = -1;
                 _offset = -1;
-                _where = "";
-                _orderBy = "";
             }
 
-            public string Build(string table) // TODO optimize this, maybe List?
+            public string Build(string table)
             {
-                var query = $"SELECT" + (_distinct ? " DISTINCT" : "") + $" {_selector} FROM {table}";
+                var query = new List<string>(new[] {"SELECT", _selector, "FROM", table});
+                
+                if(_distinct)
+                    query.Insert(1, "DISTINCT");
 
-                if (_where.Length > 0)
-                {
-                    query += $" {_where}";
-                }
+                if (!string.IsNullOrEmpty(_where))
+                    query.AddRange(new[] {"WHERE", _where});
 
                 if (_limit > 0)
-                    query += $" LIMIT {_limit}";
+                    query.AddRange(new[] {"LIMIT", _limit.ToString()});
 
                 if (_offset > 0)
-                    query += $" OFFSET {_offset}";
+                    query.AddRange(new[] {"OFFSET", _offset.ToString()});
 
-                if (_orderBy.Length > 0)
-                    query += $" {_orderBy}";
+                if (!string.IsNullOrEmpty(_orderBy))
+                    query.AddRange(new []{"ORDER BY", _orderBy});
 
-                return query;
+                return string.Join(" ", query);
             }
             
             public IBackendQuery Select(params string[] columns)
@@ -80,9 +79,7 @@ namespace Storagr.Data
                 
                 filterBuilder.Invoke(builder);
 
-                var filter = builder.Build();
-
-                _where = $"WHERE {filter}";
+                _where = builder.Build();
                 return this;
             }
 
@@ -104,9 +101,7 @@ namespace Storagr.Data
                 
                 orderByBuilder.Invoke(builder);
 
-                var filter = builder.Build();
-
-                _orderBy = $"ORDER BY {filter}";
+                _orderBy = builder.Build();
                 return this;
             }
         }
@@ -149,9 +144,7 @@ namespace Storagr.Data
                 
                 filterBuilder.Invoke(builder);
 
-                var filter = builder.Build();
-
-                _list.Add($"({filter})");
+                _list.Add($"({builder.Build()})");
                 return this;
             }
 
@@ -247,7 +240,7 @@ namespace Storagr.Data
             
             public string Build()
             {
-                return string.Join(' ', _list).Trim();
+                return string.Join(", ", _list).Trim();
             }
             
             public IBackendOrder Column(string name, BackendOrderType type)
@@ -261,7 +254,6 @@ namespace Storagr.Data
 
         #region Fields
 
-        private readonly SqliteOptions _options;
         private readonly IDbConnection _connection;
 
         #endregion
@@ -274,8 +266,7 @@ namespace Storagr.Data
             {
                 throw new ArgumentNullException(nameof(optionsAccessor));
             }
-            _options = optionsAccessor.Value;
-            _connection = new SqliteConnection($"Data Source={_options.DataSource}");
+            _connection = new SqliteConnection($"Data Source={optionsAccessor.Value.DataSource}");
         }
 
         #endregion

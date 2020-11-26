@@ -1,11 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Shared;
 using Storagr.Shared.Data;
-using Storagr.Store.Services;
 
 namespace Storagr.Store.Controllers
 {
@@ -50,7 +48,7 @@ namespace Storagr.Store.Controllers
                 await using var stream = _storeService.GetUploadStream(repositoryId, objectId);
                 await Request.Body.CopyToAsync(stream, _storeService.BufferSize);
             }
-            catch (ObjectAlreadyExistsException e)
+            catch (ObjectAlreadyExistsException)
             {
                 Response.StatusCode = StatusCodes.Status409Conflict;
             }
