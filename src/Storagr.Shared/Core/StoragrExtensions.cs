@@ -6,6 +6,13 @@ namespace Storagr.Shared
 {
     public static class StoragrExtensions
     {
+        public static IServiceCollection AddConfig<TConfig>(this IServiceCollection services, StoragrConfig config)
+            where TConfig : class, IOptions<TConfig>, new()
+        {
+            return services
+                .AddSingleton<IOptions<TConfig>>(config.Get<TConfig>());
+        }
+        
         public static IServiceCollection AddSingleton<TService, TImplementation, TOptions>(this IServiceCollection services, Action<TOptions> configureOptions)
             where TService : class
             where TImplementation : class, TService

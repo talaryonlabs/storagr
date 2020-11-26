@@ -35,3 +35,17 @@
 - /:repositoryId/locks/verify [POST]
 - /:repositoryId/locks/:lockId [GET]
 - /:repositoryId/locks/:lockId/unlock [POST]
+
+
+## Config
+
+### Default (appsettings.json)
+Storagr:Backend = [sqlite, mysql, ...]
+Storagr:Sqlite:DataSource = [path/to/database.db] (./storagr.db)
+Storagr:MySQL:...
+
+### Environment Variables
+STORAGR_BACKEND = [sqlite, mysql ,...]
+STORAGR_SQLITE_DATASOURCE = [path/to/database.db] (./storagr.db)
+STORAGR_MYSQL_...
+

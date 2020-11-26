@@ -1,35 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using Storagr.Security.Tokens;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
 namespace Storagr.IO
 {
+    [StoragrConfig("StoragrStore")]
     public sealed class StoragrStoreOptions : StoragrOptions<StoragrStoreOptions>
     {
-        public string Host { get; set; }
+        [StoragrConfigValue] public string Host { get; set; }
+        [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan DefaultExpiration { get; set; }
+        [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan TransferExpiration { get; set; }
     }
-    
+
     public sealed class StoragrStore : IStoreAdapter
     {
+        private readonly ITokenService _tokenService;
         private readonly IUserService _userService;
         private readonly IHttpClientFactory _clientFactory;
-        private readonly StoragerMediaType _mediaType;
+        private readonly StoragrMediaType _mediaType;
         private readonly StoragrStoreOptions _options;
+        private readonly StoreToken _token;
 
-        public StoragrStore(IOptions<StoragrStoreOptions> optionsAccessor, IUserService userService, IHttpClientFactory clientFactory)
+        public StoragrStore(IOptions<StoragrStoreOptions> optionsAccessor, ITokenService tokenService, IUserService userService, IHttpClientFactory clientFactory)
         {
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoragrStoreOptions));
+            _tokenService = tokenService;
             _userService = userService;
             _clientFactory = clientFactory;
-            _mediaType = new StoragerMediaType();
+            _mediaType = new StoragrMediaType();
+            _token = new StoreToken() {UniqueId = "storagr-api"};
         }
 
-        private HttpClient CreateClient(string token)
+        private HttpClient CreateClient()
         {
+            var token = _tokenService.Generate(_token, _options.DefaultExpiration);
             var client = _clientFactory.CreateClient();
             client.BaseAddress = new Uri($"https://{_options.Host}");
             client.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
@@ -58,19 +68,17 @@ namespace Storagr.IO
 
         public async Task<bool> Verify(string repositoryId, string objectId, long expectedSize)
         {
-            var token = await _userService.GetAuthenticatedUserToken();
             var request = CreateRequest($"/{repositoryId}/transfer/{objectId}", HttpMethod.Post, new StoreObject()
             {
                 RepositoryId = repositoryId, ObjectId = objectId, Size = expectedSize
             });
             
-            return (await CreateClient(token).SendAsync(request)).IsSuccessStatusCode;
+            return (await CreateClient().SendAsync(request)).IsSuccessStatusCode;
         }
 
         public async Task<StoreRepository> Get(string repositoryId)
         {
-            var token = await _userService.GetAuthenticatedUserToken();
-            var client = CreateClient(token);
+            var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}");
             var response = await client.SendAsync(request);
 
@@ -82,8 +90,7 @@ namespace Storagr.IO
         }
         public async Task<StoreObject> Get(string repositoryId, string objectId)
         {
-            var token = await _userService.GetAuthenticatedUserToken();
-            var client = CreateClient(token);
+            var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}/objects/{objectId}");
             var response = await client.SendAsync(request);
 
@@ -95,8 +102,7 @@ namespace Storagr.IO
 
         public async Task<IEnumerable<StoreRepository>> GetAll()
         {
-            var token = await _userService.GetAuthenticatedUserToken();
-            var client = CreateClient(token);
+            var client = CreateClient();
             var request = CreateRequest($"/");
             var response = await client.SendAsync(request);
 
@@ -107,8 +113,7 @@ namespace Storagr.IO
         }
         public async Task<IEnumerable<StoreObject>> GetAll(string repositoryId)
         {
-            var token = await _userService.GetAuthenticatedUserToken();
-            var client = CreateClient(token);
+            var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}/objects");
             var response = await client.SendAsync(request);
 
@@ -120,8 +125,7 @@ namespace Storagr.IO
 
         public async Task Delete(string repositoryId)
         {
-            var token = await _userService.GetAuthenticatedUserToken();
-            var client = CreateClient(token);
+            var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}", HttpMethod.Delete);
 
             await client.SendAsync(request);
@@ -129,8 +133,7 @@ namespace Storagr.IO
 
         public async Task Delete(string repositoryId, string objectId)
         {
-            var token = await _userService.GetAuthenticatedUserToken();
-            var client = CreateClient(token);
+            var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
             
             await client.SendAsync(request);
@@ -141,8 +144,8 @@ namespace Storagr.IO
             var obj = await Get(repositoryId, objectId);
             if (obj == null)
                 return null;
-            
-            var token = await _userService.GetAuthenticatedUserToken();
+
+            var token = _tokenService.Generate(_token, _options.TransferExpiration);
             
             return new StoragrAction
             {
@@ -158,8 +161,8 @@ namespace Storagr.IO
             var obj = await Get(repositoryId, objectId);
             if (obj != null) 
                 return null;
-            
-            var token = await _userService.GetAuthenticatedUserToken();
+
+            var token = _tokenService.Generate(_token, _options.TransferExpiration);
             return new StoragrAction
             {
                 Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},

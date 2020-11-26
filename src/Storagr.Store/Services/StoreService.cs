@@ -21,7 +21,7 @@ namespace Storagr.Store.Services
         private readonly DirectoryInfo _rootDirectory;
         private readonly DirectoryInfo _tmpDirectory;
 
-        public StoreService(IOptions<StoreServiceOptions> optionsAccessor, IDistributedCache cache)
+        public StoreService(IOptions<StoreServiceOptions> optionsAccessor, IDistributedCache cache, IOptions<StoreConfig> stire2)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(IDistributedCache));
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoreServiceOptions));
@@ -150,8 +150,9 @@ namespace Storagr.Store.Services
             }
             var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
             var tmp = _cache.GetString(key) ?? CreateTemporaryFile();
+            var expiration = TimeSpan.FromSeconds(_options.Expiration);
             
-            _cache.SetString(key, tmp, new DistributedCacheEntryOptions().SetAbsoluteExpiration(_options.Expiration));
+            _cache.SetString(key, tmp, new DistributedCacheEntryOptions().SetAbsoluteExpiration(expiration));
 
             return File.OpenWrite(tmp);
         }
@@ -188,7 +189,7 @@ namespace Storagr.Store.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 foreach (var tmp in _tmpDirectory.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
-                    if (tmp.LastAccessTime.Add(_options.Expiration) < DateTime.Now)
+                    if (tmp.LastAccessTime.AddSeconds(_options.Expiration) < DateTime.Now)
                     {
                         tmp.Delete();
                     }

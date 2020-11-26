@@ -3,11 +3,12 @@ using Storagr.Shared;
 
 namespace Storagr.Store
 {
+    [StoragrConfig]
     public class StoreServiceOptions : StoragrOptions<StoreServiceOptions>
     {
-        public string RootPath { get; set; }
-        public int BufferSize { get; set; }
-        public TimeSpan Expiration { get; set; }
-        public TimeSpan ScanInterval { get; set; }
+        [StoragrConfigValue] public string RootPath { get; set; }
+        [StoragrConfigValue] public int BufferSize { get; set; }
+        [StoragrConfigValue] public int Expiration { get; set; }
+        [StoragrConfigValue] public int ScanInterval { get; set; }
     }
 }

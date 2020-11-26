@@ -1,4 +1,5 @@
-﻿using Storagr.Shared;
+﻿using System;
+using Storagr.Shared;
 using Storagr.Shared.Security;
 
 namespace Storagr
@@ -7,6 +8,6 @@ namespace Storagr
     {
         public StoragrTokenValidationParameters ValidationParameters { get; set; }
         public string Secret { get; set; }
-        public int Expiration { get; set; }
+        public TimeSpan Expiration { get; set; }
     }
 }

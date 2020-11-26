@@ -1,22 +1,42 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Storagr.Shared;
-using Storagr.Shared.Security;
 using Storagr.Store.Services;
 
 namespace Storagr.Store
 {
     public static class StoreServices
     {
-        public static IServiceCollection AddStoreCore(this IServiceCollection services, StoragrSettings storagrSettings)
+        public static IServiceCollection AddStoreCore(this IServiceCollection services, StoragrConfig config)
         {
-            var mediaType = new StoragerMediaType();
+            var mediaType = new StoragrMediaType();
+            var storeConfig = config.Get<StoreConfig>();
+
+            services.Configure<KestrelServerOptions>(options =>
+            {
+                options.Listen(storeConfig.Listen);
+            });
             
+            services.AddControllers();
+            services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true;
+                options.Providers.Add<BrotliCompressionProvider>();
+                options.Providers.Add<GzipCompressionProvider>();
+                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+                {
+                    mediaType.MediaType.Value
+                });
+            });
+
             services.AddMvcCore()
                 .AddMvcOptions(options =>
                 {
@@ -39,55 +59,47 @@ namespace Storagr.Store
                     options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
                 });
             
-            services.AddControllers();
-            services.AddHttpContextAccessor();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
                     options.RequireHttpsMetadata = true;
                     options.SaveToken = true;
-                    options.TokenValidationParameters = new StoragrTokenValidationParameters(
-                        storagrSettings.TokenSettings.Issuer, 
-                        storagrSettings.TokenSettings.Audience, 
-                        storagrSettings.TokenSettings.Secret);
+                    options.TokenValidationParameters = config.Get<TokenConfig>();
                 });
             services.AddAuthorization();
             
             return services;
         }
 
-        public static IServiceCollection AddStoreCache(this IServiceCollection services, StoragrCacheSettings cacheSettings)
+        public static IServiceCollection AddStoreCache(this IServiceCollection services, StoragrConfig config)
         {
-            switch (cacheSettings.Type)
+            var storeConfig = config.Get<StoreConfig>();
+            switch (storeConfig.Cache)
             {
-                case StoragrCacheType.Memory:
-                    services.AddDistributedMemoryCache(options =>
-                    {
-                        options.SizeLimit = cacheSettings.SizeLimit;
-                    });
+                case StoreCacheType.Memory:
+                    services.AddDistributedMemoryCache();
                     break;
-                case StoragrCacheType.Redis:
+                
+                case StoreCacheType.Redis:
+                    var redisConfig = config.Get<RedisConfig>();
+                        
                     services.AddDistributedRedisCache(options =>
                     {
                         options.InstanceName = "redis";
-                        options.Configuration = cacheSettings.Host;
+                        options.Configuration = redisConfig.Host;
                     });
                     break;
+                
                 default:
                     throw new ArgumentOutOfRangeException();
             }
             return services;
         }
 
-        public static IServiceCollection AddStoreServices(this IServiceCollection services, StoragrStoreSettings storeSettings)
+        public static IServiceCollection AddStoreServices(this IServiceCollection services, StoragrConfig config)
         {
-            services.AddSingleton<IStoreService, StoreService, StoreServiceOptions>(options =>
-            {
-                options.RootPath = storeSettings.RootPath;
-                options.BufferSize = 4096;
-                options.Expiration = TimeSpan.FromHours(12);
-                options.ScanInterval = TimeSpan.FromHours(1);
-            });
+            services.AddConfig<StoreConfig>(config);
+            services.AddSingleton<IStoreService, StoreService>();
             services.AddHostedService<StoreService>();
 
             return services;

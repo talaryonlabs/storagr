@@ -4,25 +4,26 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Logging;
 using Storagr.Shared;
 
 namespace Storagr.Store
 {
     public class Startup
     {
-        private readonly StoragrSettings _storagrSettings;
+        private StoragrConfig _config;
 
         public Startup(IConfiguration configuration)
         {
-            _storagrSettings = new StoragrSettings(configuration);
+            _config = new StoragrConfig("Store", configuration);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddStoreCore(_storagrSettings);
-            services.AddStoreCache(_storagrSettings.CacheSettings);
-            services.AddStoreServices(_storagrSettings.StoreSettings);
+            services.AddStoreCore(_config);
+            services.AddStoreCache(_config);
+            services.AddStoreServices(_config);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -30,14 +31,18 @@ namespace Storagr.Store
         {
             if (env.IsDevelopment())
             {
+                IdentityModelEventSource.ShowPII = true;
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
+            app.UseResponseCompression();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
         }
     }
 }

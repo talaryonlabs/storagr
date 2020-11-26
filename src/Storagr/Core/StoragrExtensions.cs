@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Storagr.Data;
 using Storagr.IO;
 using Storagr.Security;
+using Storagr.Shared;
 
 namespace Storagr
 {

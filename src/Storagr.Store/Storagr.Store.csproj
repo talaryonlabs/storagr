@@ -2,6 +2,10 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Company>Talaryon Studios</Company>
+        <Product>Storagr Store</Product>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <FileVersion>1.0.0</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,6 +16,22 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="store\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="store\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="store\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Remove="store\**" />
     </ItemGroup>
 
 

@@ -12,41 +12,41 @@ namespace Storagr.Client
         public string IdPattern;
     }
     
-    public interface IStoragrClient : IStoragrUserManagement, IStoragrRepositoryManagement, IStoragrObjectManagement, IStoragrLockManagement
+    public interface IStoragrClient : IDisposable
     { 
         string Token { get; }
         StoragrUser User { get; }
         
         Task<bool> Authenticate(string token);
         Task<bool> Authenticate(string username, string password);
-    }
-
-    public interface IStoragrUserManagement
-    {
+        
+        /**
+         * Users
+         */
         // TODO Task<bool> CreateUser();
         Task<StoragrUser> GetUser(string userId);
         Task<IEnumerable<StoragrUser>> GetUsers();
         // TODO Task<bool> DeleteUser(string userId);
-    }
-
-    public interface IStoragrRepositoryManagement
-    {
+        
+        /**
+         * Repositories
+         */
         Task<StoragrRepository> CreateRepository(string repositoryId);
         Task<StoragrRepository> GetRepository(string repositoryId);
         Task<IEnumerable<StoragrRepository>> GetRepositories();
         Task<bool> DeleteRepository(string repositoryId);
-    }
-
-    public interface IStoragrObjectManagement
-    {
+        
+        /**
+         * Objects
+         */
         Task<StoragrAction> BatchObject(string repositoryId, string objectId, StoragrBatchOperation operation);
         Task<StoragrObject> GetObject(string repositoryId, string objectId);
         Task<IEnumerable<StoragrObject>> GetObjects(string repositoryId);
         Task<bool> DeleteObject(string repositoryId, string objectId);
-    }
-
-    public interface IStoragrLockManagement
-    {
+        
+        /**
+         * Locking
+         */
         Task<bool> Lock(string repositoryId, string path);
         Task<bool> Unlock(string repositoryId);
         

@@ -1,17 +1,16 @@
-﻿namespace Storagr
+﻿using System;
+using System.Collections.Generic;
+using Storagr.Shared.Security;
+
+namespace Storagr
 {
-    public class TokenData
-    {
-        public string UniqueId { get; set; }
-        public string Role { get; set; }
-    }
-    
     public interface ITokenService
     {
-        string Generate(TokenData data);
+        string Generate<T>(T token) where T : class; 
+        string Generate<T>(T token, TimeSpan expiresIn) where T : class;
         string Refresh(string token);
-        bool Verify(string token, TokenData data);
+        bool Verify<T>(string encodedToken, T token) where T : class;
 
-        TokenData Get(string token);
+        public T Get<T>(string encodedToken) where T : class, new();
     }
 }

@@ -13,9 +13,10 @@ using Storagr.Shared;
 
 namespace Storagr.Data
 {
-    public class SqliteBackendOptions : StoragrOptions<SqliteBackendOptions>
+    [StoragrConfig("Sqlite")]
+    public class SqliteOptions : StoragrOptions<SqliteOptions>
     {
-        public string DataSource { get; set; }
+        [StoragrConfigValue] public string DataSource { get; set; }
     }
 
     public class SqliteBackend : IDisposable, IBackendAdapter
@@ -260,14 +261,14 @@ namespace Storagr.Data
 
         #region Fields
 
-        private readonly SqliteBackendOptions _options;
+        private readonly SqliteOptions _options;
         private readonly IDbConnection _connection;
 
         #endregion
 
         #region CTor
 
-        public SqliteBackend(IOptions<SqliteBackendOptions> optionsAccessor)
+        public SqliteBackend(IOptions<SqliteOptions> optionsAccessor)
         {
             if (optionsAccessor == null)
             {

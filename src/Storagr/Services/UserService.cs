@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Storagr.Data;
 using Storagr.Data.Entities;
 using Storagr.Security;
 using Storagr.Security.Authenticators;
+using Storagr.Security.Tokens;
 using Storagr.Shared;
 
 namespace Storagr.Services
@@ -44,7 +48,7 @@ namespace Storagr.Services
                 return null;
             
             var user = await CreateOrUpdate(_authentication.Name, authenticationResult.Id, authenticationResult.Username, authenticationResult.Mail, authenticationResult.Role);
-            if (!(user != null && (user.Token = _tokenService.Generate(new TokenData() {UniqueId = user.UserId, Role = user.Role})) != null))
+            if (!(user != null && (user.Token = _tokenService.Generate(new UserToken() {UserId = user.UserId, Role = user.Role})) != null))
                 return null;
 
             var data = StoragrHelper.SerializeObject(user);
@@ -106,7 +110,7 @@ namespace Storagr.Services
 
         public async Task<UserEntity> GetAuthenticatedUser()
         {
-            var unqiueId = _httpContextAccessor.HttpContext.User.FindFirst("UniqueId")?.Value;
+            var unqiueId = _httpContextAccessor.HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (unqiueId == null)
                 return null;
             

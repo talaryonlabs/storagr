@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Storagr.Data;
@@ -25,14 +23,16 @@ namespace Storagr
 {
     public static class StoragrServices
     {
-        public static IServiceCollection AddStoragrCore(this IServiceCollection services, StoragrSettings storagrSettings)
+        public static IServiceCollection AddStoragrCore(this IServiceCollection services, StoragrConfig config)
         {
-            var mediaType = new StoragerMediaType();
-            var tokenValidationParameters = new StoragrTokenValidationParameters(
-                storagrSettings.TokenSettings.Issuer,
-                storagrSettings.TokenSettings.Audience, 
-                storagrSettings.TokenSettings.Secret);
+            var mediaType = new StoragrMediaType();
+            var storagrConfig = config.Get<StoragrCoreConfig>();
 
+            services.Configure<KestrelServerOptions>(options =>
+            {
+                options.Listen(storagrConfig.Listen);
+            });
+            
             services.AddHttpClient();
             services.AddHttpContextAccessor();
             services.AddControllers();
@@ -67,6 +67,17 @@ namespace Storagr
                     options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                     options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
                 });
+            
+            services.AddSingleton<IUserService, UserService>();
+            services.AddSingleton<IObjectService, ObjectService>();
+            services.AddSingleton<ILockService, LockService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddStoragrSecurity(this IServiceCollection services, StoragrConfig config)
+        {
+            var tokenConfig = config.Get<TokenConfig>();
 
             services.AddAuthentication("_")
                 .AddPolicyScheme("_", "AuthRouter", options =>
@@ -88,12 +99,12 @@ namespace Storagr
                 {
                     options.RequireHttpsMetadata = true;
                     options.SaveToken = true;
-                    options.TokenValidationParameters = tokenValidationParameters;
+                    options.TokenValidationParameters = tokenConfig;
                 });
             
-            services.AddAuthorization(config =>
+            services.AddAuthorization(options =>
             {
-                config.AddPolicy("Management", x =>
+                options.AddPolicy("Management", x =>
                 {
                     x.RequireAuthenticatedUser();
                     x.RequireRole("Admin");
@@ -102,65 +113,33 @@ namespace Storagr
             
             services.AddSingleton<ITokenService, TokenService, TokenServiceOptions>(options =>
             {
-                options.ValidationParameters = tokenValidationParameters;
-                options.Secret = storagrSettings.TokenSettings.Secret;
-                options.Expiration = storagrSettings.TokenSettings.Expiration;
+                options.ValidationParameters = tokenConfig;
+                options.Secret = tokenConfig.Secret;
+                options.Expiration = tokenConfig.Expiration;
             });
 
             services.AddAuthentication<BackendAuthenticator>();
 
-            
-            services.AddSingleton<IUserService, UserService>();
-            services.AddSingleton<IObjectService, ObjectService>();
-            services.AddSingleton<ILockService, LockService>();
-
             return services;
         }
 
-        public static IServiceCollection AddStoragrCache(this IServiceCollection services,  StoragrCacheSettings cacheSettings)
+        public static IServiceCollection AddStoragrCache(this IServiceCollection services,  StoragrConfig config)
         {
-            switch (cacheSettings.Type)
+            var storagrConfig = config.Get<StoragrCoreConfig>();
+            
+            switch (storagrConfig.Cache)
             {
                 case StoragrCacheType.Memory:
-                    services.AddDistributedMemoryCache(options =>
-                    {
-                        options.SizeLimit = cacheSettings.SizeLimit;
-                    });
+                    services.AddDistributedMemoryCache();
                     break;
+                
                 case StoragrCacheType.Redis:
+                    var redisConfig = config.Get<RedisCacheConfig>();
+                    
                     services.AddDistributedRedisCache(options =>
                     {
                         options.InstanceName = "redis";
-                        options.Configuration = cacheSettings.Host;
-                    });
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            return services;
-        }
-
-        public static IServiceCollection AddStoragrBackend(this IServiceCollection services, StoragrBackendSettings backendSettings)
-        {
-            services.AddFluentMigratorCore().ConfigureRunner(config =>
-            {
-                switch (backendSettings.Type)
-                {
-                    case StoragrBackendType.Sqlite:
-                        config.AddSQLite().WithGlobalConnectionString($"Data Source={backendSettings.DataSource}");
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                config.ScanIn(typeof(Setup).Assembly).For.Migrations();
-            });
-
-            switch (backendSettings.Type)
-            {
-                case StoragrBackendType.Sqlite:
-                    services.AddBackend<SqliteBackend, SqliteBackendOptions>(options =>
-                    {
-                        options.DataSource = backendSettings.DataSource;
+                        options.Configuration = redisConfig.Host;
                     });
                     break;
                 
@@ -170,15 +149,47 @@ namespace Storagr
             return services;
         }
 
-        public static IServiceCollection AddStoragrStore(this IServiceCollection services, StoragrStoreSettings storeSettings)
+        public static IServiceCollection AddStoragrBackend(this IServiceCollection services, StoragrConfig config)
         {
-            switch (storeSettings.Type)
+            var storagrConfig = config.Get<StoragrCoreConfig>();
+            
+            services.AddFluentMigratorCore().ConfigureRunner(options =>
+            {
+                switch (storagrConfig.Backend)
+                {
+                    case StoragrBackendType.Sqlite:
+                        var sqliteConfig = config.Get<SqliteOptions>();
+                        options.AddSQLite().WithGlobalConnectionString($"Data Source={sqliteConfig.DataSource}");
+                        break;
+                    
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                options.ScanIn(typeof(Setup).Assembly).For.Migrations();
+            });
+
+            switch (storagrConfig.Backend)
+            {
+                case StoragrBackendType.Sqlite:
+                    services.AddConfig<SqliteOptions>(config);
+                    services.AddBackend<SqliteBackend>();
+                    break;
+                
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            return services;
+        }
+
+        public static IServiceCollection AddStoragrStore(this IServiceCollection services, StoragrConfig config)
+        {
+            var storagrConfig = config.Get<StoragrCoreConfig>();
+            
+            switch (storagrConfig.Store)
             {
                 case StoragrStoreType.Storagr:
-                    services.AddStore<StoragrStore, StoragrStoreOptions>(options =>
-                    {
-                        options.Host = storeSettings.Host;
-                    });
+                    services.AddConfig<StoragrStoreOptions>(config);
+                    services.AddStore<StoragrStore>();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
