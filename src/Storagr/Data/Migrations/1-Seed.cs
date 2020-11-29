@@ -1,4 +1,5 @@
-﻿using FluentMigrator;
+﻿using System.Reflection.Metadata;
+using FluentMigrator;
 using Storagr.Shared;
 
 namespace Storagr.Data.Migrations
@@ -8,37 +9,55 @@ namespace Storagr.Data.Migrations
     {
         public override void Up()
         {
+            // Admin
+            var authId = StoragrHelper.UUID();
+            var userId = StoragrHelper.UUID();
+            
             // Initial Admin User
-            Insert.IntoTable("_backendAuth")
+            Insert.IntoTable("BackendAuth")
                 .Row(new
                 {
-                    AuthId = StoragrHelper.UUID(),
+                    Id = authId,
                     Username = "admin",
                     Password = "AQAAAAEAACcQAAAAEGTYFmFw+/mzx8Ef4yq2znUwkl5Y6Bs6ZV7NgINEG8GsomDerF2ZV0GfDIbmtBNhDw==", // _storagr
-                    Mail = "no-mail",
-                    Role = "Admin"
                 });
 
-            Insert.IntoTable("repositories")
+            Insert.IntoTable("User")
                 .Row(new
                 {
-                    RepositoryId = "test",
-                    OwnerId = "_",
+                    Id = userId,
+                    AuthId = authId,
+                    AuthAdapter = "storagr-backend",
+                    IsEnabled = true,
+                    IsAdmin = true,
+                    Username = "admin"
+                });
+
+            Insert.IntoTable("Repository")
+                .Row(new
+                {
+                    Id = "test",
+                    OwnerId = userId,
                     SizeLimit = -1
                 });
         }
 
         public override void Down()
         {
-            Delete.FromTable("_backendAuth")
+            Delete.FromTable("BackendAuth")
                 .Row(new
                 {
                     Username = "admin"
                 });
-            Delete.FromTable("repositories")
+            Delete.FromTable("User")
                 .Row(new
                 {
-                    RepositoryId = "test"
+                    Username = "admin"
+                });
+            Delete.FromTable("Repository")
+                .Row(new
+                {
+                    Id = "test"
                 });
         }
     }

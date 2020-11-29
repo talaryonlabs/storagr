@@ -1,5 +1,4 @@
 ﻿using FluentMigrator;
-using Storagr.Shared;
 
 namespace Storagr.Data.Migrations
 {
@@ -8,47 +7,65 @@ namespace Storagr.Data.Migrations
     {
         public override void Up()
         {
-            Create.Table("_backendAuth")
-                .WithColumn("AuthId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("Username").AsString()
-                .WithColumn("Password").AsString()
-                .WithColumn("Mail").AsString()
-                .WithColumn("Role").AsString();
-            
-            Create.Table("users")
-                .WithColumn("UserId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("AuthId").AsString()
-                .WithColumn("AuthAdapter").AsString()
+            Create.Table("BackendAuth")
+                .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
+                .WithColumn("Username").AsString().NotNullable()
+                .WithColumn("Password").AsString().NotNullable();
+
+            Create.Table("User")
+                .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
+                .WithColumn("AuthId").AsString().NotNullable()
+                .WithColumn("AuthAdapter").AsString().NotNullable()
                 .WithColumn("IsEnabled").AsBoolean().WithDefaultValue(true)
-                .WithColumn("Username").AsString()
-                .WithColumn("Mail").AsString()
-                .WithColumn("Role").AsString();
+                .WithColumn("IsAdmin").AsBoolean().WithDefaultValue(false)
+                .WithColumn("Username").AsString().NotNullable();
 
-            Create.Table("repositories")
-                .WithColumn("RepositoryId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("OwnerId").AsString()
-                .WithColumn("SizeLimit").AsInt64();
+            Create.Table("Repository")
+                .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
+                .WithColumn("OwnerId").AsString().NotNullable()
+                .WithColumn("SizeLimit").AsInt64().WithDefaultValue(-1);
 
-            Create.Table("objects")
-                .WithColumn("ObjectId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("RepositoryId").AsString()
+            Create.Table("Object")
+                .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
+                .WithColumn("RepositoryId").AsString().NotNullable()
                 .WithColumn("Size").AsInt64();
 
-            Create.Table("locks")
-                .WithColumn("LockId").AsString().PrimaryKey().NotNullable().Unique()
-                .WithColumn("OwnerId").AsString()
-                .WithColumn("RepositoryId").AsString()
-                .WithColumn("Path").AsString()
-                .WithColumn("LockedAt").AsDateTime2();
+            Create.Table("Lock")
+                .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
+                .WithColumn("OwnerId").AsString().NotNullable()
+                .WithColumn("RepositoryId").AsString().NotNullable()
+                .WithColumn("Path").AsString().NotNullable()
+                .WithColumn("LockedAt").AsDateTime2().NotNullable();
+
+            Create.ForeignKey("FK_Repository_User")
+                .FromTable("Repository").ForeignColumn("OwnerId")
+                .ToTable("User").PrimaryColumn("Id");
+            
+            Create.ForeignKey("FK_Object_Repository")
+                .FromTable("Object").ForeignColumn("RepositoryId")
+                .ToTable("Repository").PrimaryColumn("Id");
+            
+            Create.ForeignKey("FK_Lock_User")
+                .FromTable("Lock").ForeignColumn("OwnerId")
+                .ToTable("User").PrimaryColumn("Id");
+            
+            Create.ForeignKey("FK_Lock_Repository")
+                .FromTable("Lock").ForeignColumn("RepositoryId")
+                .ToTable("Repository").PrimaryColumn("Id");
         }
 
         public override void Down()
         {
-            Delete.Table("_backendAuth");
-            Delete.Table("users");
-            Delete.Table("repositories");
-            Delete.Table("objects");
-            Delete.Table("locks");
+            Delete.ForeignKey("FK_Repository_User");
+            Delete.ForeignKey("FK_Object_Repository");
+            Delete.ForeignKey("FK_Lock_User");
+            Delete.ForeignKey("FK_Lock_Repository");
+            
+            Delete.Table("BackendAuth");
+            Delete.Table("User");
+            Delete.Table("Repository");
+            Delete.Table("Object");
+            Delete.Table("Lock");
         }
     }
 }

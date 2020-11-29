@@ -5,6 +5,8 @@ namespace Storagr.Security.Tokens
 {
     public class StoreToken
     {
-        [StoragrTokenMember(Name = "uid", ClaimType = JwtRegisteredClaimNames.Sub)] public string UniqueId { get; set; }
+        [StoragrClaim(Name = StoragrConstants.TokenUnqiueId)]
+        [StoragrClaim(Name = JwtRegisteredClaimNames.Sub)] 
+        public string UniqueId { get; set; }
     }
 }

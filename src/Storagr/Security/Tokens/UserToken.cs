@@ -6,7 +6,11 @@ namespace Storagr.Security.Tokens
 {
     public class UserToken
     {
-        [StoragrTokenMember(Name = "uid", ClaimType = JwtRegisteredClaimNames.Sub)] public string UserId;
-        [StoragrTokenMember(Name = "role", ClaimType = ClaimTypes.Role)] public string Role;
+        [StoragrClaim(Name = StoragrConstants.TokenUnqiueId)] 
+        [StoragrClaim(Name = JwtRegisteredClaimNames.Sub)]
+        public string UserId { get; set; }
+        
+        [StoragrClaim(Name = ClaimTypes.Role)] 
+        public string Role { get; set; }
     }
 }

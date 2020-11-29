@@ -31,4 +31,14 @@ namespace Storagr.Shared
     {
         
     }
+    
+    public class UserAlreadyExistsException : Exception
+    {
+        
+    }
+    
+    public class UserNotFoundException : Exception
+    {
+        
+    }
 }

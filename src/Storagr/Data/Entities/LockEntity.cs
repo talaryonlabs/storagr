@@ -5,10 +5,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Data.Entities
 {
-    [Table("locks")]
+    [Table("Lock")]
     public class LockEntity
     {
-        [ExplicitKey] public string LockId { get; set; }
+        [ExplicitKey] public string Id { get; set; }
         [ExplicitKey] public string RepositoryId { get; set; }
         public string OwnerId { get; set; }
         public string Path { get; set; }
@@ -19,7 +19,7 @@ namespace Storagr.Data.Entities
         
         public static implicit operator StoragrLock([NotNull] LockEntity entity) => new StoragrLock()
         {
-            LockId = entity.LockId,
+            LockId = entity.Id,
             Path = entity.Path,
             LockedAt = entity.LockedAt,
             Owner = new StoragrOwner()

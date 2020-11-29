@@ -10,6 +10,7 @@ namespace Storagr
         
         Task<LockEntity> Get(string repositoryId, string lockId);
         Task<LockEntity> GetByPath(string repositoryId, string path);
+        
         Task<IEnumerable<LockEntity>> GetAll(string repositoryId) => 
             GetAll(repositoryId, -1, null, null, null);
         Task<IEnumerable<LockEntity>> GetAll(string repositoryId, int limit, string cursor) =>

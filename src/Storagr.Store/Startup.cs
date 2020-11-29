@@ -34,7 +34,7 @@ namespace Storagr.Store
                 IdentityModelEventSource.ShowPII = true;
                 app.UseDeveloperExceptionPage();
             }
-
+            
             app.UseResponseCompression();
             app.UseRouting();
             app.UseAuthentication();

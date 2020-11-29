@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Security;
-using Storagr.Security.Authenticators;
-using Storagr.Services;
+using Storagr.Data.Entities;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -18,12 +17,19 @@ namespace Storagr.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly IAuthenticationAdapter _authentication;
 
-        public UserController(IUserService userService, IAuthenticationAdapter authentication)
+        public UserController(IUserService userService)
         {
             _userService = userService;
-            _authentication = authentication;
+        }
+        
+        [HttpGet("me")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult> Test()
+        {
+            var user = await _userService.GetAuthenticatedUser();
+
+            return Ok($"Hello {user?.Username}!");
         }
         
         [HttpGet]
@@ -35,26 +41,32 @@ namespace Storagr.Controllers
         [HttpPost]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(UserAlreadyExistsError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
         public async Task<IActionResult> Create([FromBody] StoragrUserRequest createRequest)
         {
-            if (!(_authentication is BackendAuthenticator authenticator))
+            try
+            {
+                await _userService.Create(createRequest.User.Username, createRequest.NewPassword,
+                    createRequest.User.IsAdmin);
+            }
+            catch (NotSupportedException)
+            {
                 return (ActionResult) new NotImplementedError();
+            }
+            catch (UserAlreadyExistsException)
+            {
+                return (ActionResult) new UserAlreadyExistsError();
+            }
+            catch (Exception e)
+            {
+                return (ActionResult) new StoragrError(e.Message);
+            }
             
-            await authenticator.Create(createRequest.Username, createRequest.Password, createRequest.Mail, createRequest.Role);
             return Created("", null);
+        }
 
-        }
-        
-        [HttpGet("me")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult> Test()
-        {
-            var user = await _userService.GetAuthenticatedUser();
-            
-            return Ok($"Hello {user.Username}!");
-        }
-        
         [HttpGet("{userId}")]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
@@ -71,13 +83,22 @@ namespace Storagr.Controllers
         [HttpPatch("{userId}")] 
         [Authorize(Policy = "Management")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(UserNotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
         public async Task<IActionResult> Modify([FromRoute] string userId, [FromBody] StoragrUserRequest modifyRequest)
         {
-            var user = await _userService.Get(userId);
-            if (user == null)
+            try
+            {
+                await _userService.Modify(modifyRequest.User, modifyRequest.NewPassword);
+            }
+            catch (UserNotFoundException)
+            {
                 return (ActionResult) new UserNotFoundError();
-            
-            // TODO await _userService.Modify(entity);
+            }
+            catch (Exception e)
+            {
+                return (ActionResult) new StoragrError(e.Message);
+            }
             
             return Ok();
         }
@@ -85,30 +106,53 @@ namespace Storagr.Controllers
         [HttpDelete("{userId}")]
         [Authorize(Policy = "Management")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(UserNotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
         public async Task<IActionResult> Delete([FromRoute] string userId)
         {
-            var user = await _userService.Get(userId);
-            if (user == null)
-                return (ActionResult) new UserNotFoundError();
+            try
+            {
+                await _userService.Delete(userId);
+            }
+            catch (NotSupportedException)
+            {
+                return (ActionResult) new NotImplementedError();
+            }
+            catch (UserNotFoundException)
+            {
+                return (ActionResult) new UserNotFoundError();   
+            }
+            catch (Exception e)
+            {
+                return (ActionResult) new StoragrError(e.Message);
+            }
 
-            await _userService.Delete(userId);
             return NoContent();
         }
         
         [AllowAnonymous]
         [HttpPost("authenticate")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrAuthenticationResponse))]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(StoragrError))]
-        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(AuthenticationError))]
+        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity, Type = typeof(UsernameOrPasswordMissingError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
         public async Task<IActionResult> Authenticate([FromBody] StoragrAuthenticationRequest authenticationRequest)
         {
             if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
                 return (ActionResult) new UsernameOrPasswordMissingError();
 
-            var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
-            if (user == null)
-                return (ActionResult) new AuthenticationError();
+            UserEntity user;
+            try
+            {
+                user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
+                if (user == null)
+                    return (ActionResult) new AuthenticationError();
+            }
+            catch (Exception e)
+            {
+                return (ActionResult) new StoragrError(e);
+            }
             
             return Ok(new StoragrAuthenticationResponse()
             {

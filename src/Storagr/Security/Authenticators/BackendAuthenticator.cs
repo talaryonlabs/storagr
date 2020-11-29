@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,14 +14,12 @@ namespace Storagr.Security.Authenticators
 {
     public class BackendAuthenticator : IAuthenticationAdapter
     {
-        [Table("_backendAuth")]
-        private class Entity
+        [Table("BackendAuth")]
+        private class Entity : IAuthenticationResult
         {
-            [ExplicitKey] public string AuthId { get; set; }
+            [ExplicitKey] public string Id { get; set; }
             public string Username { get; set; }
             public string Password { get; set; }
-            public string Mail { get; set; }
-            public string Role { get; set; }
         }
         
         public string Name => "storagr-backend";
@@ -32,63 +31,52 @@ namespace Storagr.Security.Authenticators
             _backend = backend;
         }
 
-        public async Task<AuthenticationResult> Authenticate([NotNull] AuthenticationRequest authenticationRequest)
+        public Task<IAuthenticationResult> Authenticate(string token)
         {
-            var backendUser = await _backend.Get<Entity>(q => q.Where(f => f.Equal("Username", authenticationRequest.Username)));
+            throw new NotSupportedException();
+        }
+
+        public async Task<IAuthenticationResult> Authenticate(string username, string password)
+        {
+            var backendUser = await _backend.Get<Entity>(q => q.Where(f => f.Equal(nameof(Entity.Username), username)));
             if (backendUser == null)
                 return null;
-            
-            var hasher = new PasswordHasher<Entity>();
-            if(hasher.VerifyHashedPassword(backendUser, backendUser.Password, authenticationRequest.Password) != PasswordVerificationResult.Success)
-                return null;
 
-            return new AuthenticationResult()
-            {
-                Values =
-                {
-                    {AuthenticationResultType.Id, backendUser.AuthId},
-                    {AuthenticationResultType.Username, backendUser.Username},
-                    {AuthenticationResultType.Mail, backendUser.Mail},
-                    {AuthenticationResultType.Role, backendUser.Role}
-                }
-            };
+            return new PasswordHasher<Entity>()
+                .VerifyHashedPassword(backendUser, backendUser.Password, password) == PasswordVerificationResult.Success
+                ? backendUser
+                : null;
         }
 
-        public async Task Create([NotNull] string username, [NotNull] string password, [AllowNull] string mail, [AllowNull] string role)
+        public async Task<IAuthenticationResult> Create([NotNull] string username, [NotNull] string password)
         {
-            var uuid = StoragrHelper.UUID();
-            var hasher = new PasswordHasher<Entity>();
             var entity = new Entity()
             {
-                AuthId = uuid,
+                Id = StoragrHelper.UUID(),
                 Username = username,
-                Password = hasher.HashPassword(null, password),
-                Mail = mail ?? "",
-                Role = role ?? ""
+                Password = new PasswordHasher<Entity>().HashPassword(null, password),
             };
             await _backend.Insert(entity);
+
+            return entity;
         }
 
-        public async Task Modify([NotNull] string authId, [AllowNull] string username, [AllowNull] string password,
-            [AllowNull] string mail, [AllowNull] string role)
+        public async Task Modify([NotNull] string id, [AllowNull] string username, [AllowNull] string password)
         {
-            var user = await _backend.Get<Entity>(q => q.Where(f => f.Equal("AuthId", authId)));
-            var hasher = new PasswordHasher<Entity>();
-            var newPassword = (password != null ? hasher.HashPassword(null, password) : null);
-            var entity = new Entity()
+            var user = await _backend.Get<Entity>(q => q.Where(f => f.Equal(nameof(Entity.Id), id)));
+            var newPassword = (password != null ? new PasswordHasher<Entity>().HashPassword(null, password) : null);
+            
+            await _backend.Update(new Entity()
             {
-                AuthId = user.AuthId,
+                Id = user.Id,
                 Username = username ?? user.Username,
                 Password = newPassword ?? user.Password,
-                Mail = mail ?? user.Mail,
-                Role = role ?? user.Role
-            };
-            await _backend.Update(entity);
+            });
         }
 
         public async Task Delete([NotNull] string authId)
         {
-            await _backend.Delete(new Entity() {AuthId = authId});
+            await _backend.Delete(new Entity() {Id = authId});
         }
     }
 }

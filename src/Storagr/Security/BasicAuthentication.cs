@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -95,8 +96,8 @@ namespace Storagr.Security
 
             var identity = new ClaimsIdentity(new[]
             {
-                new Claim("UniqueId", user.UserId),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(StoragrConstants.TokenUnqiueId, user.Id),
+                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin": "")
             }, Scheme.Name);
             
             var principal = new ClaimsPrincipal(identity);

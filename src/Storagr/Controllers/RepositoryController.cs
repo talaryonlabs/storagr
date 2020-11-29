@@ -40,7 +40,7 @@ namespace Storagr.Controllers
             if ((repository = await _objectService.Create(newRepository.RepositoryId, newRepository.OwnerId)) == null)
                 return (ActionResult) new StoragrError("Unable to create repository.");
 
-            return Created($"/{repository.RepositoryId}", (StoragrRepository)repository);
+            return Created($"/{repository.Id}", (StoragrRepository)repository);
         }
 
         [HttpGet("{repositoryId}")]

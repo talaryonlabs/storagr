@@ -68,10 +68,10 @@ namespace Storagr
                     options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
                 });
             
-            services.AddSingleton<IUserService, UserService>();
             services.AddSingleton<IObjectService, ObjectService>();
             services.AddSingleton<ILockService, LockService>();
-
+            services.AddSingleton<IUserService, UserService>();
+            
             return services;
         }
 

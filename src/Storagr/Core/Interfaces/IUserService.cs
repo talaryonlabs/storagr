@@ -5,16 +5,24 @@ using Storagr.Services;
 
 namespace Storagr
 {
+    public enum RepositoryAccessType
+    {
+        Read,
+        Write
+    }
+    
     public interface IUserService
     {
         Task<UserEntity> GetAuthenticatedUser();
-        Task<string> GetAuthenticatedUserToken();
-        
-        Task<UserEntity> Authenticate(string username, string password);
-        // Task<(string, UserEntity)> Authenticate(string token);
+        Task<string> GetAuthenticatedToken();
+        Task<bool> HasAccess(RepositoryEntity repository, RepositoryAccessType accessType);
 
-        Task<UserEntity> CreateOrUpdate(string authAdapater, string authId, string username, string mail, string role);
-        Task Modify(UserEntity entity);
+        Task<UserEntity> Authenticate(string username, string password);
+        
+        Task<bool> Exists(string username);
+        
+        Task<UserEntity> Create(string username, string password, bool isAdmin);
+        Task Modify(UserEntity entity, string newPassword);
         Task Delete(string userId);
 
         Task<UserEntity> Get(string userId);

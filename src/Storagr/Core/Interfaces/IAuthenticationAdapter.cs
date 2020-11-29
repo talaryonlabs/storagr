@@ -1,41 +1,33 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Storagr
 {
-    public class AuthenticationRequest
+    public interface IAuthenticationResult
     {
-        public string Username;
-        public string Password;
-    }
-
-    public class AuthenticationResult
-    {
-        public string Id => Get<string>(AuthenticationResultType.Id);
-        public string Username => Get<string>(AuthenticationResultType.Username);
-        public string Mail => Get<string>(AuthenticationResultType.Mail);
-        public string Role => Get<string>(AuthenticationResultType.Role);
-        
-        public IEnumerable<string> Roles => Get<IEnumerable<string>>(AuthenticationResultType.Roles);
-
-        public T Get<T>(string type) => (Values ?? new Dictionary<string, object>()).ContainsKey(type) ? (T) Values?[type] : default;
-
-        public readonly Dictionary<string, object> Values = new Dictionary<string, object>();
-    }
-
-    public static class AuthenticationResultType
-    {
-        public const string Id = "id";
-        public const string Username = "username";
-        public const string Mail = "mail";
-        public const string Role = "role";
-        public const string Roles = "roles";
+        string Id { get; set; }
+        string Username { get; set; }
     }
 
     public interface IAuthenticationAdapter
     {
+        /// <summary>
+        /// Returns the name of the adapter.
+        /// </summary>
         string Name { get; }
 
-        Task<AuthenticationResult> Authenticate(AuthenticationRequest authenticationRequest);
+        /// <summary>
+        /// Authenticates with a token.
+        /// </summary>
+        /// <param name="token">Token used to authenticate.</param>
+        /// <returns>Successful authenticated result, otherwise null.</returns>
+        Task<IAuthenticationResult> Authenticate(string token);
+        
+        /// <summary>
+        /// Authenticates with username and password.
+        /// </summary>
+        /// <param name="username">Username</param>
+        /// <param name="password">Password</param>
+        /// <returns>Successful authenticated result, otherwise null.</returns>
+        Task<IAuthenticationResult> Authenticate(string username, string password);
     }
 }

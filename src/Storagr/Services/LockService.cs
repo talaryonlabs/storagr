@@ -28,7 +28,11 @@ namespace Storagr.Services
             
             var existingLock = await _backend.Get<LockEntity>(q =>
             {
-                q.Where(f => f.Equal("RepositoryId", repositoryId).And().Equal("Path", path));
+                q.Where(f => f
+                    .Equal(nameof(LockEntity.RepositoryId), repositoryId)
+                    .And()
+                    .Equal(nameof(LockEntity.Path), path)
+                );
             });
             if (existingLock != null)
             {
@@ -38,9 +42,9 @@ namespace Storagr.Services
             var user = await _userService.GetAuthenticatedUser();
             var entity = new LockEntity()
             {
-                LockId = StoragrHelper.UUID(),
+                Id = StoragrHelper.UUID(),
                 RepositoryId = repositoryId,
-                OwnerId = user.UserId,
+                OwnerId = user.Id,
                 Path = path,
                 LockedAt = DateTime.Now,
                 
@@ -56,7 +60,11 @@ namespace Storagr.Services
         {
             var lockEntity = await _backend.Get<LockEntity>(q =>
             {
-                q.Where(f => f.Equal("RepositoryId", repositoryId).And().Equal("LockId", lockId));
+                q.Where(f => f
+                    .Equal(nameof(LockEntity.RepositoryId), repositoryId)
+                    .And()
+                    .Equal(nameof(LockEntity.Id), lockId)
+                );
             });
             if (lockEntity == null)
                 return null;
@@ -71,7 +79,11 @@ namespace Storagr.Services
         {
             var lockEntity = await _backend.Get<LockEntity>(q =>
             {
-                q.Where(f => f.Equal("RepositoryId", repositoryId).And().Equal("Path", path.Trim()));
+                q.Where(f => f
+                    .Equal(nameof(LockEntity.RepositoryId), repositoryId)
+                    .And()
+                    .Equal(nameof(LockEntity.Path), path.Trim())
+                );
             });
             if (lockEntity == null)
                 return null;
@@ -93,16 +105,16 @@ namespace Storagr.Services
             {
                 x.Where(f =>
                 {
-                    f.Equal("RepositoryId", repositoryId);
+                    f.Equal(nameof(LockEntity.RepositoryId), repositoryId);
 
                     if (!string.IsNullOrEmpty(lockIdPattern))
                     {
-                        f.And().Like("LockId", $"%{lockIdPattern}%");
+                        f.And().Like(nameof(LockEntity.Id), $"%{lockIdPattern}%");
                     }
 
                     if (!string.IsNullOrEmpty(pathPattern))
                     {
-                        f.And().Like("Path", $"%{pathPattern}%");
+                        f.And().Like(nameof(LockEntity.Path), $"%{pathPattern}%");
                     }
                 });
             })).ToList();
@@ -113,7 +125,7 @@ namespace Storagr.Services
             }
 
             if (!string.IsNullOrEmpty(cursor))
-                locks = locks.SkipWhile(v => v.LockId != cursor).ToList();
+                locks = locks.SkipWhile(v => v.Id != cursor).ToList();
 
             if (limit > 0)
                 locks = locks.Take(limit).ToList();
@@ -121,7 +133,7 @@ namespace Storagr.Services
             foreach (var lockEntity in locks)
             {
                 lockEntity.Repository = repository;
-                lockEntity.Owner = users.Find(v => v.UserId == lockEntity.OwnerId);
+                lockEntity.Owner = users.Find(v => v.Id == lockEntity.OwnerId);
             }
 
             return locks;

@@ -1,4 +1,5 @@
-﻿using System.Reflection.Metadata.Ecma335;
+﻿using System;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,12 @@ namespace Storagr.Shared
         {
         }
 
+        public StoragrError(Exception e)
+            : this(e.Message)
+        {
+
+        }
+
         public StoragrError(int code, string message)
         {
             Code = code;
@@ -42,6 +49,14 @@ namespace Storagr.Shared
     public class NotImplementedError : StoragrError
     {
         public NotImplementedError() : base(StatusCodes.Status501NotImplemented, "Method not implemented.")
+        {
+        }
+    }
+
+    [DataContract]
+    public class ForbiddenError : StoragrError
+    {
+        public ForbiddenError() : base(StatusCodes.Status403Forbidden, "Forbidden.")
         {
         }
     }
@@ -115,6 +130,14 @@ namespace Storagr.Shared
     public class UserNotFoundError : StoragrError
     {
         public UserNotFoundError() : base(StatusCodes.Status404NotFound, "User not found.")
+        {
+        }
+    }
+    
+    [DataContract]
+    public class UserAlreadyExistsError : StoragrError
+    {
+        public UserAlreadyExistsError() : base(StatusCodes.Status409Conflict, "User already exists.")
         {
         }
     }

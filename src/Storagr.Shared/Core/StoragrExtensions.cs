@@ -9,6 +9,8 @@ namespace Storagr.Shared
         public static IServiceCollection AddConfig<TConfig>(this IServiceCollection services, StoragrConfig config)
             where TConfig : class, IOptions<TConfig>, new()
         {
+            var conf = config.Get<TConfig>();
+            
             return services
                 .AddSingleton<IOptions<TConfig>>(config.Get<TConfig>());
         }

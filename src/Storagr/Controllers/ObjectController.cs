@@ -42,7 +42,7 @@ namespace Storagr.Controllers
                 return Ok(new StoragrObjectListResponse() {Objects = new StoragrObject[0]});
 
             if (!string.IsNullOrEmpty(request.Cursor))
-                list = list.SkipWhile(v => v.ObjectId != request.Cursor).ToList();
+                list = list.SkipWhile(v => v.Id != request.Cursor).ToList();
 
             if (request.Limit > 0)
                 list = list.Take(request.Limit).ToList();
@@ -51,10 +51,10 @@ namespace Storagr.Controllers
             {
                 Objects = list.Select(v => new StoragrObject()
                 {
-                    ObjectId = v.ObjectId,
+                    ObjectId = v.Id,
                     Size = v.Size,
                 }),
-                NextCursor = list.Last().ObjectId
+                NextCursor = list.Last().Id
             });
         }
 
@@ -83,7 +83,7 @@ namespace Storagr.Controllers
             if (repository == null)
                 return (ActionResult) new RepositoryNotFoundError();
 
-            if (await _objectService.Create(repository.RepositoryId, expectedObject.ObjectId, expectedObject.Size) == null)
+            if (await _objectService.Create(repository.Id, expectedObject.ObjectId, expectedObject.Size) == null)
                 return (ActionResult) new ObjectNotFoundError();
 
             return Ok();

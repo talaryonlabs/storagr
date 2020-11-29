@@ -56,16 +56,19 @@ namespace Storagr.Controllers
         private async Task<IActionResult> Download(RepositoryEntity repository, StoragrBatchRequest batchRequest)
         {
             // TODO consider the "ref" property in request
-            // TODO check if user has read access
+            if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
+            {
+                return (ActionResult) new ForbiddenError();
+            }
 
             var requestObjects = batchRequest.Objects.ToList();
             var objects =
-                (await _objectService.GetMany(repository.RepositoryId,
+                (await _objectService.GetMany(repository.Id,
                     requestObjects.Select(v => v.ObjectId).ToArray())).ToList();
 
             var responseObjectsAsync = requestObjects.Select(async v =>
             {
-                if (!objects.Exists(x => x.ObjectId == v.ObjectId))
+                if (!objects.Exists(x => x.Id == v.ObjectId))
                 {
                     return new StoragrBatchResponseObject()
                     {
@@ -82,7 +85,7 @@ namespace Storagr.Controllers
                     Authenticated = true,
                     Actions = new StoragrActions()
                     {
-                        Download = await _objectService.NewDownloadAction(repository.RepositoryId, v.ObjectId)
+                        Download = await _objectService.NewDownloadAction(repository.Id, v.ObjectId)
                     }
                 };
             });
@@ -97,17 +100,19 @@ namespace Storagr.Controllers
         private async Task<IActionResult> Upload(RepositoryEntity repository, StoragrBatchRequest batchRequest)
         {
             // TODO consider the "ref" property in request
-            // TODO check if user has write access
+            if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
+            {
+                return (ActionResult) new ForbiddenError();
+            }
 
             var requestObjects = batchRequest.Objects.ToList();
             var objects =
-                (await _objectService.GetMany(repository.RepositoryId,
+                (await _objectService.GetMany(repository.Id,
                     requestObjects.Select(v => v.ObjectId).ToArray())).ToList();
 
-            var token = await _userService.GetAuthenticatedUserToken();
             var responseObjectsAsync = requestObjects.Select(async v =>
             {
-                if (objects.Exists(x => x.ObjectId == v.ObjectId))
+                if (objects.Exists(x => x.Id == v.ObjectId))
                 {
                     return new StoragrBatchResponseObject()
                     {
@@ -123,8 +128,8 @@ namespace Storagr.Controllers
                     Authenticated = true,
                     Actions = new StoragrActions()
                     {
-                        Upload = await _objectService.NewUploadAction(repository.RepositoryId, v.ObjectId),
-                        Verify = await _objectService.NewVerifyAction(repository.RepositoryId, v.ObjectId),
+                        Upload = await _objectService.NewUploadAction(repository.Id, v.ObjectId),
+                        Verify = await _objectService.NewVerifyAction(repository.Id, v.ObjectId),
                     }
                 };
             });

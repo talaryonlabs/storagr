@@ -71,7 +71,10 @@ namespace Storagr.Shared
             }
             if (type.IsPrimitive)
             {
-                return attribute.IsNamedSize ? StoragrHelper.ParseNamedSize(value) : Convert.ChangeType(value, type);
+                return Convert.ChangeType(attribute.IsNamedSize
+                        ? (object) StoragrHelper.ParseNamedSize(value)
+                        : value,
+                    type);
             }
 
             if (type == typeof(TimeSpan))

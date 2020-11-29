@@ -12,6 +12,7 @@ namespace Storagr.Store
         [StoragrConfigValue] public string RootPath { get; set; }
         [StoragrConfigValue] public StoreCacheType Cache { get; set; }
         
+        [StoragrConfigValue(IsNamedSize = true)] public int BufferSize { get; set; }
         [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan Expiration { get; set; }
         [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan ScanInterval { get; set; }
     }

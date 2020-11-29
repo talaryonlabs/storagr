@@ -29,7 +29,7 @@ namespace Storagr.Services
 
             await _backendAdapter.Insert(entity = new RepositoryEntity()
             {
-                RepositoryId = repositoryId,
+                Id = repositoryId,
                 OwnerId = ownerId,
                 SizeLimit = -1
             });
@@ -49,7 +49,7 @@ namespace Storagr.Services
             await _backendAdapter.Insert(entity = new ObjectEntity()
             {
                 RepositoryId = repositoryId,
-                ObjectId = objectId,
+                Id = objectId,
                 Size = size
             });
             
@@ -71,12 +71,11 @@ namespace Storagr.Services
         {
             return _backendAdapter.Get<ObjectEntity>(q =>
             {
-                q.Where(f =>
-                {
-                    f.Equal("RepositoryId", repositoryId)
-                        .And()
-                        .Equal("ObjectId", objectId);
-                });
+                q.Where(f => f
+                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
+                    .And()
+                    .Equal(nameof(ObjectEntity.Id), objectId)
+                );
             });
         }
 
@@ -84,12 +83,11 @@ namespace Storagr.Services
         {
             return _backendAdapter.GetAll<ObjectEntity>(q =>
             {
-                q.Where(f =>
-                {
-                    f.Equal("RepositoryId", repositoryId)
-                        .And()
-                        .In("ObjectId", objectIds);
-                });
+                q.Where(f => f
+                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
+                    .And()
+                    .In(nameof(ObjectEntity.Id), objectIds)
+                );
             });
         }
 
@@ -100,7 +98,7 @@ namespace Storagr.Services
 
             foreach (var repository in repositories)
             {
-                repository.Owner = users.Find(v => v.UserId == repository.OwnerId);
+                repository.Owner = users.Find(v => v.Id == repository.OwnerId);
             }
             return repositories;
         }
@@ -111,7 +109,7 @@ namespace Storagr.Services
             {
                 q.Where(f =>
                 {
-                    f.Equal("RepositoryId", repositoryId);
+                    f.Equal(nameof(ObjectEntity.RepositoryId), repositoryId);
                 });
             });
         }
@@ -145,7 +143,7 @@ namespace Storagr.Services
             if (obj != null) 
                 return null;
             
-            var token = await _userService.GetAuthenticatedUserToken();
+            var token = await _userService.GetAuthenticatedToken();
             return new StoragrAction
             {
                 Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},

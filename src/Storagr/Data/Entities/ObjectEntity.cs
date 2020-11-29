@@ -5,16 +5,16 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Data.Entities
 {
-    [Table("objects")]
+    [Table("Object")]
     public class ObjectEntity
     {
-        [ExplicitKey] public string ObjectId { get; set; }
+        [ExplicitKey] public string Id { get; set; }
         [ExplicitKey] public string RepositoryId { get; set; }
         public long Size { get; set; }
         
         public static implicit operator StoragrObject([NotNull] ObjectEntity entity) => new StoragrObject()
         {
-            ObjectId = entity.ObjectId,
+            ObjectId = entity.Id,
             Size =  entity.Size
         };
     }
