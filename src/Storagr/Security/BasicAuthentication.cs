@@ -97,7 +97,7 @@ namespace Storagr.Security
             var identity = new ClaimsIdentity(new[]
             {
                 new Claim(StoragrConstants.TokenUnqiueId, user.Id),
-                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin": "")
+                new Claim(ClaimTypes.Role, user.IsAdmin ? StoragrConstants.ManagementRole : "")
             }, Scheme.Name);
             
             var principal = new ClaimsPrincipal(identity);

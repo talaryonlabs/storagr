@@ -17,13 +17,13 @@ namespace Storagr.Services
     public class TokenService : ITokenService
     {
         private readonly JwtSecurityTokenHandler _securityTokenHandler;
-        private readonly TokenServiceOptions _options;
+        private readonly TokenConfig _options;
         private readonly IDistributedCache _cache;
 
-        public TokenService(IOptions<TokenServiceOptions> optionsAccessor, IDistributedCache cache)
+        public TokenService(IOptions<TokenConfig> optionsAccessor, IDistributedCache cache)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
+            _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(TokenConfig));
             _securityTokenHandler = new JwtSecurityTokenHandler();
         }
 
@@ -44,13 +44,15 @@ namespace Storagr.Services
                 {
                     new Claim(JwtRegisteredClaimNames.Jti, StoragrHelper.UUID())
                 }).ToList();
+
+            var parameters = (StoragrTokenParameters) _options;
             
             var securityToken = new JwtSecurityToken(
-                issuer: _options.ValidationParameters.ValidIssuer,
-                audience: _options.ValidationParameters.ValidAudience,
+                issuer: parameters.ValidIssuer,
+                audience: parameters.ValidAudience,
                 claims: claims,
                 expires: DateTime.Now.Add(expiresIn),
-                signingCredentials: new SigningCredentials(_options.ValidationParameters.IssuerSigningKey, SecurityAlgorithms.HmacSha256)
+                signingCredentials: new SigningCredentials(parameters.IssuerSigningKey, SecurityAlgorithms.HmacSha256)
             );
             return _securityTokenHandler.WriteToken(securityToken);
         }

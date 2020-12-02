@@ -61,6 +61,7 @@ namespace Storagr.Services
                 {
                     Id = StoragrHelper.UUID(),
                     IsEnabled = true,
+                    IsAdmin = !(await _backend.GetAll<UserEntity>()).Any(), // first created user is admin
                     AuthAdapter = _authentication.Name,
                     AuthId = result.Id,
                     Username = result.Username,
@@ -75,7 +76,7 @@ namespace Storagr.Services
             var token = new UserToken()
             {
                 UserId = user.Id,
-                Role = user.IsAdmin ? "Admin" : default
+                Role = user.IsAdmin ? StoragrConstants.ManagementRole : default
             };
             user.Token = _tokenService.Generate(token) ?? throw new Exception("Unable to generate token!");
 

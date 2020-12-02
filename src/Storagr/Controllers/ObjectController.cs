@@ -11,7 +11,7 @@ using Storagr.Shared.Data;
 namespace Storagr.Controllers
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     [Route("{repositoryId}/objects")]
     public class ObjectController : ControllerBase
     {
@@ -90,7 +90,6 @@ namespace Storagr.Controllers
         }
 
         [HttpDelete("{objectId}")]
-        [Authorize(Policy = "Management")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> Delete([FromRoute] string repositoryId, [FromRoute] string objectId)

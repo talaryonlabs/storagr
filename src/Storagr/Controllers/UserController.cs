@@ -33,13 +33,13 @@ namespace Storagr.Controllers
         }
         
         [HttpGet]
-        [Authorize(Policy = "Management")]
+        [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoragrUser>))]
         public async Task<IActionResult> List() =>
             Ok((await _userService.GetAll()).Select(v => (StoragrUser) v));
 
         [HttpPost]
-        [Authorize(Policy = "Management")]
+        [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(UserAlreadyExistsError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
@@ -68,7 +68,7 @@ namespace Storagr.Controllers
         }
 
         [HttpGet("{userId}")]
-        [Authorize(Policy = "Management")]
+        [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> View([FromRoute] string userId)
@@ -81,7 +81,7 @@ namespace Storagr.Controllers
         }
         
         [HttpPatch("{userId}")] 
-        [Authorize(Policy = "Management")]
+        [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(UserNotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
@@ -104,7 +104,7 @@ namespace Storagr.Controllers
         }
         
         [HttpDelete("{userId}")]
-        [Authorize(Policy = "Management")]
+        [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(UserNotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]

@@ -10,7 +10,7 @@ using Storagr.Shared.Data;
 namespace Storagr.Controllers
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     [Route("/")]
     public class RepositoryController : ControllerBase
     {

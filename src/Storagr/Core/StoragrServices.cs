@@ -104,19 +104,15 @@ namespace Storagr
             
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("Management", x =>
+                options.AddPolicy(StoragrConstants.ManagementPolicy, x =>
                 {
                     x.RequireAuthenticatedUser();
-                    x.RequireRole("Admin");
+                    x.RequireRole(StoragrConstants.ManagementRole);
                 });
             });
-            
-            services.AddSingleton<ITokenService, TokenService, TokenServiceOptions>(options =>
-            {
-                options.ValidationParameters = tokenConfig;
-                options.Secret = tokenConfig.Secret;
-                options.Expiration = tokenConfig.Expiration;
-            });
+
+            services.AddConfig<TokenConfig>(config);
+            services.AddSingleton<ITokenService, TokenService>();
 
             services.AddAuthentication<BackendAuthenticator>();
 

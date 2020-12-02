@@ -4,9 +4,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Storagr.Shared.Security
 {
-    public class StoragrTokenValidationParameters : TokenValidationParameters
+    public class StoragrTokenParameters : TokenValidationParameters
     {
-        public StoragrTokenValidationParameters(string issuer, string audience, string secret)
+        public StoragrTokenParameters(string issuer, string audience, string secret)
         {
             if(string.IsNullOrEmpty(issuer)) throw new ArgumentNullException(nameof(issuer));
             if(string.IsNullOrEmpty(audience)) throw new ArgumentNullException(nameof(audience));

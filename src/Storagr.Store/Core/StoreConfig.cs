@@ -24,8 +24,8 @@ namespace Storagr.Store
         [StoragrConfigValue] public string Issuer { get; set; }
         [StoragrConfigValue] public string Audience { get; set; }
         
-        public static implicit operator StoragrTokenValidationParameters(TokenConfig config) => 
-            new StoragrTokenValidationParameters(config.Issuer, config.Audience, config.Secret);
+        public static implicit operator StoragrTokenParameters(TokenConfig config) => 
+            new StoragrTokenParameters(config.Issuer, config.Audience, config.Secret);
     }
 
     [StoragrConfig("Redis")]
