@@ -11,8 +11,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Dapper" Version="2.0.35" />
-      <PackageReference Include="Dapper.Contrib" Version="2.0.35" />
+      <PackageReference Include="Dapper" Version="2.0.78" />
+      <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
       <PackageReference Include="FluentMigrator" Version="3.2.9" />
       <PackageReference Include="FluentMigrator.Runner" Version="3.2.9" />
       <PackageReference Include="FluentMigrator.Runner.SQLite" Version="3.2.9" />
@@ -49,10 +49,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Core\Options" />
     </ItemGroup>
 
 

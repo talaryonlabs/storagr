@@ -77,7 +77,7 @@ namespace Storagr
 
         public static IServiceCollection AddStoragrSecurity(this IServiceCollection services, StoragrConfig config)
         {
-            var tokenConfig = config.Get<TokenConfig>();
+            var tokenConfig = config.Get<TokenOptions>();
 
             services.AddAuthentication("_")
                 .AddPolicyScheme("_", "AuthRouter", options =>
@@ -111,7 +111,7 @@ namespace Storagr
                 });
             });
 
-            services.AddConfig<TokenConfig>(config);
+            services.AddConfig<TokenOptions>(config);
             services.AddSingleton<ITokenService, TokenService>();
 
             services.AddAuthentication<BackendAuthenticator>();

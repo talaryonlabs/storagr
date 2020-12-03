@@ -17,13 +17,13 @@ namespace Storagr.Services
     public class TokenService : ITokenService
     {
         private readonly JwtSecurityTokenHandler _securityTokenHandler;
-        private readonly TokenConfig _options;
+        private readonly TokenOptions _options;
         private readonly IDistributedCache _cache;
 
-        public TokenService(IOptions<TokenConfig> optionsAccessor, IDistributedCache cache)
+        public TokenService(IOptions<TokenOptions> optionsAccessor, IDistributedCache cache)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(TokenConfig));
+            _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(TokenOptions));
             _securityTokenHandler = new JwtSecurityTokenHandler();
         }
 

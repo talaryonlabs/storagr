@@ -29,7 +29,7 @@ namespace Storagr.Controllers
         {
             var user = await _userService.GetAuthenticatedUser();
 
-            return Ok($"Hello {user?.Username}!");
+            return Ok(user);
         }
         
         [HttpGet]

@@ -1,0 +1,73 @@
+﻿@using System.ComponentModel.DataAnnotations
+
+<div class="flex-container" style="justify-content: center;">
+    <div class="columns is-centered is-gapless">
+        <div class="column is-6 is-4-widescreen is-full-mobile">
+            <div class="card">
+                <EditForm Model="@_loginModel" OnSubmit="CallbackAsync">
+                    <header class="card-header">
+                        <div class="card-header-title">
+                            Welcome to Storagr!
+                        </div>
+                    </header>
+                    <div class="card-content">
+
+                        <div class="field">
+                            <div class="control has-icons-left">
+                                <InputText class="input" type="text" placeholder="Username" disabled="@_isAuthenticating" @bind-Value="_loginModel.Username" />
+                                <span class="icon is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control has-icons-left">
+                                <InputText class="input" type="password" placeholder="Password" disabled="@_isAuthenticating" @bind-Value="_loginModel.Password"/>
+                                <span class="icon is-left">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    <footer class="card-footer">
+                        <div class="card-footer-item">
+                            <button type="submit" class="button is-info is-fullwidth @(_isAuthenticating ? "is-loading" : "")">Login</button>
+                        </div>
+                    </footer>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@inject IStoragrClient StoragrClient;
+@inject ILocalStorageService LocalStorageService;
+@inject NavigationManager NavigationManager;
+@code {
+
+    class LoginRequest
+    {
+        
+        [Required] public string Username { get; set; }
+        [Required] public string Password { get; set; }
+    }
+
+    private LoginRequest _loginModel = new LoginRequest();
+    private bool _isAuthenticating = false;
+
+    private async Task CallbackAsync()
+    {
+        _isAuthenticating = true;
+        if (await StoragrClient.Authenticate(_loginModel.Username, _loginModel.Password))
+        {
+            await LocalStorageService.SetItemAsync(Constants.StorageTokenKey, StoragrClient.Token);
+            NavigationManager.NavigateTo(NavigationManager.Uri, true);
+        }
+        else
+        {
+            _isAuthenticating = false;
+        }
+    }
+}

@@ -14,6 +14,7 @@ namespace Storagr.Client
     
     public interface IStoragrClient : IDisposable
     { 
+        bool IsAuthenticated { get; }
         string Token { get; }
         StoragrUser User { get; }
         

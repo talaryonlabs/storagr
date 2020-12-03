@@ -1,0 +1,22 @@
+﻿@inherits LayoutComponentBase
+
+<div class="flex-container is-fullheight">
+    <div class="flex-header pb-4">
+        <LayoutHeader />
+    </div>
+
+    <div class="flex-body flex-container">
+        <AuthorizeView>
+            <Authorized>
+                @Body
+            </Authorized>
+            <NotAuthorized>
+                <Login />
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+
+    <div class="flex-footer">
+        <LayoutFooter />
+    </div>
+</div>

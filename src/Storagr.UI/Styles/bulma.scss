@@ -1,0 +1,21 @@
+﻿@charset "utf-8";
+
+$body-background-color: #eee;
+$background: #eee;
+
+$text: #333;
+$text-strong: #333;
+
+$link: #333;
+$link-hover: #65A1D0;
+
+$navbar-height: 4rem;
+
+$navbar-item-img-max-height: 10rem;
+
+$footer-background-color: $background;
+$footer-padding: 6rem 1.5rem 1.5rem;
+
+$card-radius: 0;
+
+@import "vendors/bulma/bulma.sass";

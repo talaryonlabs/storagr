@@ -1,0 +1,50 @@
+﻿@attribute [Authorize]
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+        <div class="navbar-item">
+            Storagr @* TODO replace with Logo *@
+        </div>
+        
+        <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbar-mainMenu">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    </div>
+    
+    <div class="navbar-menu" id="navbar-mainMenu">
+        <div class="navbar-start">
+            <a href="repositories" class="navbar-item">Repositories</a>
+            <a href="objects" class="navbar-item">Objects</a>
+            <a href="users" class="navbar-item">Users</a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <button class="button is-link is-light @(_isLoggingOff ? "is-loading" : "")" @onclick="LogoutAsync">Logout</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+@inject ILocalStorageService LocalStorageService;
+@inject NavigationManager NavigationManager;
+@code {
+    private bool _isLoggingOff = false;
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private async Task LogoutAsync()
+    {
+        _isLoggingOff = true;
+        
+        await LocalStorageService.RemoveItemAsync("storagr_token");
+        NavigationManager.NavigateTo("/", true);
+    }
+}
