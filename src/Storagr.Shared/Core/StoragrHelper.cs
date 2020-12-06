@@ -1,8 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Web;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Newtonsoft.Json;
+using Storagr.Shared.Data;
 
 namespace Storagr.Shared
 {
@@ -70,6 +76,22 @@ namespace Storagr.Shared
                 }
 
             return TimeSpan.FromSeconds(double.Parse(namedDelay));
+        }
+
+        [Pure]
+        public static string ToQueryString<T>(T data)
+        {
+            return string.Join("&", typeof(T)
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(v => v.CanRead)
+                .Select(v =>
+                {
+                    var attr = v.GetCustomAttributes<QueryMemberAttribute>().FirstOrDefault();
+                    var name = attr != null ? attr.Name : v.Name;
+                    var value = v.GetValue(data) ?? "";
+
+                    return $"{name.ToLower()}={HttpUtility.UrlEncode(value.ToString())}";
+                }));
         }
     }
 }

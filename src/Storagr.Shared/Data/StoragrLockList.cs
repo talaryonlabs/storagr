@@ -9,11 +9,11 @@ namespace Storagr.Shared.Data
     [DataContract]
     public class StoragrLockListRequest
     {
-        [FromQuery(Name = "path")] public string Path { get; set; }
-        [FromQuery(Name = "id")] public string LockId { get; set; }
-        [FromQuery(Name = "cursor")] public string Cursor { get; set; }
-        [FromQuery(Name = "limit")] public int Limit { get; set; }
-        [FromQuery(Name = "refspec")] public string RefSpec { get; set; }
+        [QueryMember(Name = "path")] public string Path { get; set; }
+        [QueryMember(Name = "id")] public string LockId { get; set; }
+        [QueryMember(Name = "cursor")] public string Cursor { get; set; }
+        [QueryMember(Name = "limit")] public int Limit { get; set; }
+        [QueryMember(Name = "refspec")] public string RefSpec { get; set; }
     }
 
     [DataContract]

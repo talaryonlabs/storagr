@@ -8,8 +8,8 @@ namespace Storagr.Shared.Data
     public class StoragrObjectListRequest
     {
         // [FromQuery(Name = "id")] public string Id;
-        [FromQuery(Name = "cursor")] public string Cursor { get; set; }
-        [FromQuery(Name = "limit")] public int Limit { get; set; }
+        [QueryMember(Name = "cursor")] public string Cursor { get; set; }
+        [QueryMember(Name = "limit")] public int Limit { get; set; }
         // [FromQuery(Name = "refspec")] public string RefSpec;
     }
     
