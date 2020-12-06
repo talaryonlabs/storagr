@@ -2,25 +2,27 @@ body, html {
   overflow: initial;
 }
 
-.flex-container {
+.is-flex.is-fullheight {
+  min-height: 100vh;
+}
+
+/*.flex-container {
   display: flex;
   flex: 1;
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-}
-.flex-container.is-fullheight {
-  min-height: 100vh;
-}
 
+  &.is-fullheight {
+    min-height: 100vh;
+  }
+}
 .flex-header, .flex-footer {
   flex: 0 0 auto;
 }
-
 .flex-body {
   flex: 1 0 auto;
-}
-
+}*/
 .footer-branding {
   height: 20px;
   filter: invert(16%) sepia(99%) saturate(17%) hue-rotate(11deg) brightness(94%) contrast(93%);

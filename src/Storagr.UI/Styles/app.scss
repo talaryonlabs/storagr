@@ -4,7 +4,11 @@ body, html {
   overflow: initial;
 }  
 
-.flex-container {
+.is-flex.is-fullheight {
+  min-height: 100vh;
+}
+
+/*.flex-container {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -20,7 +24,7 @@ body, html {
 }
 .flex-body {
   flex: 1 0 auto;
-}
+}*/
 
 .footer-branding {
   height: 20px;
