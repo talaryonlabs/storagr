@@ -29,14 +29,16 @@ namespace Storagr.Data
             private string _selector;
             private bool _distinct;
             private int _limit, _offset;
-            private string _where;
             private string _orderBy;
+
+            private FilterBuilder _filter;
             
             public QueryBuilder()
             {
                 _selector = "*";
                 _limit = -1;
                 _offset = -1;
+                _filter = new FilterBuilder();
             }
 
             public string Build(string table)
@@ -46,17 +48,17 @@ namespace Storagr.Data
                 if(_distinct)
                     query.Insert(1, "DISTINCT");
 
-                if (!string.IsNullOrEmpty(_where))
-                    query.AddRange(new[] {"WHERE", _where});
+                if (_filter.HasItems)
+                    query.AddRange(new[] {"WHERE", _filter.Build()});
 
+                if (!string.IsNullOrEmpty(_orderBy))
+                    query.AddRange(new []{"ORDER BY", _orderBy});
+                
                 if (_limit > 0)
                     query.AddRange(new[] {"LIMIT", _limit.ToString()});
 
                 if (_offset > 0)
                     query.AddRange(new[] {"OFFSET", _offset.ToString()});
-
-                if (!string.IsNullOrEmpty(_orderBy))
-                    query.AddRange(new []{"ORDER BY", _orderBy});
 
                 return string.Join(" ", query);
             }
@@ -75,11 +77,10 @@ namespace Storagr.Data
 
             public IBackendQuery Where(Action<IBackendFilter> filterBuilder)
             {
-                var builder = new FilterBuilder();
+                _filter = new FilterBuilder();
                 
-                filterBuilder.Invoke(builder);
+                filterBuilder.Invoke(_filter);
 
-                _where = builder.Build();
                 return this;
             }
 
@@ -112,6 +113,8 @@ namespace Storagr.Data
 
         private class FilterBuilder : IBackendFilter
         {
+            public bool HasItems => _list?.Count > 0;
+
             private readonly List<string> _list;
 
             public FilterBuilder()
@@ -272,6 +275,32 @@ namespace Storagr.Data
         #endregion
 
         #region Methods<IBackendAdapter>
+
+        public async Task<int> Count<T>(Action<IBackendFilter> filterBuilder) where T : class
+        {
+            var table = (TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault();
+            if (table == null)
+            {
+                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
+            }
+
+            var filter = new FilterBuilder();
+            var query = new[]
+            {
+                "SELECT COUNT(*) FROM",
+                table.Name
+            };
+
+            filterBuilder?.Invoke(filter);
+            
+            if (filter.HasItems)
+                query = (string[]) query.Concat(new[]
+                {
+                    $"WHERE {filter.Build()}"
+                });
+            
+            return await _connection.QueryFirstAsync<int>(string.Join(" ", query));
+        }
 
         public async Task<T> Get<T>(string id) where T : class
         {

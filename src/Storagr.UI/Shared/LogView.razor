@@ -1,0 +1,116 @@
+﻿@using Microsoft.Extensions.Logging
+@using Storagr.Shared.Data
+
+<span class="title">Logs</span>
+
+<table class="table is-striped is-fullwidth">
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Level</th>
+        <th colspan="2">Category</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var log in _logList.Logs)
+    {
+        var color = log.Level switch
+        {
+            LogLevel.Critical => "red",
+            LogLevel.Error => "red",
+            LogLevel.Warning => "orange",
+            LogLevel.Information => "darkgreen",
+            _ => "black"
+        };
+        <tr>
+            <td>@log.Date</td>
+            <td style="color: @color;">@log.Level</td>
+            <td>@log.Category</td>
+        </tr>
+        <tr>
+            @if (!string.IsNullOrEmpty(log.Exception))
+            {
+                <td colspan="4">@log.Message [<a @onclick="() => ShowException(log.Message, log.Exception)">Show Details</a>]</td>
+            }
+            else
+            {
+                <td colspan="4">@log.Message</td>
+            }
+        </tr>
+    }
+    </tbody>
+</table>
+
+<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" @onclick="async () => await Previous()">Previous</a>
+    <a class="pagination-next" @onclick="async () => await Next()">Next</a>
+    
+    <ul class="pagination-list">
+        @for (int i = 1, e = 0; i < (_pageCount + 1); i++)
+        {
+            if (i <= 2 || i >= _pageCount - 2 || Math.Abs(i - _currentPage) <= 2)
+            {
+                var x = i;
+                <li>
+                    <a class="pagination-link @(i == _currentPage ? "is-current" : "")" aria-label="Goto page @i" @onclick="async () => await Load(x)">@i</a>
+                </li>
+                e = 0;
+            }
+            else if(e == 0)
+            {
+                <li>
+                    <span class="pagination-ellipsis">&hellip;</span>
+                </li>
+                e = 1;
+            }
+        }
+    </ul>
+</nav>
+
+<ExceptionViewer Params="_exceptionViewerParams"></ExceptionViewer>
+
+@inject IStoragrClient StoragrClient;
+@code {
+    private readonly StoragrLogListOptions _logOptions = new StoragrLogListOptions()
+    {
+        Limit = 8
+    };
+    private readonly ExceptionViewer.ExceptionViewerParams _exceptionViewerParams = new ExceptionViewer.ExceptionViewerParams();
+
+    private StoragrLogList _logList = StoragrLogList.Empty;
+    private int _pageCount;
+    private int _currentPage = 1;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _logList = await StoragrClient.GetLogs(_logOptions);
+        _pageCount = (int) Math.Ceiling((double) _logList.Total / _logOptions.Limit);
+    }
+
+    private void ShowException(string title, string message)
+    {
+        _exceptionViewerParams.IsVisible = true;
+        _exceptionViewerParams.Title = title;
+        _exceptionViewerParams.Message = message;
+    }
+
+    private async Task Load(int page)
+    {
+        if ((page = Math.Clamp(page, 1, _pageCount)) == _currentPage)
+            return;
+
+        _logOptions.Offset = (page - 1) * _logOptions.Limit;
+        _logList = await StoragrClient.GetLogs(_logOptions);
+        _currentPage = page;
+    }
+
+    private async Task Previous()
+    {
+        await Load(_currentPage - 1);
+    }
+
+    private async Task Next()
+    {
+        await Load(_currentPage + 1);
+    }
+}

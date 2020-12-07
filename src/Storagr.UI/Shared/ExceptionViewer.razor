@@ -1,0 +1,27 @@
+﻿<div class="modal @(Params.IsVisible ? "is-active" : "")">
+    <div class="modal-background" @onclick="Hide"></div>
+    <div class="modal-content">
+        <header class="modal-card-head">
+            <p class="modal-card-title">@Params.Title</p>
+            <button class="delete" aria-label="close" @onclick="Hide"></button>
+        </header>
+        <section class="modal-card-body">
+            @Params.Message
+        </section>
+    </div>
+</div>
+@code {
+    [Parameter] public ExceptionViewerParams Params { get; set; }
+    
+    private void Hide()
+    {
+        Params.IsVisible = false;
+    }
+
+    public class ExceptionViewerParams
+    {
+        public bool IsVisible { get; set; }
+        public string Title { get; set; }
+        public string Message { get; set; }
+    }
+}

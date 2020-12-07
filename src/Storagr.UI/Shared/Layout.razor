@@ -5,16 +5,22 @@
         <LayoutHeader />
     </div>
 
-    <div class="is-flex is-flex-grow-1 is-flex-shrink-0">
-        <AuthorizeView>
-            <Authorized>
-                @Body
-            </Authorized>
-            <NotAuthorized>
-                <Login />
-            </NotAuthorized>
-        </AuthorizeView>
-    </div>
+    <AuthorizeView>
+        <Authorized>
+            <div class="is-flex is-flex-grow-1 is-flex-shrink-0">
+                <div class="container">
+                    @Body
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <Login />
+        </NotAuthorized>
+        <Authorizing>
+            <Loading />
+        </Authorizing>
+    </AuthorizeView>
+    
 
     <div>
         <LayoutFooter />

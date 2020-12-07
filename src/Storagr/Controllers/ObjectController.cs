@@ -26,9 +26,9 @@ namespace Storagr.Controllers
         
         
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrObjectListResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrObjectList))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListRequest request)
+        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListOptions options)
         {
             var repository = await _objectService.Get(repositoryId);
             if (repository == null)
@@ -39,15 +39,15 @@ namespace Storagr.Controllers
 
             var list = objects.ToList();
             if (!list.Any())
-                return Ok(new StoragrObjectListResponse() {Objects = new StoragrObject[0]});
+                return Ok(StoragrObjectList.Empty);
 
-            if (!string.IsNullOrEmpty(request.Cursor))
-                list = list.SkipWhile(v => v.Id != request.Cursor).ToList();
+            if (!string.IsNullOrEmpty(options.Cursor))
+                list = list.SkipWhile(v => v.Id != options.Cursor).ToList();
 
-            if (request.Limit > 0)
-                list = list.Take(request.Limit).ToList();
+            if (options.Limit > 0)
+                list = list.Take(options.Limit).ToList();
 
-            return Ok(new StoragrObjectListResponse()
+            return Ok(new StoragrObjectList()
             {
                 Objects = list.Select(v => new StoragrObject()
                 {

@@ -5,7 +5,7 @@ using Storagr.Shared.Data;
 namespace Storagr
 {
     public interface IStoreAdapter
-    {
+    {        
         Task<StoreRepository> Get(string repositoryId);
         Task<StoreObject> Get(string repositoryId, string objectId);
         

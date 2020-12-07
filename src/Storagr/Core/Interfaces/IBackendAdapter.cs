@@ -6,6 +6,10 @@ namespace Storagr
 {
     public interface IBackendAdapter
     {
+        Task<int> Count<T>() where T : class
+            => Count<T>(null);
+        Task<int> Count<T>(Action<IBackendFilter> filterBuilder) where T : class;
+
         Task<T> Get<T>(string id) where T : class;
         Task<T> Get<T>(Action<IBackendQuery> queryBuilder) where T : class;
         
@@ -49,6 +53,8 @@ namespace Storagr
     
     public interface IBackendFilter
     {
+        bool HasItems { get; }
+        
         IBackendFilter Clamp(Action<IBackendFilter> filterBuilder);
 
         IBackendFilter Or();

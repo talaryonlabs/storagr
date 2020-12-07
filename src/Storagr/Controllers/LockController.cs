@@ -36,10 +36,10 @@ namespace Storagr.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLockListResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLockList))]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ForbiddenError))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(RepositoryNotFoundError))]
-        public async Task<IActionResult> ListLocks([FromRoute] string rid, [FromQuery] StoragrLockListRequest request)
+        public async Task<IActionResult> ListLocks([FromRoute] string rid, [FromQuery] StoragrLockListOptions options)
         {
             // TODO only if authorized -> Forbidden!
             // TODO consider the "refspec" property in request
@@ -50,10 +50,13 @@ namespace Storagr.Controllers
             if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
                 return (ActionResult) new ForbiddenError();
 
-            var locks = await _lockService.GetAll(rid, request.Limit, request.Cursor, request.LockId, request.Path);
-            var list = locks.ToList();
+            var locks = await _lockService.GetAll(rid, options.Limit, options.Cursor, options.LockId, options.Path);
             
-            return Ok(new StoragrLockListResponse()
+            var list = locks.ToList();
+            if (!list.Any())
+                return Ok(StoragrLockList.Empty);
+            
+            return Ok(new StoragrLockList()
             {
                 Locks = list.Select(v => (StoragrLock)v).ToList(),
                 NextCursor = list.LastOrDefault()?.Id

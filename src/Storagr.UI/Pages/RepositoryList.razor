@@ -2,43 +2,39 @@
 @using Storagr.Shared.Data
 @inject IStoragrClient StoragrClient;
 
-<div class="is-flex-grow-1">
-    <div class="container content">
-            <span class="title">Repositories</span>
+<span class="title">Repositories</span>
 
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Owner</th>
-                    <th>Size Limit</th>
-                </tr>
-                </thead>
-                <tbody>
-                @foreach (var repository in _repositories)
+<table class="table">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Owner</th>
+        <th>Size Limit</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var repository in _repositories)
+    {
+        var user = _users.FirstOrDefault(v => v.UserId == repository.OwnerId);
+        <tr>
+            <td>
+                <a href="repositories/@repository.RepositoryId">@repository.RepositoryId</a>
+            </td>
+            <td>
+                @if (user != null)
                 {
-                    var user = _users.FirstOrDefault(v => v.UserId == repository.OwnerId);
-                    <tr>
-                        <td>
-                            <a href="repositories/@repository.RepositoryId">@repository.RepositoryId</a>
-                        </td>
-                        <td>
-                            @if (user != null)
-                            {
-                                <a href="users/@user.UserId">@user.Username</a>
-                            }
-                            else
-                            {
-                                <span>[User not found]</span>
-                            }
-                        </td>
-                        <td>@repository.SizeLimit</td>
-                    </tr>
+                    <a href="users/@user.UserId">@user.Username</a>
                 }
-                </tbody>
-            </table>
-    </div>
-</div>
+                else
+                {
+                    <span>[User not found]</span>
+                }
+            </td>
+            <td>@repository.SizeLimit</td>
+        </tr>
+    }
+    </tbody>
+</table>
 
 @code {
     private IEnumerable<StoragrUser> _users = new List<StoragrUser>();

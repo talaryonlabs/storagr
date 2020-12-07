@@ -5,13 +5,6 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    public struct StoragrLockListOptions
-    {
-        public int Limit;
-        public string PathPattern;
-        public string IdPattern;
-    }
-    
     public interface IStoragrClient : IDisposable
     { 
         bool IsAuthenticated { get; }
@@ -28,6 +21,11 @@ namespace Storagr.Client
         Task<StoragrUser> GetUser(string userId);
         Task<IEnumerable<StoragrUser>> GetUsers();
         // TODO Task<bool> DeleteUser(string userId);
+
+        /**
+         * Logs
+         */
+        Task<StoragrLogList> GetLogs(StoragrLogListOptions options);
         
         /**
          * Repositories
@@ -42,7 +40,8 @@ namespace Storagr.Client
          */
         Task<StoragrAction> BatchObject(string repositoryId, string objectId, StoragrBatchOperation operation);
         Task<StoragrObject> GetObject(string repositoryId, string objectId);
-        Task<IEnumerable<StoragrObject>> GetObjects(string repositoryId);
+        Task<StoragrObjectList> GetObjects(string repositoryId) => GetObjects(repositoryId, StoragrObjectListOptions.Empty);
+        Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListOptions options);
         Task<bool> DeleteObject(string repositoryId, string objectId);
         
         /**
@@ -52,7 +51,7 @@ namespace Storagr.Client
         Task<bool> Unlock(string repositoryId);
         
         Task<StoragrLock> GetLock(string repositoryId, string lockId);
-        Task<IEnumerable<StoragrLock>> GetLocks(string repositoryId) => GetLocks(repositoryId, new StoragrLockListOptions());
-        Task<IEnumerable<StoragrLock>> GetLocks(string repositoryId, StoragrLockListOptions listOptions);
+        Task<StoragrLockList> GetLocks(string repositoryId) => GetLocks(repositoryId, StoragrLockListOptions.Empty);
+        Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListOptions options);
     }
 }

@@ -1,4 +1,5 @@
-﻿using FluentMigrator;
+﻿using System;
+using FluentMigrator;
 
 namespace Storagr.Data.Migrations
 {
@@ -37,6 +38,14 @@ namespace Storagr.Data.Migrations
                 .WithColumn("Path").AsString().NotNullable()
                 .WithColumn("LockedAt").AsDateTime2().NotNullable();
 
+            Create.Table("Log")
+                .WithColumn("Id").AsInt32().Unique().PrimaryKey()
+                .WithColumn("Date").AsDateTime2().NotNullable()
+                .WithColumn("Level").AsString().NotNullable()
+                .WithColumn("Category").AsString().NotNullable()
+                .WithColumn("Message").AsString().NotNullable()
+                .WithColumn("Exception").AsString();
+
             Create.ForeignKey("FK_Repository_User")
                 .FromTable("Repository").ForeignColumn("OwnerId")
                 .ToTable("User").PrimaryColumn("Id");
@@ -66,6 +75,7 @@ namespace Storagr.Data.Migrations
             Delete.Table("Repository");
             Delete.Table("Object");
             Delete.Table("Lock");
+            Delete.Table("Log");
         }
     }
 }

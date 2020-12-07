@@ -180,10 +180,11 @@ namespace Storagr.Services
         public async Task<bool> HasAccess(RepositoryEntity repository, RepositoryAccessType accessType)
         {
             var user = await GetAuthenticatedUser();
-            var access = repository.OwnerId == user.Id;
+            var access = user.IsAdmin;
             
             // TODO check for read/write access
-            // access &= ...
+            // access |= ...
+            access |= repository.OwnerId == user.Id;
             
             return access;
         }

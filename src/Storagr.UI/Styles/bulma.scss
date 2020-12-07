@@ -1,4 +1,5 @@
 ﻿@charset "utf-8";
+@import "vendors/bulma/sass/utilities/initial-variables.sass";
 
 $body-background-color: #eee;
 $background: #eee;
@@ -6,11 +7,11 @@ $background: #eee;
 $text: #333;
 $text-strong: #333;
 
-$link: #333;
-$link-hover: #65A1D0;
+$link: #014273;
+$link-hover: #00192c;
 
 $navbar-height: 4rem;
-
+$navbar-breakpoint: $tablet;
 $navbar-item-img-max-height: 10rem;
 
 $footer-background-color: $background;

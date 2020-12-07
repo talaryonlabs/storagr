@@ -1,8 +1,64 @@
 ﻿@page "/repositories/{RepositoryId}"
+@using Storagr.Shared.Data
 <h3>Repository @RepositoryId</h3>
 
+<span class="title">Objects</span>
 
+<table class="table">
+    <thead>
+    <tr>
+        <th>ObjectId</th>
+        <th>Size</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var obj in _objectList.Objects)
+    {
+        <tr>
+            <td>@obj.ObjectId</td>
+            <td>@obj.Size</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<span class="title">Locks</span>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>LockId</th>
+        <th>LockedAt</th>
+        <th>Path</th>
+        <th>Owner</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var lck in _lockList.Locks)
+    {
+        <tr>
+            <td>@lck.LockId</td>
+            <td>@lck.LockedAt</td>
+            <td>@lck.Path</td>
+            <td>@lck.Owner.Name</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+
+@inject IStoragrClient StoragrClient;
 @code {
     [Parameter]
     public string RepositoryId { get; set; }
+
+    private StoragrObjectList _objectList = StoragrObjectList.Empty;
+    private StoragrLockList _lockList = StoragrLockList.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _objectList = await StoragrClient.GetObjects(RepositoryId);
+        _lockList = await StoragrClient.GetLocks(RepositoryId);
+    }
+
 }
