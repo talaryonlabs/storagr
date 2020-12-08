@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Storagr.Shared;
 
 namespace Storagr.Controllers
 {
-    [ApiController]
     [Authorize]
-    [Route("info")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("info")]
     public class InfoController : ControllerBase
     {
     }

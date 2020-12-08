@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +27,7 @@ namespace Storagr.Shared.Data
     }
 
     [DataContract]
-    public class StoragrLockList
+    public class StoragrLockList : IEnumerable<StoragrLock>
     {
         [DataMember(Name = "locks")] public IEnumerable<StoragrLock> Locks;
         [DataMember(Name = "next_cursor")] public string NextCursor;
@@ -39,5 +40,10 @@ namespace Storagr.Shared.Data
         
         public static implicit operator StoragrLockList(byte[] data) =>
             StoragrHelper.DeserializeObject<StoragrLockList>(data);
+        
+        public IEnumerator<StoragrLock> GetEnumerator() =>
+            Locks.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() =>
+            GetEnumerator();
     }
 }

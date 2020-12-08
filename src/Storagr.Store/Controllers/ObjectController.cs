@@ -8,9 +8,10 @@ using Storagr.Store.Services;
 
 namespace Storagr.Store.Controllers
 {
-    [ApiController]
     [Authorize]
-    [Route("{repositoryId}/objects")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("{repositoryId}/objects")]
     public class ObjectController : ControllerBase
     {
         private readonly IStoreService _storeService;

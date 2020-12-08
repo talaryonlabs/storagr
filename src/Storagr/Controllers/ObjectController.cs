@@ -11,8 +11,9 @@ using Storagr.Shared.Data;
 namespace Storagr.Controllers
 {
     [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("{repositoryId}/objects")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-    [Route("{repositoryId}/objects")]
     public class ObjectController : ControllerBase
     {
         private readonly IUserService _userService;

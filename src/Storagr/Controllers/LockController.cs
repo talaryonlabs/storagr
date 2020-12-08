@@ -13,9 +13,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Controllers
 {
-    [ApiController]
     [Authorize]
-    [Route("{rid}/locks")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("{rid}/locks")]
     public class LockController : ControllerBase
     {
         private readonly IBackendAdapter _backend;

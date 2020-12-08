@@ -41,7 +41,7 @@ namespace Storagr.IO
         {
             var token = _tokenService.Generate(_token, _options.DefaultExpiration);
             var client = _clientFactory.CreateClient();
-            client.BaseAddress = new Uri($"https://{_options.Host}");
+            client.BaseAddress = new Uri($"https://{_options.Host}/v1");
             client.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 

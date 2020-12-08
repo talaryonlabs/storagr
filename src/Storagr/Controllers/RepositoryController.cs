@@ -10,8 +10,9 @@ using Storagr.Shared.Data;
 namespace Storagr.Controllers
 {
     [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("/repositories")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-    [Route("/")]
     public class RepositoryController : ControllerBase
     {
         private readonly IObjectService _objectService;
@@ -22,10 +23,14 @@ namespace Storagr.Controllers
         }
         
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoragrRepository>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepositoryList))]
         public async Task<IActionResult> List()
         {
-            return Ok((await _objectService.GetAll()).Select(v => (StoragrRepository) v));
+            return Ok(new StoragrRepositoryList()
+            {
+                Repositories = (await _objectService.GetAll()).Select(v => (StoragrRepository) v),
+                NextCursor = default // TODO
+            });
         }
         
         [HttpPost]

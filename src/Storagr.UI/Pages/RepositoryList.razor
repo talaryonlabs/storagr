@@ -38,7 +38,7 @@
 
 @code {
     private IEnumerable<StoragrUser> _users = new List<StoragrUser>();
-    private IEnumerable<StoragrRepository> _repositories = new List<StoragrRepository>();
+    private StoragrRepositoryList _repositories = StoragrRepositoryList.Empty;
     
     protected override async Task OnInitializedAsync()
     {

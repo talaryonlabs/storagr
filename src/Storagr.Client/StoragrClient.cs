@@ -46,7 +46,7 @@ namespace Storagr.Client
             _mediaType = new StoragrMediaType();
             
             _httpClient = clientFactory.CreateClient();
-            _httpClient.BaseAddress = new Uri($"http://{_options.Host}");
+            _httpClient.BaseAddress = new Uri($"http://{_options.Host}/v1");
             _httpClient.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
         }
 
@@ -144,17 +144,16 @@ namespace Storagr.Client
             return data;
         }
 
-        public async Task<IEnumerable<StoragrUser>> GetUsers()
+        public async Task<StoragrUserList> GetUsers()
         {
             var request = CreateRequest("/users", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
-            
-            if (!response.IsSuccessStatusCode)
-                return null;
-
             var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
 
-            return StoragrHelper.DeserializeObject<IEnumerable<StoragrUser>>(data);
+            return data;
         }
 
         public async Task<StoragrLogList> GetLogs(StoragrLogListOptions options)
@@ -172,7 +171,7 @@ namespace Storagr.Client
 
         public async Task<StoragrRepository> CreateRepository(string repositoryId, string ownerId, long sizeLimit)
         {
-            var request = CreateRequest($"/", HttpMethod.Post, new StoragrRepository()
+            var request = CreateRequest($"/repositories", HttpMethod.Post, new StoragrRepository()
             {
                 RepositoryId = repositoryId,
                 OwnerId = ownerId,
@@ -189,7 +188,7 @@ namespace Storagr.Client
 
         public async Task<StoragrRepository> GetRepository(string repositoryId)
         {
-            var request = CreateRequest($"/{repositoryId}", HttpMethod.Get);
+            var request = CreateRequest($"/repositories/{repositoryId}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
             
@@ -199,21 +198,21 @@ namespace Storagr.Client
             return data;
         }
 
-        public async Task<IEnumerable<StoragrRepository>> GetRepositories()
+        public async Task<StoragrRepositoryList> GetRepositories()
         {
-            var request = CreateRequest("/", HttpMethod.Get);
+            var request = CreateRequest("/repositories", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
             
             if (!response.IsSuccessStatusCode) 
                 throw new StoragrException(data);
 
-            return StoragrHelper.DeserializeObject<IEnumerable<StoragrRepository>>(data);
+            return data;
         }
 
         public async Task DeleteRepository(string repositoryId)
         {
-            var request = CreateRequest($"/{repositoryId}", HttpMethod.Delete);
+            var request = CreateRequest($"/repositories/{repositoryId}", HttpMethod.Delete);
             var response = await _httpClient.SendAsync(request);
             
             if (!response.IsSuccessStatusCode) 
@@ -227,7 +226,7 @@ namespace Storagr.Client
 
         public async Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList)
         {
-            var request = CreateRequest($"/{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
+            var request = CreateRequest($"/repositories/{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
             {
                 Operation = operation,
                 Transfers = new []{"basic"}, // TODO
@@ -245,7 +244,7 @@ namespace Storagr.Client
 
         public async Task<StoragrObject> GetObject(string repositoryId, string objectId)
         {
-            var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Get);
+            var request = CreateRequest($"/repositories/{repositoryId}/objects/{objectId}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
             
@@ -258,7 +257,7 @@ namespace Storagr.Client
         public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListOptions options)
         {
             var query = StoragrHelper.ToQueryString(options);
-            var request = CreateRequest($"/{repositoryId}/objects?{query}", HttpMethod.Get);
+            var request = CreateRequest($"/repositories/{repositoryId}/objects?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
 
@@ -270,7 +269,7 @@ namespace Storagr.Client
 
         public async Task DeleteObject(string repositoryId, string objectId)
         {
-            var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
+            var request = CreateRequest($"/repositories/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
             var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
@@ -281,7 +280,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> CreateLock(string repositoryId, string path)
         {
-            var request = CreateRequest($"/{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
+            var request = CreateRequest($"/repositories/{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
             {
                 Path = path,
                 Ref = default // TODO
@@ -297,7 +296,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> DeleteLock(string repositoryId, string lockId, bool force)
         {
-            var request = CreateRequest($"/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrLockUnlockRequest()
+            var request = CreateRequest($"/repositories/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrLockUnlockRequest()
             {
                Force = force,
                Ref = default // TODO
@@ -313,7 +312,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> GetLock(string repositoryId, string lockId)
         {
-            var request = CreateRequest($"/{repositoryId}/locks/{lockId}", HttpMethod.Get);
+            var request = CreateRequest($"/repositories/{repositoryId}/locks/{lockId}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
             
@@ -326,7 +325,7 @@ namespace Storagr.Client
         public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListOptions options)
         {
             var query = StoragrHelper.ToQueryString(options);
-            var request = CreateRequest($"/{repositoryId}/locks?{query}", HttpMethod.Get);
+            var request = CreateRequest($"/repositories/{repositoryId}/locks?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
             

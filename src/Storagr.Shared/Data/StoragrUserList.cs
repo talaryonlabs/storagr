@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrObjectListOptions
+    public class StoragrUserListOptions
     {
         // [FromQuery(Name = "id")] public string Id;
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
         [QueryMember(Name = "limit")] public int Limit { get; set; }
         // [FromQuery(Name = "refspec")] public string RefSpec;
         
-        public static StoragrObjectListOptions Empty => new StoragrObjectListOptions()
+        public static StoragrUserListOptions Empty => new StoragrUserListOptions()
         {
             Cursor = null,
             Limit = 0
@@ -21,21 +21,21 @@ namespace Storagr.Shared.Data
     }
     
     [DataContract]
-    public class StoragrObjectList : IEnumerable<StoragrObject>
+    public class StoragrUserList : IEnumerable<StoragrUser>
     {
-        [DataMember(Name = "objects")] public IEnumerable<StoragrObject> Objects;
+        [DataMember(Name = "users")] public IEnumerable<StoragrUser> Users;
         [DataMember(Name = "next_cursor")] public string NextCursor;
-        public static StoragrObjectList Empty => new StoragrObjectList()
+        public static StoragrUserList Empty => new StoragrUserList()
         {
-            Objects = new List<StoragrObject>(),
+            Users = new List<StoragrUser>(),
             NextCursor = null
         };
         
-        public static implicit operator StoragrObjectList(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrObjectList>(data);
+        public static implicit operator StoragrUserList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrUserList>(data);
 
-        public IEnumerator<StoragrObject> GetEnumerator() =>
-            Objects.GetEnumerator();
+        public IEnumerator<StoragrUser> GetEnumerator() =>
+            Users.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();
     }

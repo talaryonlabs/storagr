@@ -12,7 +12,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var obj in _objectList.Objects)
+    @foreach (var obj in _objects)
     {
         <tr>
             <td>@obj.ObjectId</td>
@@ -34,7 +34,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var lck in _lockList.Locks)
+    @foreach (var lck in _locks)
     {
         <tr>
             <td>@lck.LockId</td>
@@ -52,13 +52,13 @@
     [Parameter]
     public string RepositoryId { get; set; }
 
-    private StoragrObjectList _objectList = StoragrObjectList.Empty;
-    private StoragrLockList _lockList = StoragrLockList.Empty;
+    private StoragrObjectList _objects = StoragrObjectList.Empty;
+    private StoragrLockList _locks = StoragrLockList.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        _objectList = await StoragrClient.GetObjects(RepositoryId);
-        _lockList = await StoragrClient.GetLocks(RepositoryId);
+        _objects = await StoragrClient.GetObjects(RepositoryId);
+        _locks = await StoragrClient.GetLocks(RepositoryId);
     }
 
 }

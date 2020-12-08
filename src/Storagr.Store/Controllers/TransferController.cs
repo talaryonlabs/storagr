@@ -7,9 +7,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Store.Controllers
 {
-    [ApiController]
     [Authorize]
-    [Route("{repositoryId}/transfer/{objectId}")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("{repositoryId}/transfer/{objectId}")]
     public class TransferController : ControllerBase
     {
         private readonly IStoreService _storeService;

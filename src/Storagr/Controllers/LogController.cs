@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Data.Entities;
+using Storagr.Shared;
 using Storagr.Shared.Data;
 
 namespace Storagr.Controllers
 {
     [ApiController]
-    [Route("logs")]
+    [ApiVersion("1.0")]
+    [ApiRoute("logs")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class LogController : ControllerBase
     {

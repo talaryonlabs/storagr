@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrObjectListOptions
+    public class StoragrRepositoryListOptions
     {
         // [FromQuery(Name = "id")] public string Id;
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
         [QueryMember(Name = "limit")] public int Limit { get; set; }
         // [FromQuery(Name = "refspec")] public string RefSpec;
         
-        public static StoragrObjectListOptions Empty => new StoragrObjectListOptions()
+        public static StoragrRepositoryListOptions Empty => new StoragrRepositoryListOptions()
         {
             Cursor = null,
             Limit = 0
@@ -21,21 +21,21 @@ namespace Storagr.Shared.Data
     }
     
     [DataContract]
-    public class StoragrObjectList : IEnumerable<StoragrObject>
+    public class StoragrRepositoryList : IEnumerable<StoragrRepository>
     {
-        [DataMember(Name = "objects")] public IEnumerable<StoragrObject> Objects;
+        [DataMember(Name = "repositories")] public IEnumerable<StoragrRepository> Repositories;
         [DataMember(Name = "next_cursor")] public string NextCursor;
-        public static StoragrObjectList Empty => new StoragrObjectList()
+        public static StoragrRepositoryList Empty => new StoragrRepositoryList()
         {
-            Objects = new List<StoragrObject>(),
+            Repositories = new List<StoragrRepository>(),
             NextCursor = null
         };
         
-        public static implicit operator StoragrObjectList(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrObjectList>(data);
+        public static implicit operator StoragrRepositoryList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrRepositoryList>(data);
 
-        public IEnumerator<StoragrObject> GetEnumerator() =>
-            Objects.GetEnumerator();
+        public IEnumerator<StoragrRepository> GetEnumerator() =>
+            Repositories.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();
     }

@@ -19,7 +19,7 @@ namespace Storagr.Client
          */
         // TODO Task<StoragrUser> CreateUser();
         Task<StoragrUser> GetUser(string userId);
-        Task<IEnumerable<StoragrUser>> GetUsers();
+        Task<StoragrUserList> GetUsers();
         // TODO Task DeleteUser(string userId);
 
         /**
@@ -32,7 +32,7 @@ namespace Storagr.Client
          */
         Task<StoragrRepository> CreateRepository(string repositoryId, string ownerId, long sizeLimit);
         Task<StoragrRepository> GetRepository(string repositoryId);
-        Task<IEnumerable<StoragrRepository>> GetRepositories();
+        Task<StoragrRepositoryList> GetRepositories();
         Task DeleteRepository(string repositoryId);
         
         /**

@@ -23,7 +23,7 @@
 </table>
 
 @code {
-    private IEnumerable<StoragrUser> _users = new List<StoragrUser>();
+    private StoragrUserList _users = StoragrUserList.Empty;
     
     protected override async Task OnInitializedAsync()
     {

@@ -10,9 +10,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Controllers
 {
-    [ApiController]
     [Authorize]
-    [Route("{rid}/objects/batch")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ApiRoute("{rid}/objects/batch")]
     public class BatchController : ControllerBase
     {
         private readonly IUserService _userService;

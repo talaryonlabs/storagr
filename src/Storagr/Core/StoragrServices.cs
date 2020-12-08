@@ -36,6 +36,11 @@ namespace Storagr
             services.AddHttpClient();
             services.AddHttpContextAccessor();
             services.AddControllers();
+            services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.ReportApiVersions = true;
+            });
             services.AddResponseCompression(options =>
             {
                 options.EnableForHttps = true;
