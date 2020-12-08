@@ -26,17 +26,17 @@ namespace Storagr.Shared.Data
     [DataContract]
     public class StoragrBatchRequest
     {
-        [DataMember(Name = "operation", IsRequired = true)]  public StoragrBatchOperation Operation ;
-        [DataMember(Name = "transfers")] public IEnumerable<string> Transfers = new[] {"basic"};
-        [DataMember(Name = "ref")] public StoragrRef Ref;
-        [DataMember(Name = "objects", IsRequired = true)] public IEnumerable<StoragrObject> Objects;
+        [DataMember(Name = "operation", IsRequired = true)]  public StoragrBatchOperation Operation  { get; set; }
+        [DataMember(Name = "transfers")] public IEnumerable<string> Transfers  { get; set; } = new[] {"basic"};
+        [DataMember(Name = "ref")] public StoragrRef Ref { get; set; }
+        [DataMember(Name = "objects", IsRequired = true)] public IEnumerable<StoragrObject> Objects { get; set; }
     }
 
     [DataContract]
     public class StoragrBatchResponse
     {
-        [DataMember(Name = "transfers", IsRequired = true)] public IEnumerable<string> Transfers;
-        [DataMember(Name = "objects", IsRequired = true)] public IEnumerable<StoragrBatchObject> Objects;
+        [DataMember(Name = "transfers", IsRequired = true)] public IEnumerable<string> Transfers { get; set; }
+        [DataMember(Name = "objects", IsRequired = true)] public IEnumerable<StoragrBatchObject> Objects { get; set; }
         
         public static implicit operator StoragrBatchResponse(byte[] data) =>
             StoragrHelper.DeserializeObject<StoragrBatchResponse>(data);
@@ -45,8 +45,8 @@ namespace Storagr.Shared.Data
     [DataContract]
     public class StoragrBatchObject : StoragrObject
     {
-        [DataMember(Name = "authenticated")] public bool Authenticated;
-        [DataMember(Name = "actions")] public StoragrActions Actions;
-        [DataMember(Name = "error")] public StoragrBatchError Error;
+        [DataMember(Name = "authenticated")] public bool Authenticated { get; set; }
+        [DataMember(Name = "actions")] public StoragrActions Actions { get; set; }
+        [DataMember(Name = "error")] public StoragrBatchError Error { get; set; }
     }
 }

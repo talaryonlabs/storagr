@@ -6,36 +6,26 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrRepositoryListOptions
+    public class StoragrRepositoryListOptions : IStoragrListQuery
     {
         // [FromQuery(Name = "id")] public string Id;
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
         [QueryMember(Name = "limit")] public int Limit { get; set; }
         // [FromQuery(Name = "refspec")] public string RefSpec;
-        
-        public static StoragrRepositoryListOptions Empty => new StoragrRepositoryListOptions()
-        {
-            Cursor = null,
-            Limit = 0
-        };
     }
     
     [DataContract]
-    public class StoragrRepositoryList : IEnumerable<StoragrRepository>
+    public class StoragrRepositoryList : IStoragrList<StoragrRepository>
     {
-        [DataMember(Name = "repositories")] public IEnumerable<StoragrRepository> Repositories;
-        [DataMember(Name = "next_cursor")] public string NextCursor;
-        public static StoragrRepositoryList Empty => new StoragrRepositoryList()
-        {
-            Repositories = new List<StoragrRepository>(),
-            NextCursor = null
-        };
-        
         public static implicit operator StoragrRepositoryList(byte[] data) =>
             StoragrHelper.DeserializeObject<StoragrRepositoryList>(data);
+        
+        [DataMember(Name = "repositories")] public IEnumerable<StoragrRepository> Items { get; set; } = new List<StoragrRepository>();
+        [DataMember(Name = "next_cursor")] public string NextCursor { get; set; }
+        [DataMember(Name = "total_count")] public int TotalCount { get; set; }
 
         public IEnumerator<StoragrRepository> GetEnumerator() =>
-            Repositories.GetEnumerator();
+            Items.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();
     }

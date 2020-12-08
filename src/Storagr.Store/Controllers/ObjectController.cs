@@ -12,7 +12,7 @@ namespace Storagr.Store.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiRoute("{repositoryId}/objects")]
-    public class ObjectController : ControllerBase
+    public class ObjectController : StoragrController
     {
         private readonly IStoreService _storeService;
 
@@ -26,10 +26,7 @@ namespace Storagr.Store.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public IActionResult List([FromRoute] string repositoryId)
         {
-            if (!_storeService.Exists(repositoryId))
-                return (ActionResult) new RepositoryNotFoundError();
-
-            return Ok(_storeService.List(repositoryId));
+            return !_storeService.Exists(repositoryId) ? Error<RepositoryNotFoundError>() : Ok(_storeService.List(repositoryId));
         }
 
         [HttpGet("{objectId}")]
@@ -38,11 +35,12 @@ namespace Storagr.Store.Controllers
         public IActionResult Get([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             if (!_storeService.Exists(repositoryId))
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
             if (!_storeService.Exists(repositoryId, objectId))
-                return (ActionResult) new ObjectNotFoundError();
+                return Error<ObjectNotFoundError>();
 
-            return Ok(_storeService.Get(repositoryId, objectId));
+            var obj = _storeService.Get(repositoryId, objectId);
+            return Ok(obj);
         }
         
         [HttpDelete("{objectId}")]
@@ -51,9 +49,9 @@ namespace Storagr.Store.Controllers
         public IActionResult Delete([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             if (!_storeService.Exists(repositoryId))
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
             if (!_storeService.Exists(repositoryId, objectId))
-                return (ActionResult) new ObjectNotFoundError();
+                return Error<ObjectNotFoundError>();
 
             _storeService.Delete(repositoryId, objectId);
             

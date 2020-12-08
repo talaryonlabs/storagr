@@ -156,7 +156,7 @@ namespace Storagr.Client
             return data;
         }
 
-        public async Task<StoragrLogList> GetLogs(StoragrLogListOptions options)
+        public async Task<StoragrLogList> GetLogs(StoragrLogQuery options)
         {
             var query = StoragrHelper.ToQueryString(options);
             var request = CreateRequest($"/logs?{query}", HttpMethod.Get);
@@ -254,9 +254,9 @@ namespace Storagr.Client
             return data;
         }
 
-        public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListOptions options)
+        public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListQuery listQuery)
         {
-            var query = StoragrHelper.ToQueryString(options);
+            var query = StoragrHelper.ToQueryString(listQuery);
             var request = CreateRequest($"/repositories/{repositoryId}/objects?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();
@@ -296,7 +296,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> DeleteLock(string repositoryId, string lockId, bool force)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrLockUnlockRequest()
+            var request = CreateRequest($"/repositories/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrUnlockRequest()
             {
                Force = force,
                Ref = default // TODO
@@ -307,7 +307,7 @@ namespace Storagr.Client
             if (!response.IsSuccessStatusCode) 
                 throw new StoragrException(data);
 
-            return ((StoragrLockUnlockResponse) data).Lock;
+            return ((StoragrUnlockResponse) data).Lock;
         }
 
         public async Task<StoragrLock> GetLock(string repositoryId, string lockId)
@@ -322,9 +322,9 @@ namespace Storagr.Client
             return data;
         }
 
-        public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListOptions options)
+        public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListQuery listQuery)
         {
-            var query = StoragrHelper.ToQueryString(options);
+            var query = StoragrHelper.ToQueryString(listQuery);
             var request = CreateRequest($"/repositories/{repositoryId}/locks?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
             var data = await response.Content.ReadAsByteArrayAsync();

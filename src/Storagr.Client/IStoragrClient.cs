@@ -25,7 +25,7 @@ namespace Storagr.Client
         /**
          * Logs
          */
-        Task<StoragrLogList> GetLogs(StoragrLogListOptions options);
+        Task<StoragrLogList> GetLogs(StoragrLogQuery options);
         
         /**
          * Repositories
@@ -42,8 +42,8 @@ namespace Storagr.Client
         Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList);
         
         Task<StoragrObject> GetObject(string repositoryId, string objectId);
-        Task<StoragrObjectList> GetObjects(string repositoryId) => GetObjects(repositoryId, StoragrObjectListOptions.Empty);
-        Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListOptions options);
+        Task<StoragrObjectList> GetObjects(string repositoryId) => GetObjects(repositoryId, new StoragrObjectListQuery());
+        Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListQuery listQuery);
         Task DeleteObject(string repositoryId, string objectId);
         
         /**
@@ -55,7 +55,7 @@ namespace Storagr.Client
         Task<StoragrLock> DeleteLock(string repositoryId, string lockId, bool force);
         
         Task<StoragrLock> GetLock(string repositoryId, string lockId);
-        Task<StoragrLockList> GetLocks(string repositoryId) => GetLocks(repositoryId, StoragrLockListOptions.Empty);
-        Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListOptions options);
+        Task<StoragrLockList> GetLocks(string repositoryId) => GetLocks(repositoryId, new StoragrLockListQuery());
+        Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListQuery listQuery);
     }
 }

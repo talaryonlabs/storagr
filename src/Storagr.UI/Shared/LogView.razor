@@ -12,7 +12,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var log in _logList.Logs)
+    @foreach (var log in _logs)
     {
         var color = log.Level switch
         {
@@ -71,20 +71,20 @@
 
 @inject IStoragrClient StoragrClient;
 @code {
-    private readonly StoragrLogListOptions _logOptions = new StoragrLogListOptions()
+    private readonly StoragrLogQuery _logOptions = new StoragrLogQuery()
     {
         Limit = 8
     };
     private readonly ExceptionViewer.ExceptionViewerParams _exceptionViewerParams = new ExceptionViewer.ExceptionViewerParams();
 
-    private StoragrLogList _logList = StoragrLogList.Empty;
+    private StoragrLogList _logs = new StoragrLogList();
     private int _pageCount;
     private int _currentPage = 1;
     
     protected override async Task OnInitializedAsync()
     {
-        _logList = await StoragrClient.GetLogs(_logOptions);
-        _pageCount = (int) Math.Ceiling((double) _logList.Total / _logOptions.Limit);
+        _logs = await StoragrClient.GetLogs(_logOptions);
+        _pageCount = (int) Math.Ceiling((double) _logs.TotalCount / _logOptions.Limit);
     }
 
     private void ShowException(string title, string message)
@@ -99,8 +99,8 @@
         if ((page = Math.Clamp(page, 1, _pageCount)) == _currentPage)
             return;
 
-        _logOptions.Offset = (page - 1) * _logOptions.Limit;
-        _logList = await StoragrClient.GetLogs(_logOptions);
+        _logOptions.Cursor = (page - 1) * _logOptions.Limit;
+        _logs = await StoragrClient.GetLogs(_logOptions);
         _currentPage = page;
     }
 

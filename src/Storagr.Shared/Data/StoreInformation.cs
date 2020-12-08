@@ -5,6 +5,6 @@ namespace Storagr.Shared.Data
     [DataContract]
     public class StoreInformation
     {
-        [DataMember(Name = "available_space")] public long AvailableSpace;
+        [DataMember(Name = "available_space")] public long AvailableSpace { get; set; }
     }
 }

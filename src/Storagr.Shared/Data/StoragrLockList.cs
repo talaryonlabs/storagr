@@ -8,42 +8,31 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrLockListOptions
+    public class StoragrLockList : IStoragrList<StoragrLock>
     {
-        [QueryMember(Name = "path")] public string Path { get; set; }
-        [QueryMember(Name = "id")] public string LockId { get; set; }
-        [QueryMember(Name = "cursor")] public string Cursor { get; set; }
-        [QueryMember(Name = "limit")] public int Limit { get; set; }
-        [QueryMember(Name = "refspec")] public string RefSpec { get; set; }
-
-        public static StoragrLockListOptions Empty => new StoragrLockListOptions()
-        {
-            LockId = null,
-            Path = null,
-            Cursor = null,
-            Limit = 0,
-            RefSpec = null
-        };
-    }
-
-    [DataContract]
-    public class StoragrLockList : IEnumerable<StoragrLock>
-    {
-        [DataMember(Name = "locks")] public IEnumerable<StoragrLock> Locks;
-        [DataMember(Name = "next_cursor")] public string NextCursor;
-
-        public static StoragrLockList Empty => new StoragrLockList()
-        {
-            Locks = new StoragrLock[0],
-            NextCursor = null
-        };
-        
         public static implicit operator StoragrLockList(byte[] data) =>
             StoragrHelper.DeserializeObject<StoragrLockList>(data);
         
+        [DataMember(Name = "locks")] public IEnumerable<StoragrLock> Items { get; set; } = new List<StoragrLock>();
+        [DataMember(Name = "next_cursor")] public string NextCursor { get; set; }
+        [DataMember(Name = "total_count")] public int TotalCount { get; set; }
+
+        
         public IEnumerator<StoragrLock> GetEnumerator() =>
-            Locks.GetEnumerator();
+            Items.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() =>
             GetEnumerator();
+    }
+    
+    [DataContract]
+    public class StoragrLockListQuery : IStoragrListQuery
+    {
+        [QueryMember(Name = "cursor")] public string Cursor { get; set; }
+        [QueryMember(Name = "limit")] public int Limit { get; set; }
+        
+        [QueryMember(Name = "path")] public string Path { get; set; }
+        [QueryMember(Name = "id")] public string LockId { get; set; }
+        
+        [QueryMember(Name = "refspec")] public string RefSpec { get; set; }
     }
 }

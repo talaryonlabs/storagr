@@ -32,18 +32,18 @@ namespace Storagr.Shared.Data
     }
     
     [DataContract]
-    public class StoragrLockUnlockRequest
+    public class StoragrUnlockRequest
     {
         [DataMember(Name = "force")] public bool Force { get; set; }
         [DataMember(Name = "ref")] public StoragrRef Ref { get; set; }
     }
 
     [DataContract]
-    public class StoragrLockUnlockResponse
+    public class StoragrUnlockResponse
     {
         [DataMember(Name = "lock")] public StoragrLock Lock { get; set; }
         
-        public static implicit operator StoragrLockUnlockResponse(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrLockUnlockResponse>(data);
+        public static implicit operator StoragrUnlockResponse(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrUnlockResponse>(data);
     }
 }

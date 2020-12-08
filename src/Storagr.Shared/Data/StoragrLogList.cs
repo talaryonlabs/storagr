@@ -1,35 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrLogListOptions
+    public class StoragrLogList : IStoragrList<StoragrLog, int>
     {
-        [QueryMember(Name = "offset")] public int Offset { get; set; }
-        [QueryMember(Name = "limit")] public int Limit { get; set; }
+        public static implicit operator StoragrLogList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrLogList>(data);
         
-        public static StoragrLogListOptions Empty => new StoragrLogListOptions()
-        {
-            Offset = 0,
-            Limit = 0
-        };
+        [DataMember(Name = "logs")] public IEnumerable<StoragrLog> Items { get; set; } = new List<StoragrLog>();
+        [DataMember(Name = "next_cursor")] public int NextCursor { get; set; }
+        [DataMember(Name = "total_count")] public int TotalCount { get; set; } 
+        
+        public IEnumerator<StoragrLog> GetEnumerator() =>
+            Items.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() =>
+            GetEnumerator();
     }
     
     [DataContract]
-    public class StoragrLogList
+    public class StoragrLogQuery : IStoragrListQuery<int>
     {
-        [DataMember(Name = "logs")] public IEnumerable<StoragrLog> Logs { get; set; }
-        [DataMember(Name = "cursor")] public int Cursor { get; set; }
-        [DataMember(Name = "total")] public int Total { get; set; }
-        public static StoragrLogList Empty => new StoragrLogList()
-        {
-            Logs = new List<StoragrLog>(),
-            Cursor = -1,
-            Total = 0
-        };
-        
-        public static implicit operator StoragrLogList(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrLogList>(data);
+        [QueryMember(Name = "cursor")] public int Cursor { get; set; }
+        [QueryMember(Name = "limit")] public int Limit { get; set; }
     }
 }

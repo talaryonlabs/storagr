@@ -14,7 +14,7 @@ namespace Storagr.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiRoute("{rid}/objects/batch")]
-    public class BatchController : ControllerBase
+    public class BatchController : StoragrController
     {
         private readonly IUserService _userService;
         private readonly IObjectService _objectService;
@@ -43,13 +43,13 @@ namespace Storagr.Controllers
         {
             var repository = await _objectService.Get(rid);
             if (repository == null)
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
 
             return request.Operation switch
             {
                 StoragrBatchOperation.Download => await Download(repository, request),
                 StoragrBatchOperation.Upload => await Upload(repository, request),
-                _ => (ActionResult) new NotImplementedError()
+                _ => Error<NotImplementedError>()
             };
         }
 
@@ -59,7 +59,7 @@ namespace Storagr.Controllers
             // TODO consider the "ref" property in request
             if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
             {
-                return (ActionResult) new ForbiddenError();
+                return Error<ForbiddenError>();
             }
 
             var requestObjects = batchRequest.Objects.ToList();
@@ -103,7 +103,7 @@ namespace Storagr.Controllers
             // TODO consider the "ref" property in request
             if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
             {
-                return (ActionResult) new ForbiddenError();
+                return Error<ForbiddenError>();
             }
 
             var requestObjects = batchRequest.Objects.ToList();

@@ -52,8 +52,8 @@
     [Parameter]
     public string RepositoryId { get; set; }
 
-    private StoragrObjectList _objects = StoragrObjectList.Empty;
-    private StoragrLockList _locks = StoragrLockList.Empty;
+    private StoragrObjectList _objects = new StoragrObjectList();
+    private StoragrLockList _locks = new StoragrLockList();
 
     protected override async Task OnInitializedAsync()
     {

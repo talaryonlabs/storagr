@@ -14,7 +14,7 @@ namespace Storagr.Controllers
     [ApiVersion("1.0")]
     [ApiRoute("{repositoryId}/objects")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-    public class ObjectController : ControllerBase
+    public class ObjectController : StoragrController
     {
         private readonly IUserService _userService;
         private readonly IObjectService _objectService;
@@ -29,18 +29,18 @@ namespace Storagr.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrObjectList))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListOptions options)
+        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListQuery options)
         {
             var repository = await _objectService.Get(repositoryId);
             if (repository == null)
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
             
             var user = await _userService.GetAuthenticatedUser();
             var objects = (await _objectService.GetAll(repositoryId));
 
             var list = objects.ToList();
             if (!list.Any())
-                return Ok(StoragrObjectList.Empty);
+                return Ok<StoragrObjectList>();
 
             if (!string.IsNullOrEmpty(options.Cursor))
                 list = list.SkipWhile(v => v.Id != options.Cursor).ToList();
@@ -50,7 +50,7 @@ namespace Storagr.Controllers
 
             return Ok(new StoragrObjectList()
             {
-                Objects = list.Select(v => new StoragrObject()
+                Items = list.Select(v => new StoragrObject()
                 {
                     ObjectId = v.Id,
                     Size = v.Size,
@@ -65,10 +65,8 @@ namespace Storagr.Controllers
         public async Task<IActionResult> Get([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             var obj = await _objectService.Get(repositoryId, objectId);
-            if (obj == null)
-                return (ActionResult) new ObjectNotFoundError();
-
-            return Ok((StoragrObject)obj);
+            
+            return obj == null ? Error<ObjectNotFoundError>() : Ok((StoragrObject)obj);
         }
         
         [HttpPost("{objectId}")]
@@ -82,10 +80,10 @@ namespace Storagr.Controllers
 
             var repository = await _objectService.Get(repositoryId);
             if (repository == null)
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
 
             if (await _objectService.Create(repository.Id, expectedObject.ObjectId, expectedObject.Size) == null)
-                return (ActionResult) new ObjectNotFoundError();
+                return Error<ObjectNotFoundError>();
 
             return Ok();
         }
@@ -97,11 +95,11 @@ namespace Storagr.Controllers
         {
             var repository = await _objectService.Get(repositoryId);
             if (repository == null)
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
             
             var obj = await _objectService.Get(repositoryId, objectId);
             if (obj == null)
-                return (ActionResult) new ObjectNotFoundError();
+                return Error<ObjectNotFoundError>();
             
             try
             {

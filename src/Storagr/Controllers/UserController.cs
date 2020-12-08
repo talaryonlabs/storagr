@@ -15,7 +15,7 @@ namespace Storagr.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiRoute("users")]
-    public class UserController : ControllerBase
+    public class UserController : StoragrController
     {
         private readonly IUserService _userService;
 
@@ -54,15 +54,15 @@ namespace Storagr.Controllers
             }
             catch (NotSupportedException)
             {
-                return (ActionResult) new NotImplementedError();
+                return Error<NotImplementedError>();
             }
             catch (UserAlreadyExistsException)
             {
-                return (ActionResult) new UserAlreadyExistsError();
+                return Error<UserAlreadyExistsError>();
             }
             catch (Exception e)
             {
-                return (ActionResult) new StoragrError(e.Message);
+                return Error(new StoragrError(e.Message));
             }
             
             return Created("", null);
@@ -75,10 +75,7 @@ namespace Storagr.Controllers
         public async Task<IActionResult> View([FromRoute] string userId)
         {
             var user = await _userService.Get(userId);
-            if (user == null)
-                return (ActionResult) new UserNotFoundError();
-
-            return Ok((StoragrUser) user);
+            return user == null ? Error<UserNotFoundError>() : Ok((StoragrUser) user);
         }
         
         [HttpPatch("{userId}")] 
@@ -94,11 +91,11 @@ namespace Storagr.Controllers
             }
             catch (UserNotFoundException)
             {
-                return (ActionResult) new UserNotFoundError();
+                return Error<UserNotFoundError>();
             }
             catch (Exception e)
             {
-                return (ActionResult) new StoragrError(e.Message);
+                return Error(e);
             }
             
             return Ok();
@@ -118,15 +115,15 @@ namespace Storagr.Controllers
             }
             catch (NotSupportedException)
             {
-                return (ActionResult) new NotImplementedError();
+                return Error<NotImplementedError>();
             }
             catch (UserNotFoundException)
             {
-                return (ActionResult) new UserNotFoundError();   
+                return Error<UserNotFoundError>();
             }
             catch (Exception e)
             {
-                return (ActionResult) new StoragrError(e.Message);
+                return Error(e);
             }
 
             return NoContent();
@@ -141,18 +138,18 @@ namespace Storagr.Controllers
         public async Task<IActionResult> Authenticate([FromBody] StoragrAuthenticationRequest authenticationRequest)
         {
             if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
-                return (ActionResult) new UsernameOrPasswordMissingError();
+                return Error<UsernameOrPasswordMissingError>();
 
             UserEntity user;
             try
             {
                 user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
                 if (user == null)
-                    return (ActionResult) new AuthenticationError();
+                    return Error<AuthenticationError>();
             }
             catch (Exception e)
             {
-                return (ActionResult) new StoragrError(e);
+                return Error(e);
             }
             
             return Ok(new StoragrAuthenticationResponse()

@@ -11,7 +11,7 @@ namespace Storagr.Store.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiRoute("{repositoryId}/transfer/{objectId}")]
-    public class TransferController : ControllerBase
+    public class TransferController : StoragrController
     {
         private readonly IStoreService _storeService;
 
@@ -61,7 +61,7 @@ namespace Storagr.Store.Controllers
         public IActionResult Finish([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoreObject verifyObject)
         {
             if (!_storeService.Exists(repositoryId))
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
             
             return !_storeService.FinalizeUpload(verifyObject.RepositoryId, verifyObject.ObjectId, verifyObject.Size) ? StatusCode(500) : Ok();
         }

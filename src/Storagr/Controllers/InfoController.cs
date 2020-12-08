@@ -8,7 +8,7 @@ namespace Storagr.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiRoute("info")]
-    public class InfoController : ControllerBase
+    public class InfoController : StoragrController
     {
     }
 }

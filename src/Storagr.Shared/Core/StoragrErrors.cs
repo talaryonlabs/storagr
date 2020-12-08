@@ -39,11 +39,6 @@ namespace Storagr.Shared
 
         }
 
-        public static implicit operator ObjectResult(StoragrError error) => new ObjectResult(error)
-        {
-            StatusCode = error.Code
-        };
-
         public static implicit operator StoragrError(byte[] data) =>
             StoragrHelper.DeserializeObject<StoragrError>(data);
     }

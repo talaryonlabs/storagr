@@ -13,7 +13,7 @@ namespace Storagr.Controllers
     [ApiVersion("1.0")]
     [ApiRoute("/repositories")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-    public class RepositoryController : ControllerBase
+    public class RepositoryController : StoragrController
     {
         private readonly IObjectService _objectService;
 
@@ -28,7 +28,7 @@ namespace Storagr.Controllers
         {
             return Ok(new StoragrRepositoryList()
             {
-                Repositories = (await _objectService.GetAll()).Select(v => (StoragrRepository) v),
+                Items = (await _objectService.GetAll()).Select(v => (StoragrRepository) v),
                 NextCursor = default // TODO
             });
         }
@@ -40,10 +40,10 @@ namespace Storagr.Controllers
         {
             var repository = await _objectService.Get(newRepository.RepositoryId);
             if (repository == null)
-                return (ActionResult) new RepositoryAlreadyExistsError(newRepository);
+                return Error(new RepositoryAlreadyExistsError(newRepository));
 
             if ((repository = await _objectService.Create(newRepository.RepositoryId, newRepository.OwnerId)) == null)
-                return (ActionResult) new StoragrError("Unable to create repository.");
+                return Error(new StoragrError("Unable to create repository."));
 
             return Created($"/{repository.Id}", (StoragrRepository)repository);
         }
@@ -55,7 +55,7 @@ namespace Storagr.Controllers
         {
             var repository = await _objectService.Get(repositoryId);
             if (repository == null)
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
 
             return Ok((StoragrRepository)repository);
         }
@@ -67,7 +67,7 @@ namespace Storagr.Controllers
         {
             var repository = await _objectService.Get(repositoryId);
             if (repository == null)
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
 
             await _objectService.Delete(repositoryId);
             

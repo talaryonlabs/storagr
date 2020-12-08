@@ -11,7 +11,7 @@ namespace Storagr.Store.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiRoute("/")]
-    public class RepositoryController : ControllerBase
+    public class RepositoryController : StoragrController
     {
         private readonly IStoreService _storeService;
 
@@ -32,10 +32,7 @@ namespace Storagr.Store.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public IActionResult Get([FromRoute] string repositoryId)
         {
-            if (!_storeService.Exists(repositoryId))
-                return (ActionResult) new RepositoryNotFoundError();
-
-            return Ok(_storeService.Get(repositoryId));
+            return !_storeService.Exists(repositoryId) ? Error<RepositoryNotFoundError>() : Ok(_storeService.Get(repositoryId));
         }
         
         [HttpDelete("{repositoryId}")]
@@ -44,7 +41,7 @@ namespace Storagr.Store.Controllers
         public IActionResult Delete([FromRoute] string repositoryId)
         {
             if (!_storeService.Exists(repositoryId))
-                return (ActionResult) new RepositoryNotFoundError();
+                return Error<RepositoryNotFoundError>();
 
             _storeService.Delete(repositoryId);
             

@@ -37,8 +37,8 @@
 </table>
 
 @code {
-    private IEnumerable<StoragrUser> _users = new List<StoragrUser>();
-    private StoragrRepositoryList _repositories = StoragrRepositoryList.Empty;
+    private StoragrUserList _users = new StoragrUserList();
+    private StoragrRepositoryList _repositories = new StoragrRepositoryList();
     
     protected override async Task OnInitializedAsync()
     {
