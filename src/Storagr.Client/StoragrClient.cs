@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using System.Web;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -139,7 +134,14 @@ namespace Storagr.Client
 
         public async Task<StoragrUser> GetUser(string userId)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/users/{userId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return data;
         }
 
         public async Task<IEnumerable<StoragrUser>> GetUsers()
@@ -160,51 +162,97 @@ namespace Storagr.Client
             var query = StoragrHelper.ToQueryString(options);
             var request = CreateRequest($"/logs?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
-            
-            if (!response.IsSuccessStatusCode)
-                return null;
-
             var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
 
-            return StoragrHelper.DeserializeObject<StoragrLogList>(data);
+            return data;
         }
 
-        public async Task<StoragrRepository> CreateRepository(string repositoryId)
+        public async Task<StoragrRepository> CreateRepository(string repositoryId, string ownerId, long sizeLimit)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/", HttpMethod.Post, new StoragrRepository()
+            {
+                RepositoryId = repositoryId,
+                OwnerId = ownerId,
+                SizeLimit = sizeLimit
+            });
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return data;
         }
 
         public async Task<StoragrRepository> GetRepository(string repositoryId)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return data;
         }
 
         public async Task<IEnumerable<StoragrRepository>> GetRepositories()
         {
             var request = CreateRequest("/", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
-            
-            if (!response.IsSuccessStatusCode)
-                return null;
-
             var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
 
             return StoragrHelper.DeserializeObject<IEnumerable<StoragrRepository>>(data);
         }
 
-        public async Task<bool> DeleteRepository(string repositoryId)
+        public async Task DeleteRepository(string repositoryId)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}", HttpMethod.Delete);
+            var response = await _httpClient.SendAsync(request);
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(
+                    await response.Content.ReadAsByteArrayAsync()
+                );
         }
 
-        public async Task<StoragrAction> BatchObject(string repositoryId, string objectId, StoragrBatchOperation operation)
+        public async Task<StoragrBatchObject> BatchObject(string repositoryId, StoragrBatchOperation operation, StoragrObject obj) =>
+            (await BatchObjects(repositoryId, operation, new[] {obj})).First();
+
+        public async Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
+            {
+                Operation = operation,
+                Transfers = new []{"basic"}, // TODO
+                Ref = default, // TODO
+                Objects = objList
+            });
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return ((StoragrBatchResponse) data).Objects;
         }
 
         public async Task<StoragrObject> GetObject(string repositoryId, string objectId)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return data;
         }
 
         public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListOptions options)
@@ -212,33 +260,67 @@ namespace Storagr.Client
             var query = StoragrHelper.ToQueryString(options);
             var request = CreateRequest($"/{repositoryId}/objects?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
-            
-            if (!response.IsSuccessStatusCode)
-                return null;
-
             var data = await response.Content.ReadAsByteArrayAsync();
 
-            return StoragrHelper.DeserializeObject<StoragrObjectList>(data);
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return data;
         }
 
-        public async Task<bool> DeleteObject(string repositoryId, string objectId)
+        public async Task DeleteObject(string repositoryId, string objectId)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+                throw new StoragrException(
+                    await response.Content.ReadAsByteArrayAsync()
+                );
         }
 
-        public async Task<bool> Lock(string repositoryId, string path)
+        public async Task<StoragrLock> CreateLock(string repositoryId, string path)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
+            {
+                Path = path,
+                Ref = default // TODO
+            });
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return ((StoragrLockResponse) data).Lock;
         }
 
-        public async Task<bool> Unlock(string repositoryId)
+        public async Task<StoragrLock> DeleteLock(string repositoryId, string lockId, bool force)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrLockUnlockRequest()
+            {
+               Force = force,
+               Ref = default // TODO
+            });
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+
+            if (!response.IsSuccessStatusCode) 
+                throw new StoragrException(data);
+
+            return ((StoragrLockUnlockResponse) data).Lock;
         }
 
         public async Task<StoragrLock> GetLock(string repositoryId, string lockId)
         {
-            throw new NotImplementedException();
+            var request = CreateRequest($"/{repositoryId}/locks/{lockId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
+            
+            if (!response.IsSuccessStatusCode)
+                throw new StoragrException(data);
+
+            return data;
         }
 
         public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListOptions options)
@@ -246,13 +328,12 @@ namespace Storagr.Client
             var query = StoragrHelper.ToQueryString(options);
             var request = CreateRequest($"/{repositoryId}/locks?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request);
+            var data = await response.Content.ReadAsByteArrayAsync();
             
             if (!response.IsSuccessStatusCode)
-                return null; // TODO throw forbidden
+                throw new StoragrException(data);
 
-            var data = await response.Content.ReadAsByteArrayAsync();
-
-            return StoragrHelper.DeserializeObject<StoragrLockList>(data);
+            return data;
         }
 
         public void Dispose()

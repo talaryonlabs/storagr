@@ -36,5 +36,8 @@ namespace Storagr.Shared.Data
             Locks = new StoragrLock[0],
             NextCursor = null
         };
+        
+        public static implicit operator StoragrLockList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrLockList>(data);
     }
 }

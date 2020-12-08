@@ -36,11 +36,14 @@ namespace Storagr.Shared.Data
     public class StoragrBatchResponse
     {
         [DataMember(Name = "transfers", IsRequired = true)] public IEnumerable<string> Transfers;
-        [DataMember(Name = "objects", IsRequired = true)] public IEnumerable<StoragrBatchResponseObject> Objects;
+        [DataMember(Name = "objects", IsRequired = true)] public IEnumerable<StoragrBatchObject> Objects;
+        
+        public static implicit operator StoragrBatchResponse(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrBatchResponse>(data);
     }
     
     [DataContract]
-    public class StoragrBatchResponseObject : StoragrObject
+    public class StoragrBatchObject : StoragrObject
     {
         [DataMember(Name = "authenticated")] public bool Authenticated;
         [DataMember(Name = "actions")] public StoragrActions Actions;

@@ -13,5 +13,8 @@ namespace Storagr.Shared.Data
         [DataMember(Name = "category")] public string Category { get; set; }
         [DataMember(Name = "message")] public string Message { get; set; }
         [DataMember(Name = "exception")] public string Exception { get; set; }
+        
+        public static implicit operator StoragrLog(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrLog>(data);
     }
 }

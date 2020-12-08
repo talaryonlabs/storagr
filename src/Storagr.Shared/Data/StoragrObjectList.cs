@@ -29,5 +29,8 @@ namespace Storagr.Shared.Data
             Objects = new List<StoragrObject>(),
             NextCursor = null
         };
+        
+        public static implicit operator StoragrObjectList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrObjectList>(data);
     }
 }

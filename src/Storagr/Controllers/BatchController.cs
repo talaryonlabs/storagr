@@ -70,7 +70,7 @@ namespace Storagr.Controllers
             {
                 if (!objects.Exists(x => x.Id == v.ObjectId))
                 {
-                    return new StoragrBatchResponseObject()
+                    return new StoragrBatchObject()
                     {
                         ObjectId = v.ObjectId,
                         Size = v.Size,
@@ -78,7 +78,7 @@ namespace Storagr.Controllers
                     };
                 }
 
-                return new StoragrBatchResponseObject()
+                return new StoragrBatchObject()
                 {
                     ObjectId = v.ObjectId,
                     Size = v.Size,
@@ -114,14 +114,14 @@ namespace Storagr.Controllers
             {
                 if (objects.Exists(x => x.Id == v.ObjectId))
                 {
-                    return new StoragrBatchResponseObject()
+                    return new StoragrBatchObject()
                     {
                         ObjectId = v.ObjectId,
                         Size = v.Size
                     };
                 }
 
-                return new StoragrBatchResponseObject()
+                return new StoragrBatchObject()
                 {
                     ObjectId = v.ObjectId,
                     Size = v.Size,

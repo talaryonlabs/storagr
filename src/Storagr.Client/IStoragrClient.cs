@@ -17,10 +17,10 @@ namespace Storagr.Client
         /**
          * Users
          */
-        // TODO Task<bool> CreateUser();
+        // TODO Task<StoragrUser> CreateUser();
         Task<StoragrUser> GetUser(string userId);
         Task<IEnumerable<StoragrUser>> GetUsers();
-        // TODO Task<bool> DeleteUser(string userId);
+        // TODO Task DeleteUser(string userId);
 
         /**
          * Logs
@@ -30,25 +30,29 @@ namespace Storagr.Client
         /**
          * Repositories
          */
-        Task<StoragrRepository> CreateRepository(string repositoryId);
+        Task<StoragrRepository> CreateRepository(string repositoryId, string ownerId, long sizeLimit);
         Task<StoragrRepository> GetRepository(string repositoryId);
         Task<IEnumerable<StoragrRepository>> GetRepositories();
-        Task<bool> DeleteRepository(string repositoryId);
+        Task DeleteRepository(string repositoryId);
         
         /**
          * Objects
          */
-        Task<StoragrAction> BatchObject(string repositoryId, string objectId, StoragrBatchOperation operation);
+        Task<StoragrBatchObject> BatchObject(string repositoryId, StoragrBatchOperation operation, StoragrObject obj);
+        Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList);
+        
         Task<StoragrObject> GetObject(string repositoryId, string objectId);
         Task<StoragrObjectList> GetObjects(string repositoryId) => GetObjects(repositoryId, StoragrObjectListOptions.Empty);
         Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListOptions options);
-        Task<bool> DeleteObject(string repositoryId, string objectId);
+        Task DeleteObject(string repositoryId, string objectId);
         
         /**
          * Locking
          */
-        Task<bool> Lock(string repositoryId, string path);
-        Task<bool> Unlock(string repositoryId);
+        Task<StoragrLock> CreateLock(string repositoryId, string path);
+
+        Task<StoragrLock> Unlock(string repositoryId, string lockId) => DeleteLock(repositoryId, lockId, false);
+        Task<StoragrLock> DeleteLock(string repositoryId, string lockId, bool force);
         
         Task<StoragrLock> GetLock(string repositoryId, string lockId);
         Task<StoragrLockList> GetLocks(string repositoryId) => GetLocks(repositoryId, StoragrLockListOptions.Empty);

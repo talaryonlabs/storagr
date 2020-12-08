@@ -7,5 +7,8 @@ namespace Storagr.Shared.Data
     {
         [DataMember(Name = "oid")] public string ObjectId;
         [DataMember(Name = "size")] public long Size;
+        
+        public static implicit operator StoragrObject(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrObject>(data);
     }
 }

@@ -28,5 +28,8 @@ namespace Storagr.Shared.Data
             Cursor = -1,
             Total = 0
         };
+        
+        public static implicit operator StoragrLogList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrLogList>(data);
     }
 }
