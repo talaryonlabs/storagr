@@ -1,0 +1,18 @@
+﻿storagr ls repositories
+storagr ls objects
+storagr ls users
+
+storagr new user
+storagr new repository
+
+storagr lock --repository test <path>
+storagr unlock --repository test [--by-path "" --by-id ""]
+
+storagr list locks
+
+
+storagr list objects --repository test
+
+
+storagr delete object <oid>
+storagr delete repository <rid>

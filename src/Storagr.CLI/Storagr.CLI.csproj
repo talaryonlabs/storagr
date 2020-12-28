@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Storagr.Client\Storagr.Client.csproj" />
+      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
+      <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+      <PackageReference Include="System.CommandLine.Hosting" Version="0.3.0-alpha.20574.7" />
+    </ItemGroup>
+
+</Project>
