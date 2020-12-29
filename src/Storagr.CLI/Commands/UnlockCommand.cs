@@ -13,7 +13,7 @@ namespace Storagr.CLI
     public class UnlockCommand : Command
     {
         public UnlockCommand()
-            : base("unlock", "Unlock a path")
+            : base("unlock", StoragrConstants.UnlockCommandDescription)
         {
             AddOption(new RepositoryOption());
             AddOption(new ForceOption());

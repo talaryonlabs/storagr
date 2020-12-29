@@ -5,7 +5,7 @@ namespace Storagr.CLI
     public class LimitOption : Option<int>
     {
         public LimitOption()
-            : base(new[] {"--limit"}, "")
+            : base(new[] {"--limit"}, StoragrConstants.LimitOptionDescription)
         {
 
         }

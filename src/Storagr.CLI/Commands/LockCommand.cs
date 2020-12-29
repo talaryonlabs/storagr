@@ -15,7 +15,7 @@ namespace Storagr.CLI
     public class LockCommand : Command
     {
         public LockCommand()
-            : base("lock", "Lock a path")
+            : base("lock", StoragrConstants.LockCommandDescription)
         {
             AddOption(new RepositoryOption());
             AddArgument(new Argument<string>("path", "Path to lock")

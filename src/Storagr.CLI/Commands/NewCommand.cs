@@ -1,18 +1,17 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Invocation;
 
 namespace Storagr.CLI
 {
     public class NewCommand : Command
     {
         public NewCommand()
-            : base("new", "Creates a resource")
+            : base("new", StoragrConstants.NewCommandDescription)
         {
-            AddCommand(new Command("user", "Creates a new user")
+            AddCommand(new Command("user", StoragrConstants.NewUserCommandDescription)
             {
                 new Option("--username"),
             });
-            AddCommand(new Command("repository", "Creates a new repository")
+            AddCommand(new Command("repository", StoragrConstants.NewRepositoryCommandDescription)
             {
                 new Argument("name")
                 {

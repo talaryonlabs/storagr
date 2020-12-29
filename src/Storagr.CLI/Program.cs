@@ -19,7 +19,8 @@ namespace Storagr.CLI
                     {
                         configuration
                             .AddJsonFile("appsettings.json", true)
-                            .AddJsonFile("/usr/storagr/config/storagr.cli.json", true)
+                            .AddConfigFile()
+                            .AddTokenFile()
                             .AddCommandLine(args);
                     });
                     host.ConfigureServices((context, services) =>
@@ -28,7 +29,9 @@ namespace Storagr.CLI
                             .AddStoragrClient(options =>
                             {
                                 options.Host = context.Configuration["host"];
+                                options.Token = context.Configuration["token"];
                             })
+                            .AddSingleton<IConsoleService, ConsoleService>()
                             .AddSingleton<IConfigService, ConfigService>();
                     });
                 })

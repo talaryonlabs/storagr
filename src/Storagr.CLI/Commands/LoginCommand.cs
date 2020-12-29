@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.CommandLine.IO;
+using System.IO;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Storagr.Client;
+using Newtonsoft.Json;
+using Storagr.Shared;
 
 namespace Storagr.CLI
 {
@@ -17,73 +18,54 @@ namespace Storagr.CLI
     
     public class LoginCommand : Command
     {
-        public LoginCommand() : base("login", "Authenticate with username and password.")
+        public LoginCommand() 
+            : base("login", StoragrConstants.LoginCommandDescription)
         {
             AddOption(new Option<string>(new[] {"--username", "-u"}, ""));
             AddOption(new Option<string>(new[] {"--password", "-p"}, ""));
             
-            Handler = CommandHandler.Create<IHost, IConsole, LoginOptions>(Login);
+            Handler = CommandHandler.Create<IHost, LoginOptions>(Login);
         }
 
-        private static async Task Login(IHost host, IConsole console, LoginOptions options)
+        private static async Task<int> Login(IHost host, LoginOptions options)
         {
+            var console = host.GetConsole();
+            
             if (string.IsNullOrEmpty(options.Username))
             {
-                console.Out.Write("Username: ");
-                options.Username = Console.ReadLine();
+                options.Username = console.ReadLine("Username");
             }
 
-            if (string.IsNullOrEmpty(options.Password))
-            {
-                options.Password = "";
-                
-                console.Out.Write("Password: ");
-                ConsoleKeyInfo keyInfo;
-                do
-                {
-                    keyInfo = Console.ReadKey(true);
-
-                    if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control) && keyInfo.Key == ConsoleKey.C)
-                        return;
-
-                    if (keyInfo.Key == ConsoleKey.Backspace && options.Password.Length > 0)
-                    {
-                        console.Out.Write("\b \b");
-                        options.Password = options.Password[0..^1];
-                    }
-                    else if(!char.IsControl(keyInfo.KeyChar))
-                    {
-                        console.Out.Write("*");
-                        options.Password += keyInfo.KeyChar;
-                    }
-                    
-                } while (keyInfo.Key != ConsoleKey.Enter);
-                
-                console.Out.WriteLine();
-            }
+            if (string.IsNullOrEmpty(options.Password) && (options.Password = console.ReadPassword("Password")) is null)
+                return 0; // aborting
 
             if (string.IsNullOrEmpty(options.Username) || string.IsNullOrEmpty(options.Password))
             {
-                console.Error.WriteLine("Username or password not provided!");
-                return;
+                console.WriteError("Username or password not provided!");
+                return 1;
             }
 
-            console.Out.WriteLine();
-            console.Out.WriteLine(options.Username);
-            console.Out.WriteLine(options.Password);
-            return;
-            
-            var client = host.Services.GetRequiredService<IStoragrClient>();
+            var client = host.GetStoragrClient();
+            try
+            {
+                await client.Authenticate(options.Username, options.Password);
+            }
+            catch (StoragrException e)
+            {
+                console.WriteError(e);
+                return e.Code;
+            }
+            catch (Exception e)
+            {
+                console.WriteError(e);
+                return -1;
+            }
 
-            Console.WriteLine("authenticate");
-            Console.WriteLine(options.Username);
-            Console.WriteLine(options.Password);
+            await using var writer = File.CreateText(StoragrConstants.TokenFilePath);
+            new JsonSerializer().Serialize(writer, new Dictionary<string, string> {{"token", client.Token}});
 
-            var result = await client.Authenticate(options.Username, options.Password);
-            
-            Console.WriteLine($"Result: {result}");
-            
-            return;
+            // TODO console output on success
+            return 0;
         }
     }
 }

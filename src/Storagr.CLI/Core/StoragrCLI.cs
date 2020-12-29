@@ -9,7 +9,8 @@ namespace Storagr.CLI
         {
             base.Name = "storagr";
             
-            AddGlobalOption(new Option<string>("--host", "Storagr API endpoint"));
+            AddGlobalOption(new HostOption());
+            AddGlobalOption(new TokenOption());
             
             AddCommand(new ConfigCommand());
             
@@ -19,6 +20,7 @@ namespace Storagr.CLI
             AddCommand(new ListCommand());
             AddCommand(new GetCommand());
             AddCommand(new DeleteCommand());
+            // TODO AddCommand(new TimelineCommand());
             
             AddCommand(new LockCommand());
             AddCommand(new UnlockCommand());

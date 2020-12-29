@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.VisualBasic;
 
 namespace Storagr.CLI
 {
@@ -24,7 +25,7 @@ namespace Storagr.CLI
         
         
         public ConfigCommand()
-            : base("config", "Gets or sets a local config value.")
+            : base("config", StoragrConstants.ConfigCommandDescription)
         {
             var nameArg = new Argument<string>("name");
             var valueArg = new Argument<string>("value");
@@ -57,6 +58,13 @@ namespace Storagr.CLI
             AddCommand(listCmd);
             AddCommand(getCmd);
             AddCommand(setCmd);
+
+
+            var testCmd = new Command("test")
+            {
+                new Option<string>("name")
+            };
+            AddCommand(testCmd);
         }
 
         private static void List(IHost host, IConsole console)
