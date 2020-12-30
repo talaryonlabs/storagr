@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Web;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Newtonsoft.Json;
 using Storagr.Shared.Data;
 
@@ -87,7 +84,7 @@ namespace Storagr.Shared
                 .Select(v =>
                 {
                     var attr = v.GetCustomAttributes<QueryMemberAttribute>().FirstOrDefault();
-                    var name = attr != null ? attr.Name : v.Name;
+                    var name = attr is not null ? attr.Name : v.Name;
                     var value = v.GetValue(data) ?? "";
 
                     return $"{name.ToLower()}={HttpUtility.UrlEncode(value.ToString())}";

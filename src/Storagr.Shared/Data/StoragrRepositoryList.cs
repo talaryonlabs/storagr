@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrRepositoryListOptions : IStoragrListQuery
+    public class StoragrRepositoryListArgs : IStoragrListQuery
     {
-        // [FromQuery(Name = "id")] public string Id;
+        [QueryMember(Name = "id")] public string Id { get; set; }
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
         [QueryMember(Name = "limit")] public int Limit { get; set; }
         // [FromQuery(Name = "refspec")] public string RefSpec;

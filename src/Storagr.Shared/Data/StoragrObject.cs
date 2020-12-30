@@ -6,8 +6,9 @@ namespace Storagr.Shared.Data
     public class StoragrObject
     {
         [DataMember(Name = "oid")] public string ObjectId { get; set; }
+        [DataMember(Name = "rid")] public string RepositoryId { get; set; }
         [DataMember(Name = "size")] public long Size { get; set; }
-        
+
         public static implicit operator StoragrObject(byte[] data) =>
             StoragrHelper.DeserializeObject<StoragrObject>(data);
     }

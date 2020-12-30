@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrUserListOptions : IStoragrListQuery
+    public class StoragrUserListArgs : IStoragrListQuery
     {
         // [FromQuery(Name = "id")] public string Id;
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
         [QueryMember(Name = "limit")] public int Limit { get; set; }
+        [QueryMember(Name = "username")] public string Username { get; set; }
+
         // [FromQuery(Name = "refspec")] public string RefSpec;
     }
     

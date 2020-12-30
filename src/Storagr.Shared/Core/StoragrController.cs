@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Shared;
 
-namespace Storagr
+namespace Storagr.Shared
 {
     public class StoragrController : ControllerBase
     {
+        [Pure]
         [NonAction]
-        protected ObjectResult Ok<T>()
+        protected static ObjectResult Ok<T>()
             where T : class, new()
         {
             return new OkObjectResult(
@@ -15,8 +16,9 @@ namespace Storagr
             );
         }
         
+        [Pure]
         [NonAction]
-        protected ObjectResult Error<T>()
+        protected static ObjectResult Error<T>()
             where T : StoragrError
         {
             var error = Activator.CreateInstance<T>();
@@ -26,14 +28,17 @@ namespace Storagr
             };
         }
 
+        [Pure]
         [NonAction]
-        protected ObjectResult Error(StoragrError error) => new ObjectResult(error)
-        {
-            StatusCode = error.Code
-        };
+        protected static ObjectResult Error(StoragrError error) =>
+            new(error)
+            {
+                StatusCode = error.Code
+            };
 
+        [Pure]
         [NonAction]
-        protected ObjectResult Error(Exception exception) => 
+        protected static ObjectResult Error(Exception exception) => 
             Error(new StoragrError(exception));
     }
 }

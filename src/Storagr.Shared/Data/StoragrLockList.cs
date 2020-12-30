@@ -25,7 +25,7 @@ namespace Storagr.Shared.Data
     }
     
     [DataContract]
-    public class StoragrLockListQuery : IStoragrListQuery
+    public class StoragrLockListArgs : IStoragrListQuery
     {
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
         [QueryMember(Name = "limit")] public int Limit { get; set; }

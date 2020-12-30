@@ -30,20 +30,20 @@ namespace Storagr.Shared
             }
             
             var configAttribute = (StoragrConfigAttribute)type.GetCustomAttribute(typeof(StoragrConfigAttribute));
-            if (configAttribute == null)
+            if (configAttribute is null)
                 throw new InvalidOperationException($"{nameof(StoragrConfigAttribute)} missing.");
 
             var config = (object)Activator.CreateInstance(type);
             
             var properties = type
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Where(v => v.CanWrite && v.GetCustomAttribute(typeof(StoragrConfigValueAttribute)) != null);
+                .Where(v => v.CanWrite && v.GetCustomAttribute(typeof(StoragrConfigValueAttribute)) is not null);
             foreach (var property in properties)
             {
                 var attribute = (StoragrConfigValueAttribute)property.GetCustomAttribute(typeof(StoragrConfigValueAttribute));
                 var value = ReadValue(configAttribute.Name, attribute?.Name ?? property.Name);
 
-                if (value != null) 
+                if (value is not null) 
                     property.SetValue(config, ParseValue(value, property.PropertyType, attribute));
             }
             _cache.Add(config);
@@ -85,7 +85,7 @@ namespace Storagr.Shared
             {
                 return IPEndPoint.Parse(value);
             }
-            return type.GetCustomAttribute<StoragrConfigAttribute>() != null ? Get(type) : value;
+            return type.GetCustomAttribute<StoragrConfigAttribute>() is not null ? Get(type) : value;
         }
     }
 
