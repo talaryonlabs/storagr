@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
+using Storagr.Services;
 using Storagr.Shared.Data;
 
 namespace Storagr.Data.Entities
@@ -16,7 +17,7 @@ namespace Storagr.Data.Entities
         
         [Computed] public string Token { get; set; }
         
-        public static implicit operator StoragrUser([NotNull] UserEntity entity) => new StoragrUser()
+        public static implicit operator StoragrUser([NotNull] UserEntity entity) => new()
         {
             UserId = entity.Id,
             IsEnabled = entity.IsEnabled,
@@ -24,12 +25,17 @@ namespace Storagr.Data.Entities
             Username = entity.Username,
         };
         
-        public static implicit operator UserEntity([NotNull] StoragrUser user) => new UserEntity()
+        public static implicit operator UserEntity([NotNull] StoragrUser user) => new()
         {
             Id = user.UserId,
             Username = user.Username,
             IsAdmin = user.IsAdmin,
             IsEnabled = user.IsEnabled
+        };
+        
+        public static implicit operator StoragrOwner([NotNull] UserEntity entity) => new()
+        {
+            Name = entity.Username,
         };
     }
 }

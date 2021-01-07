@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper.Contrib.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -24,22 +25,26 @@ namespace Storagr.Security.Authenticators
         
         public string Name => "storagr-backend";
 
-        private readonly IBackendAdapter _backend;
+        private readonly IDatabaseAdapter _backend;
 
-        public BackendAuthenticator(IBackendAdapter backend)
+        public BackendAuthenticator(IDatabaseAdapter backend)
         {
             _backend = backend;
         }
 
-        public Task<IAuthenticationResult> Authenticate(string token)
+        public Task<IAuthenticationResult> Authenticate(string token, CancellationToken cancellationToken)
         {
             throw new NotSupportedException();
         }
 
-        public async Task<IAuthenticationResult> Authenticate(string username, string password)
+        public async Task<IAuthenticationResult> Authenticate(string username, string password, CancellationToken cancellationToken)
         {
-            var backendUser = await _backend.Get<Entity>(q => q.Where(f => f.Equal(nameof(Entity.Username), username)));
-            if (backendUser == null)
+            var backendUser = await _backend.Get<Entity>(filter =>
+            {
+                filter
+                    .Equal(nameof(Entity.Username), username);
+            }, cancellationToken);
+            if (backendUser is null)
                 return null;
 
             return new PasswordHasher<Entity>()
@@ -64,7 +69,7 @@ namespace Storagr.Security.Authenticators
         public async Task Modify([NotNull] string id, [AllowNull] string username, [AllowNull] string password)
         {
             var user = await _backend.Get<Entity>(q => q.Where(f => f.Equal(nameof(Entity.Id), id)));
-            var newPassword = (password != null ? new PasswordHasher<Entity>().HashPassword(null, password) : null);
+            var newPassword = (password is not null ? new PasswordHasher<Entity>().HashPassword(null, password) : null);
             
             await _backend.Update(new Entity()
             {
@@ -74,9 +79,7 @@ namespace Storagr.Security.Authenticators
             });
         }
 
-        public async Task Delete([NotNull] string authId)
-        {
-            await _backend.Delete(new Entity() {Id = authId});
-        }
+        public Task Delete([NotNull] string authId, CancellationToken cancellationToken) =>
+            _backend.Delete(new Entity() {Id = authId}, cancellationToken);
     }
 }

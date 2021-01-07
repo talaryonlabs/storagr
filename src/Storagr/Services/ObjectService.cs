@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Distributed;
 using Storagr.Data.Entities;
 using Storagr.Shared;
 using Storagr.Shared.Data;
@@ -10,140 +12,149 @@ namespace Storagr.Services
 {
     public class ObjectService : IObjectService
     {
-        private readonly IBackendAdapter _backendAdapter;
-        private readonly IStoreAdapter _storeAdapter;
+        private readonly IDatabaseAdapter _database;
+        private readonly IStoreAdapter _store;
         private readonly IUserService _userService;
+        private readonly IDistributedCache _cache;
+        private readonly DistributedCacheEntryOptions _cacheEntryOptions;
 
-        public ObjectService(IBackendAdapter backendAdapter, IStoreAdapter storeAdapter, IUserService userService)
+        public ObjectService(IDatabaseAdapter database, IStoreAdapter store, IUserService userService, IDistributedCache cache)
         {
-            _backendAdapter = backendAdapter;
-            _storeAdapter = storeAdapter;
+            _database = database;
+            _store = store;
             _userService = userService;
+            _cache = cache;
+            _cacheEntryOptions = new DistributedCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(30)); // TODO time from a global config
         }
 
-        public async Task<RepositoryEntity> Create(string repositoryId, string ownerId)
+        public async Task<int> Count(string repositoryId, CancellationToken cancellationToken)
         {
-            var entity = await Get(repositoryId);
-            if(entity != null)
-                throw new RepositoryAlreadyExistsException();
+            var key = StoragrCaching.GetObjectCountKey(repositoryId);
+            if (await _cache.ExistsAsync(key, cancellationToken))
+                return await _cache.GetObjectAsync<int>(key, cancellationToken);
 
-            await _backendAdapter.Insert(entity = new RepositoryEntity()
+            var count = await _database.Count<ObjectEntity>(filter =>
             {
-                Id = repositoryId,
-                OwnerId = ownerId,
-                SizeLimit = -1
-            });
+                filter
+                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId);
+            }, cancellationToken);
+
+            await _cache.SetObjectAsync(key, count, _cacheEntryOptions, cancellationToken);
+            return count;
+        }
             
-            return entity;
-        }
 
-        public async Task<ObjectEntity> Create(string repositoryId, string objectId, long size)
-        {
-            var entity = await Get(repositoryId, objectId);
-            if (entity != null)
-                throw new ObjectAlreadyExistsException();
 
-            if (!await _storeAdapter.Verify(repositoryId, objectId, size))
-                return null;
-
-            await _backendAdapter.Insert(entity = new ObjectEntity()
-            {
-                RepositoryId = repositoryId,
-                Id = objectId,
-                Size = size
-            });
-            
-            return entity;
-        }
-
-        public async Task<RepositoryEntity> Get(string repositoryId)
-        {
-            var entity = await _backendAdapter.Get<RepositoryEntity>(repositoryId);
-            if (entity == null)
-                return null;
-
-            entity.Owner = await _userService.Get(entity.OwnerId);
-
-            return entity;
-        }
-
-        public Task<ObjectEntity> Get(string repositoryId, string objectId)
-        {
-            return _backendAdapter.Get<ObjectEntity>(q =>
-            {
-                q.Where(f => f
-                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
-                    .And()
-                    .Equal(nameof(ObjectEntity.Id), objectId)
-                );
-            });
-        }
-
-        public Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, params string[] objectIds)
-        {
-            return _backendAdapter.GetAll<ObjectEntity>(q =>
-            {
-                q.Where(f => f
-                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
-                    .And()
-                    .In(nameof(ObjectEntity.Id), objectIds)
-                );
-            });
-        }
-
-        public async Task<IEnumerable<RepositoryEntity>> GetAll()
-        {
-            var users = (await _backendAdapter.GetAll<UserEntity>()).ToList();
-            var repositories = (await _backendAdapter.GetAll<RepositoryEntity>()).ToList();
-
-            foreach (var repository in repositories)
-            {
-                repository.Owner = users.Find(v => v.Id == repository.OwnerId);
-            }
-            return repositories;
-        }
-
-        public Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId)
-        {
-            return _backendAdapter.GetAll<ObjectEntity>(q =>
-            {
-                q.Where(f =>
+        public async Task<bool> Exists(string repositoryId, string objectId, CancellationToken cancellationToken) =>
+            await _cache.ExistsAsync(StoragrCaching.GetObjectKey(repositoryId, objectId), cancellationToken)
+            ||
+            await _database.Exists<ObjectEntity>(filter =>
                 {
-                    f.Equal(nameof(ObjectEntity.RepositoryId), repositoryId);
-                });
-            });
+                    filter
+                        .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
+                        .And()
+                        .Equal(nameof(ObjectEntity.Id), objectId);
+                },
+                cancellationToken);
+
+
+        public async Task<ObjectEntity> Get(string repositoryId, string objectId, CancellationToken cancellationToken)
+        {
+            var key = StoragrCaching.GetObjectKey(repositoryId, objectId);
+            var obj =
+                await _cache.GetObjectAsync<ObjectEntity>(key, cancellationToken) ??
+                await _database.Get<ObjectEntity>(filter =>
+                {
+                    filter
+                        .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
+                        .And()
+                        .Equal(nameof(ObjectEntity.Id), objectId);
+                }, cancellationToken) ??
+                throw new ObjectNotFoundError();
+
+            await _cache.SetObjectAsync(key, obj, _cacheEntryOptions, cancellationToken);
+            return obj;
         }
 
-        public async Task Delete(string repositoryId)
-        {
-            var entity = await Get(repositoryId);
-            if (entity == null)
+        public Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, IEnumerable<string> objectIds, CancellationToken cancellationToken) =>
+            _database.GetMany<ObjectEntity>(filter =>
             {
-                throw new RepositoryNotFoundException();
-            }
-            await _backendAdapter.Delete(entity);
-            await _storeAdapter.Delete(repositoryId);
-        }
-
-        public async Task Delete(string repositoryId, string objectId)
-        {
-            var entity = await Get(repositoryId, objectId);
-            
-            if (entity == null)
+                filter
+                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId)
+                    .And()
+                    .In(nameof(ObjectEntity.Id), objectIds);
+            }, cancellationToken);
+        
+        public Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId, CancellationToken cancellationToken) =>
+            _database.GetMany<ObjectEntity>(filter =>
             {
-                throw new ObjectNotFoundException();
+                filter
+                    .Equal(nameof(ObjectEntity.RepositoryId), repositoryId);
+            }, cancellationToken);
+
+        public async Task<ObjectEntity> Add(string repositoryId, ObjectEntity newObject, CancellationToken cancellationToken)
+        {
+            var existingObject = await Get(repositoryId, newObject.Id, cancellationToken);
+            if (existingObject is not null) 
+                throw new ObjectAlreadyExistsError(existingObject);
+
+            if (!await _store.Finalize(repositoryId, newObject.Id, newObject.Size, cancellationToken))
+            {
+                throw null; // TODO
             }
-            await _backendAdapter.Delete(entity);
-            await _storeAdapter.Delete(repositoryId, objectId);
+            await Task.WhenAll(
+                _cache.RemoveAsync(StoragrCaching.GetObjectCountKey(repositoryId), cancellationToken),
+                _database.Insert(newObject, cancellationToken)
+            );
+            
+            return newObject;
         }
 
-        public async Task<StoragrAction> NewVerifyAction(string repositoryId, string objectId)
+        public async Task<ObjectEntity> Delete(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var obj = await Get(repositoryId, objectId);
-            if (obj != null) 
-                return null;
+            var deletingObject = await Get(repositoryId, objectId, cancellationToken) ??
+                                 throw new ObjectNotFoundError();
+
+            await Task.WhenAll(
+                _cache.RemoveAsync(StoragrCaching.GetObjectCountKey(repositoryId), cancellationToken),
+                _cache.RemoveAsync(StoragrCaching.GetObjectKey(repositoryId, objectId), cancellationToken),
+                _store.Delete(repositoryId, objectId, cancellationToken),
+                _database.Delete(new ObjectEntity()
+                {
+                    Id = objectId,
+                    RepositoryId = repositoryId
+                }, cancellationToken)
+            );
             
-            var token = await _userService.GetAuthenticatedToken();
+            return deletingObject;
+        }
+
+        public async Task<IEnumerable<ObjectEntity>> DeleteAll(string repositoryId, CancellationToken cancellationToken)
+        {
+            var list = (
+                await GetAll(repositoryId, cancellationToken)
+            ).ToList();
+
+            await Task.WhenAll(
+                list
+                    .Select(v => _cache.RemoveAsync(StoragrCaching.GetObjectKey(repositoryId, v.Id), cancellationToken))
+                    .Concat(new[]
+                    {
+                        _cache.RemoveAsync(StoragrCaching.GetObjectCountKey(repositoryId), cancellationToken),
+                        _store.Delete(repositoryId, cancellationToken),
+                        _database.Delete(list, cancellationToken)
+                    })
+            );
+
+            return list;
+        }
+
+        public async Task<StoragrAction> NewVerifyAction(string repositoryId, string objectId, CancellationToken cancellationToken)
+        {
+            if (!await Exists(repositoryId, objectId, cancellationToken))
+                throw new ObjectNotFoundError();
+
+            var token = await _userService.GetAuthenticatedToken(cancellationToken);
             return new StoragrAction
             {
                 Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},
@@ -153,14 +164,21 @@ namespace Storagr.Services
             };
         }
 
-        public Task<StoragrAction> NewUploadAction(string repositoryId, string objectId)
+        public async Task<StoragrAction> NewUploadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            return _storeAdapter.NewUploadAction(repositoryId, objectId);
+            var existingObject = await Get(repositoryId, objectId, cancellationToken);
+            if (existingObject is not null)
+                throw new ObjectAlreadyExistsError(existingObject);
+
+            return await _store.NewUploadAction(repositoryId, objectId, cancellationToken);
         }
 
-        public Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId)
+        public async Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            return _storeAdapter.NewDownloadAction(repositoryId, objectId);
+            if (!await Exists(repositoryId, objectId, cancellationToken))
+                throw new ObjectNotFoundError();
+
+            return await _store.NewDownloadAction(repositoryId, objectId, cancellationToken);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Storagr.Data.Entities;
 using Storagr.Shared.Data;
@@ -7,20 +8,26 @@ namespace Storagr
 {
     public interface IObjectService
     {
-        Task<RepositoryEntity> Create(string repositoryId, string ownerId);
-        Task<ObjectEntity> Create(string repositoryId, string objectId, long size);
+        Task<int> Count(string repositoryId, CancellationToken cancellationToken = default);
+        Task<bool> Exists(string repositoryId, string objectId, CancellationToken cancellationToken = default);
 
-        Task<RepositoryEntity> Get(string repositoryId);
-        Task<ObjectEntity> Get(string repositoryId, string objectId);
-        Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, params string[] objectIds);
-        Task<IEnumerable<RepositoryEntity>> GetAll();
-        Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId);
+        Task<ObjectEntity> Get(string repositoryId, string objectId, CancellationToken cancellationToken = default);
 
-        Task Delete(string repositoryId);
-        Task Delete(string repositoryId, string objectId);
+        Task<IEnumerable<ObjectEntity>> GetMany(string repositoryId, IEnumerable<string> objectIds,
+            CancellationToken cancellationToken = default);
 
-        Task<StoragrAction> NewVerifyAction(string repositoryId, string objectId);
-        Task<StoragrAction> NewUploadAction(string repositoryId, string objectId);
-        Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId);
+        Task<IEnumerable<ObjectEntity>> GetAll(string repositoryId, CancellationToken cancellationToken = default);
+
+        Task<ObjectEntity> Add(string repositoryId, ObjectEntity newObject, CancellationToken cancellationToken = default);
+        Task<ObjectEntity> Delete(string repositoryId, string objectId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<ObjectEntity>> DeleteAll(string repositoryId, CancellationToken cancellationToken = default);
+
+        Task<StoragrAction> NewVerifyAction(string repositoryId, string objectId, CancellationToken cancellationToken = default);
+        Task<StoragrAction> NewUploadAction(string repositoryId, string objectId, CancellationToken cancellationToken = default);
+
+        Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId,
+            CancellationToken cancellationToken = default);
+
+        
     }
 }

@@ -20,9 +20,9 @@ namespace Storagr
     public class StoragrLogger : ILogger
     {
         private readonly string _name;
-        private readonly IBackendAdapter _backendAdapter;
+        private readonly IDatabaseAdapter _backendAdapter;
 
-        public StoragrLogger(string name, IBackendAdapter backendAdapter)
+        public StoragrLogger(string name, IDatabaseAdapter backendAdapter)
         {
             _name = name;
             _backendAdapter = backendAdapter;
@@ -38,8 +38,8 @@ namespace Storagr
                 Level = logLevel,
                 Date = DateTime.Now,
                 Category = _name,
-                Message = exception != null ? exception.Message : formatter(state, exception),
-                Exception = exception != null ? exception.StackTrace : ""
+                Message = exception is not null ? exception.Message : formatter(state, exception),
+                Exception = exception is not null ? exception.StackTrace : ""
             };
             _backendAdapter?.Insert(log);
         }
@@ -54,11 +54,11 @@ namespace Storagr
 
     public class StoragrLoggerProvider : ILoggerProvider
     {
-        private readonly IBackendAdapter _backendAdapter;
+        private readonly IDatabaseAdapter _backendAdapter;
         private readonly ConcurrentDictionary<string, StoragrLogger> _loggers =
             new ConcurrentDictionary<string, StoragrLogger>();
 
-        public StoragrLoggerProvider(IBackendAdapter backendAdapter)
+        public StoragrLoggerProvider(IDatabaseAdapter backendAdapter)
         {
             _backendAdapter = backendAdapter;
         }

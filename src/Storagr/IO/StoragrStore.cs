@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Storagr.Security.Tokens;
@@ -66,83 +67,83 @@ namespace Storagr.IO
             return request;
         }
 
-        public async Task<bool> Verify(string repositoryId, string objectId, long expectedSize)
+        public async Task<bool> Finalize(string repositoryId, string objectId, long expectedSize, CancellationToken cancellationToken)
         {
             var request = CreateRequest($"/{repositoryId}/transfer/{objectId}", HttpMethod.Post, new StoreObject()
             {
                 RepositoryId = repositoryId, ObjectId = objectId, Size = expectedSize
             });
             
-            return (await CreateClient().SendAsync(request)).IsSuccessStatusCode;
+            return (await CreateClient().SendAsync(request, cancellationToken)).IsSuccessStatusCode;
         }
 
-        public async Task<StoreRepository> Get(string repositoryId)
+        public async Task<StoreRepository> Get(string repositoryId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
 
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             return StoragrHelper.DeserializeObject<StoreRepository>(data);
 
         }
-        public async Task<StoreObject> Get(string repositoryId, string objectId)
+        public async Task<StoreObject> Get(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}/objects/{objectId}");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
 
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             return StoragrHelper.DeserializeObject<StoreObject>(data);
         }
 
-        public async Task<IEnumerable<StoreRepository>> GetAll()
+        public async Task<IEnumerable<StoreRepository>> GetAll(CancellationToken cancellationToken)
         {
             var client = CreateClient();
             var request = CreateRequest($"/");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
 
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             return StoragrHelper.DeserializeObject<IEnumerable<StoreRepository>>(data);
         }
-        public async Task<IEnumerable<StoreObject>> GetAll(string repositoryId)
+        public async Task<IEnumerable<StoreObject>> GetAll(string repositoryId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}/objects");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
 
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             return StoragrHelper.DeserializeObject<IEnumerable<StoreObject>>(data);
         }
 
-        public async Task Delete(string repositoryId)
+        public async Task Delete(string repositoryId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}", HttpMethod.Delete);
 
-            await client.SendAsync(request);
+            await client.SendAsync(request, cancellationToken);
         }
 
-        public async Task Delete(string repositoryId, string objectId)
+        public async Task Delete(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
             var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
             
-            await client.SendAsync(request);
+            await client.SendAsync(request, cancellationToken);
         }
 
-        public async Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId)
+        public async Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var obj = await Get(repositoryId, objectId);
-            if (obj == null)
+            var obj = await Get(repositoryId, objectId, cancellationToken);
+            if (obj is null)
                 return null;
 
             var token = _tokenService.Generate(_token, _options.TransferExpiration);
@@ -156,10 +157,10 @@ namespace Storagr.IO
             };
         }
 
-        public async Task<StoragrAction> NewUploadAction(string repositoryId, string objectId)
+        public async Task<StoragrAction> NewUploadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var obj = await Get(repositoryId, objectId);
-            if (obj != null) 
+            var obj = await Get(repositoryId, objectId, cancellationToken);
+            if (obj is not null) 
                 return null;
 
             var token = _tokenService.Generate(_token, _options.TransferExpiration);

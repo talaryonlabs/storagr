@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
 using Microsoft.Extensions.Logging;
+using Storagr.Services;
 using Storagr.Shared.Data;
 
 namespace Storagr.Data.Entities

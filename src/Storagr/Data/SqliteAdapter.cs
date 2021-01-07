@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Storagr.Shared;
 
@@ -20,11 +19,11 @@ namespace Storagr.Data
         [StoragrConfigValue] public string DataSource { get; set; }
     }
 
-    public class SqliteBackend : IDisposable, IBackendAdapter
+    public class SqliteAdapter : IDisposable, IDatabaseAdapter
     {
         #region Class<QueryBuilder>
 
-        private class QueryBuilder : IBackendQuery
+        private class QueryBuilder : IDatabaseQuery
         {
             private string _selector;
             private bool _distinct;
@@ -63,44 +62,44 @@ namespace Storagr.Data
                 return string.Join(" ", query);
             }
             
-            public IBackendQuery Select(params string[] columns)
+            public IDatabaseQuery Select(params string[] columns)
             {
                 _selector = columns.Length == 0 ? "*" : string.Join(", ", columns);
                 return this;
             }
 
-            public IBackendQuery Distinct()
+            public IDatabaseQuery Distinct()
             {
                 _distinct = true;
                 return this;
             }
 
-            public IBackendQuery Where(Action<IBackendFilter> filterBuilder)
+            public IDatabaseQuery Where(Action<IDatabaseFilter> filterBuilder)
             {
                 _filter = new FilterBuilder();
                 
-                filterBuilder.Invoke(_filter);
+                filterBuilder?.Invoke(_filter);
 
                 return this;
             }
 
-            public IBackendQuery Limit(int limit)
+            public IDatabaseQuery Limit(int limit)
             {
                 _limit = limit;
                 return this;
             }
 
-            public IBackendQuery Offset(int offset)
+            public IDatabaseQuery Offset(int offset)
             {
                 _offset = offset;
                 return this;
             }
 
-            public IBackendQuery OrderBy(Action<IBackendOrder> orderByBuilder)
+            public IDatabaseQuery OrderBy(Action<IDatabaseOrder> orderByBuilder)
             {
                 var builder = new OrderBuilder();
                 
-                orderByBuilder.Invoke(builder);
+                orderByBuilder?.Invoke(builder);
 
                 _orderBy = builder.Build();
                 return this;
@@ -111,7 +110,7 @@ namespace Storagr.Data
 
         #region Class<FilterBuilder>
 
-        private class FilterBuilder : IBackendFilter
+        private class FilterBuilder : IDatabaseFilter
         {
             public bool HasItems => _list?.Count > 0;
 
@@ -139,88 +138,90 @@ namespace Storagr.Data
                     throw new Exception("Add AND or OR before `` statement.");
             }
             
-            public IBackendFilter Clamp(Action<IBackendFilter> filterBuilder)
+            public IDatabaseFilter Clamp(Action<IDatabaseFilter> filterBuilder)
             {
                 CheckWhereStatement();
+                if (filterBuilder is null) 
+                    return this;
+                
                 
                 var builder = new FilterBuilder();
-                
                 filterBuilder.Invoke(builder);
-
                 _list.Add($"({builder.Build()})");
+                
                 return this;
             }
 
-            public IBackendFilter Or()
+            public IDatabaseFilter Or()
             {
                 CheckAndOr();
                 _list.Add("OR");
                 return this;
             }
 
-            public IBackendFilter And()
+            public IDatabaseFilter And()
             {
                 CheckAndOr();
                 _list.Add("AND");
                 return this;
             }
 
-            public IBackendFilter Not()
+            public IDatabaseFilter Not()
             {
                 _list.Add("NOT");
                 return this;
             }
 
-            public IBackendFilter Equal(string column, string value)
+            public IDatabaseFilter Equal(string column, string value)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} = '{value}'");
                 return this;
             }
 
-            public IBackendFilter Like(string column, string pattern)
+            public IDatabaseFilter Like(string column, string pattern)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} LIKE '{pattern}'");
                 return this;
             }
 
-            public IBackendFilter In(string column, params string[] values)
+            public IDatabaseFilter In(string column, IEnumerable<string> values)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} IN ({string.Join(",", values.Select(v => $"'{v}'"))})");
                 return this;
             }
 
-            public IBackendFilter Between(string column, string value1, string value2)
+            public IDatabaseFilter Between(string column, string value1, string value2)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} BETWEEN '{value1}' AND '{value2}'");
                 return this;
             }
 
-            public IBackendFilter GreaterThan(string column, string value)
+            public IDatabaseFilter GreaterThan(string column, string value)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} > '{value}'");
                 return this;
             }
 
-            public IBackendFilter GreaterThanOrEqual(string column, string value)
+            public IDatabaseFilter GreaterThanOrEqual(string column, string value)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} >= '{value}'");
                 return this;
             }
 
-            public IBackendFilter LessThan(string column, string value)
+            public IDatabaseFilter LessThan(string column, string value)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} < '{value}'");
                 return this;
             }
 
-            public IBackendFilter LessThanOrEqual(string column, string value)
+            public IDatabaseFilter LessThanOrEqual(string column, string value)
             {
                 CheckWhereStatement();
                 _list.Add($"{column} >= '{value}'");
@@ -232,7 +233,7 @@ namespace Storagr.Data
 
         #region Class<OrderBuilder>
 
-        private class OrderBuilder : IBackendOrder
+        private class OrderBuilder : IDatabaseOrder
         {
             private readonly List<string> _list;
 
@@ -246,9 +247,9 @@ namespace Storagr.Data
                 return string.Join(", ", _list).Trim();
             }
             
-            public IBackendOrder Column(string name, BackendOrderType type)
+            public IDatabaseOrder Column(string name, DatabaseOrderType type)
             {
-                _list.Add($"{name} {(type == BackendOrderType.Asc ? "ASC" : "DESC")}");
+                _list.Add($"{name} {(type == DatabaseOrderType.Asc ? "ASC" : "DESC")}");
                 return this;
             }
         }
@@ -263,9 +264,9 @@ namespace Storagr.Data
 
         #region CTor
 
-        public SqliteBackend(IOptions<SqliteOptions> optionsAccessor)
+        public SqliteAdapter(IOptions<SqliteOptions> optionsAccessor)
         {
-            if (optionsAccessor == null)
+            if (optionsAccessor is null)
             {
                 throw new ArgumentNullException(nameof(optionsAccessor));
             }
@@ -274,107 +275,109 @@ namespace Storagr.Data
 
         #endregion
 
+        private static string GetTableName<T>()
+        {
+            CheckTableAttribute<T>();
+            return typeof(T).GetCustomAttribute<TableAttribute>()?.Name;
+        }
+
+        private static void CheckTableAttribute<T>()
+        {
+            if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() is null)
+                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
+        }
+        
         #region Methods<IBackendAdapter>
 
-        public async Task<int> Count<T>(Action<IBackendFilter> filterBuilder) where T : class
+        public Task<int> Count<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken) where T : class
         {
-            var table = (TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault();
-            if (table == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-
-            var filter = new FilterBuilder();
-            var query = new[]
-            {
-                "SELECT COUNT(*) FROM",
-                table.Name
-            };
-
-            filterBuilder?.Invoke(filter);
+            var table = GetTableName<T>();
+            var query = new QueryBuilder();
             
-            if (filter.HasItems)
-                query = (string[]) query.Concat(new[]
-                {
-                    $"WHERE {filter.Build()}"
-                });
+            query.Select("COUNT(*)");
             
-            return await _connection.QueryFirstAsync<int>(string.Join(" ", query));
+            if(filterBuilder is not null)
+                query.Where(filterBuilder);
+
+            return Task.Run(() => _connection.QueryFirstAsync<int>(query.Build(table)), cancellationToken);
         }
 
-        public async Task<T> Get<T>(string id) where T : class
+        public async Task<bool> Exists<T>(string id, CancellationToken cancellationToken) where T : class =>
+            await Get<T>(id, cancellationToken) is not null;
+
+        public async Task<bool> Exists<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken) where T : class
         {
-            if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-            return await _connection.GetAsync<T>(id);
+            var table = GetTableName<T>();
+            var query = new QueryBuilder();
+            query.Where(filterBuilder);
+
+            return await Task.Run(() => _connection.QueryFirstAsync<T>(query.Build(table)), cancellationToken) is not null;
         }
 
-        public async Task<T> Get<T>(Action<IBackendQuery> queryBuilder) where T : class
+        public Task<T> Get<T>(string id, CancellationToken cancellationToken) where T : class
         {
-            var table = (TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault();
-            if (table == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-            
-            var builder = new QueryBuilder();
-            queryBuilder.Invoke(builder);
-            var query = builder.Build(table.Name);
-            
-            return await _connection.QuerySingleOrDefaultAsync<T>(query);
+            CheckTableAttribute<T>();
+            return Task.Run(() => _connection.GetAsync<T>(id), cancellationToken);
         }
 
-        public async Task<IEnumerable<T>> GetAll<T>() where T : class
+        public Task<T> Get<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class
         {
-            if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-            return await _connection.GetAllAsync<T>();
+            var table = GetTableName<T>();
+            var query = new QueryBuilder();
+            query.Where(filterBuilder);
+
+            return Task.Run(() => _connection.QueryFirstAsync<T>(query.Build(table)), cancellationToken);
         }
 
-        public async Task<IEnumerable<T>> GetAll<T>(Action<IBackendQuery> queryBuilder) where T : class
+        public Task<T> Get<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken) where T : class
         {
-            var table = (TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault();
-            if (table == null)
-            {
-                throw new Exception("Type T has no [Table] attribute.");
-            }
+            var table = GetTableName<T>();
+            var query = new QueryBuilder();
+            queryBuilder.Invoke(query);
 
-            var builder = new QueryBuilder();
-            queryBuilder.Invoke(builder);
-            var query = builder.Build(table.Name);
-            
-            return await _connection.QueryAsync<T>(query);
+            return Task.Run(() => _connection.QuerySingleOrDefaultAsync<T>(query.Build(table)), cancellationToken);
         }
 
-        public async Task<int> Insert<T>(T data) where T : class
+        public Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken) where T : class
         {
-            if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-            return await _connection.InsertAsync<T>(data);
+            var table = GetTableName<T>();
+            var query = new QueryBuilder();
+            queryBuilder.Invoke(query);
+
+            return Task.Run(() => _connection.QueryAsync<T>(query.Build(table)), cancellationToken);
         }
 
-        public async Task Update<T>(T data) where T : class
+        public Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class
         {
-            if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-            await _connection.UpdateAsync<T>(data);
+            var table = GetTableName<T>();
+            var query = new QueryBuilder();
+            query.Where(filterBuilder);
+
+            return Task.Run(() => _connection.QueryAsync<T>(query.Build(table)), cancellationToken);
         }
 
-        public async Task<bool> Delete<T>(T data) where T : class
+        public Task<IEnumerable<T>> GetAll<T>(CancellationToken cancellationToken) where T : class
         {
-            if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() == null)
-            {
-                throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
-            }
-            return await _connection.DeleteAsync<T>(data);
+            CheckTableAttribute<T>();
+            return Task.Run(() => _connection.GetAllAsync<T>(), cancellationToken);
+        }
+
+        public Task<int> Insert<T>(T data, CancellationToken cancellationToken) where T : class
+        {
+            CheckTableAttribute<T>();
+            return Task.Run(() => _connection.InsertAsync<T>(data), cancellationToken);
+        }
+
+        public Task Update<T>(T data, CancellationToken cancellationToken) where T : class
+        {
+            CheckTableAttribute<T>();
+            return Task.Run(() => _connection.UpdateAsync<T>(data), cancellationToken);
+        }
+
+        public Task<bool> Delete<T>(T data, CancellationToken cancellationToken) where T : class
+        {
+            CheckTableAttribute<T>();
+            return Task.Run(() => _connection.DeleteAsync(data), cancellationToken);
         }
 
         #endregion

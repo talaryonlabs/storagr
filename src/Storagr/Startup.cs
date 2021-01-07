@@ -22,7 +22,7 @@ namespace Storagr
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {
+        { 
             services.AddStoragrCore(_config);
             services.AddStoragrSecurity(_config);
             services.AddStoragrCache(_config);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
+using Storagr.Services;
 using Storagr.Shared.Data;
 
 namespace Storagr.Data.Entities
@@ -15,17 +16,13 @@ namespace Storagr.Data.Entities
         public DateTime LockedAt { get; set; }
 
         [Computed] public UserEntity Owner { get; set; }
-        [Computed] public RepositoryEntity Repository { get; set; }
         
         public static implicit operator StoragrLock([NotNull] LockEntity entity) => new StoragrLock()
         {
             LockId = entity.Id,
             Path = entity.Path,
             LockedAt = entity.LockedAt,
-            Owner = new StoragrOwner()
-            {
-                Name = entity.Owner.Username
-            }
+            Owner = entity.Owner
         };
     }
 }

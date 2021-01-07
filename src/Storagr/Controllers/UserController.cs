@@ -26,18 +26,54 @@ namespace Storagr.Controllers
         
         [HttpGet("me")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult> Test()
+        public async Task<ActionResult> ViewMe()
         {
-            var user = await _userService.GetAuthenticatedUser();
-
-            return Ok(user);
+            return Ok(
+                await _userService.GetAuthenticatedUser()
+            );
         }
         
+        [HttpPatch("me")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult> UpdateMe()
+        {
+            throw new NotImplementedException();
+        }
+
         [HttpGet]
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoragrUser>))]
-        public async Task<IActionResult> List() =>
-            Ok((await _userService.GetAll()).Select(v => (StoragrUser) v));
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUserList))]
+        public async Task<IActionResult> List([FromQuery] StoragrUserListArgs listArgs)
+        {
+            var count = await _userService.Count();
+            if (count == 0)
+                return Ok<StoragrUserList>();
+
+            var list = (
+                    string.IsNullOrEmpty(listArgs.Username)
+                        ? await _userService.GetAll()
+                        : await _userService.GetMany(listArgs.Username)
+                )
+                .Select(v => (StoragrUser) v)
+                .ToList();
+
+            if (!string.IsNullOrEmpty(listArgs.Cursor))
+                list = list.SkipWhile(v => v.UserId != listArgs.Cursor).Skip(1).ToList();
+
+            list = list.Take(listArgs.Limit > 0
+                ? Math.Max(listArgs.Limit, StoragrConstants.MaxListLimit)
+                : StoragrConstants.DefaultListLimit).ToList();
+
+            return !list.Any()
+                ? Ok<StoragrUserList>()
+                : Ok(new StoragrUserList()
+                {
+                    Items = list,
+                    NextCursor = list.Last().UserId,
+                    TotalCount = count
+                });
+        }
+
 
         [HttpPost]
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
@@ -47,22 +83,15 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
         public async Task<IActionResult> Create([FromBody] StoragrUserRequest createRequest)
         {
+            // TODO!
             try
             {
-                await _userService.Create(createRequest.User.Username, createRequest.NewPassword,
-                    createRequest.User.IsAdmin);
+                // await _userService.Create(createRequest.User.Username, createRequest.NewPassword,
+                //     createRequest.User.IsAdmin);
             }
-            catch (NotSupportedException)
+            catch (Exception exception)
             {
-                return Error<NotImplementedError>();
-            }
-            catch (UserAlreadyExistsException)
-            {
-                return Error<UserAlreadyExistsError>();
-            }
-            catch (Exception e)
-            {
-                return Error(new StoragrError(e.Message));
+                return Error(exception is StoragrError error ? error : exception);
             }
             
             return Created("", null);
@@ -74,8 +103,12 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> View([FromRoute] string userId)
         {
-            var user = await _userService.Get(userId);
-            return user == null ? Error<UserNotFoundError>() : Ok((StoragrUser) user);
+            if (!await _userService.Exists(userId))
+                return Error<UserNotFoundError>();
+
+            return Ok(
+                (StoragrUser) await _userService.Get(userId)
+            );
         }
         
         [HttpPatch("{userId}")] 
@@ -85,17 +118,14 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
         public async Task<IActionResult> Modify([FromRoute] string userId, [FromBody] StoragrUserRequest modifyRequest)
         {
+            // TODO!
             try
             {
-                await _userService.Modify(modifyRequest.User, modifyRequest.NewPassword);
+                // await _userService.Modify(modifyRequest.User, modifyRequest.NewPassword);
             }
-            catch (UserNotFoundException)
+            catch (Exception exception)
             {
-                return Error<UserNotFoundError>();
-            }
-            catch (Exception e)
-            {
-                return Error(e);
+                return Error(exception is StoragrError error ? error : exception);
             }
             
             return Ok();
@@ -113,17 +143,9 @@ namespace Storagr.Controllers
             {
                 await _userService.Delete(userId);
             }
-            catch (NotSupportedException)
+            catch (Exception exception)
             {
-                return Error<NotImplementedError>();
-            }
-            catch (UserNotFoundException)
-            {
-                return Error<UserNotFoundError>();
-            }
-            catch (Exception e)
-            {
-                return Error(e);
+                return Error(exception is StoragrError error ? error : exception);
             }
 
             return NoContent();
@@ -140,22 +162,21 @@ namespace Storagr.Controllers
             if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
                 return Error<UsernameOrPasswordMissingError>();
 
-            UserEntity user;
             try
             {
-                user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
-                if (user == null)
+                var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
+                if (user is null)
                     return Error<AuthenticationError>();
+                
+                return Ok(new StoragrAuthenticationResponse()
+                {
+                    Token = user.Token
+                });
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                return Error(e);
+                return Error(exception is StoragrError error ? error : exception);
             }
-            
-            return Ok(new StoragrAuthenticationResponse()
-            {
-                Token = user.Token
-            });
         }
     }
 }

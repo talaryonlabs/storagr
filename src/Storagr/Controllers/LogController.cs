@@ -16,9 +16,9 @@ namespace Storagr.Controllers
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class LogController : StoragrController
     {
-        private readonly IBackendAdapter _backendAdapter;
+        private readonly IDatabaseAdapter _backendAdapter;
 
-        public LogController(IBackendAdapter backendAdapter)
+        public LogController(IDatabaseAdapter backendAdapter)
         {
             _backendAdapter = backendAdapter;
         }
@@ -29,9 +29,9 @@ namespace Storagr.Controllers
         {
             const int max = 100; 
             
-            var logs = await _backendAdapter.GetAll<LogEntity>(x =>
+            var logs = await _backendAdapter.GetMany<LogEntity>(x =>
             {
-                x.OrderBy(o => o.Column("Date", BackendOrderType.Desc));
+                x.OrderBy(o => o.Column("Date", DatabaseOrderType.Desc));
                 x.Limit(options.Limit > max ? max : options.Limit);
                 x.Offset(options.Cursor);
             });

@@ -16,47 +16,46 @@ namespace Storagr.Controllers
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class ObjectController : StoragrController
     {
-        private readonly IUserService _userService;
         private readonly IObjectService _objectService;
+        private readonly IRepositoryService _repositoryService;
 
-        public ObjectController(IUserService userService, IObjectService objectService)
+        public ObjectController(IObjectService objectService, IRepositoryService repositoryService)
         {
-            _userService = userService;
             _objectService = objectService;
+            _repositoryService = repositoryService;
         }
-        
         
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrObjectList))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListQuery options)
+        public async Task<IActionResult> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListQuery listArgs)
         {
-            var repository = await _objectService.Get(repositoryId);
-            if (repository == null)
+            if (!await _repositoryService.Exists(repositoryId))
                 return Error<RepositoryNotFoundError>();
             
-            var user = await _userService.GetAuthenticatedUser();
-            var objects = (await _objectService.GetAll(repositoryId));
-
-            var list = objects.ToList();
-            if (!list.Any())
+            var count = await _objectService.Count(repositoryId);
+            if (count == 0)
                 return Ok<StoragrObjectList>();
+            
+            var list = (await _objectService.GetAll(repositoryId))
+                .Select(v => (StoragrObject) v)
+                .ToList();
 
-            if (!string.IsNullOrEmpty(options.Cursor))
-                list = list.SkipWhile(v => v.Id != options.Cursor).ToList();
+            if (!string.IsNullOrEmpty(listArgs.Cursor))
+                list = list.SkipWhile(v => v.ObjectId != listArgs.Cursor).Skip(1).ToList();
 
-            if (options.Limit > 0)
-                list = list.Take(options.Limit).ToList();
+            list = list.Take(listArgs.Limit > 0
+                ? Math.Max(listArgs.Limit, StoragrConstants.MaxListLimit)
+                : StoragrConstants.DefaultListLimit).ToList();
 
-            return Ok(new StoragrObjectList()
-            {
-                Items = list.Select(v => new StoragrObject()
+            return !list.Any()
+                ? Ok<StoragrObjectList>()
+                : Ok(new StoragrObjectList()
                 {
-                    ObjectId = v.Id,
-                    Size = v.Size,
-                }),
-                NextCursor = list.Last().Id
-            });
+                    Items = list,
+                    NextCursor = list.Last().ObjectId,
+                    TotalCount = count
+                });
         }
 
         [HttpGet("{objectId}")]
@@ -64,27 +63,40 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> Get([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
-            var obj = await _objectService.Get(repositoryId, objectId);
-            
-            return obj == null ? Error<ObjectNotFoundError>() : Ok((StoragrObject)obj);
+            if (!await _repositoryService.Exists(repositoryId))
+                return Error<RepositoryNotFoundError>();
+
+            try
+            {
+                return Ok(await _objectService.Get(repositoryId, objectId));
+            }
+            catch (Exception exception)
+            {
+                return Error(exception is StoragrError error ? error : exception);
+            }
         }
         
         [HttpPost("{objectId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(StoragrError))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(StoragrError))]
         public async Task<IActionResult> Verify([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoragrObject expectedObject)
         {
             if (objectId != expectedObject.ObjectId)
                 return BadRequest();
-
-            var repository = await _objectService.Get(repositoryId);
-            if (repository == null)
+            
+            if (!await _repositoryService.Exists(repositoryId)) 
                 return Error<RepositoryNotFoundError>();
 
-            if (await _objectService.Create(repository.Id, expectedObject.ObjectId, expectedObject.Size) == null)
-                return Error<ObjectNotFoundError>();
-
+            try
+            {
+                await _objectService.Add(repositoryId, expectedObject);
+            }
+            catch (Exception exception)
+            {
+                return Error(exception is StoragrError error ? error : exception);
+            }
             return Ok();
         }
 
@@ -93,22 +105,19 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> Delete([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
-            var repository = await _objectService.Get(repositoryId);
-            if (repository == null)
+            if (!await _repositoryService.Exists(repositoryId)) 
                 return Error<RepositoryNotFoundError>();
             
-            var obj = await _objectService.Get(repositoryId, objectId);
-            if (obj == null)
+            if (!await _objectService.Exists(repositoryId, objectId)) 
                 return Error<ObjectNotFoundError>();
             
             try
             {
                 await _objectService.Delete(repositoryId, objectId);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Console.WriteLine(e);
-                return StatusCode(500);
+                return Error(exception is StoragrError error ? error : exception);
             }
             return NoContent();
         }

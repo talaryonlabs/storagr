@@ -24,7 +24,7 @@ namespace Storagr.Data.Migrations
             Create.Table("Repository")
                 .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
                 .WithColumn("OwnerId").AsString().NotNullable()
-                .WithColumn("SizeLimit").AsInt64().WithDefaultValue(-1);
+                .WithColumn("SizeLimit").AsInt64().NotNullable();
 
             Create.Table("Object")
                 .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()

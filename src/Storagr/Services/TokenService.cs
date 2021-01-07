@@ -33,11 +33,11 @@ namespace Storagr.Services
         {
             var claims = typeof(T)
                 .GetProperties()
-                .Where(v => v.CanRead && v.GetCustomAttributes<StoragrClaimAttribute>().Any())
+                .Where(v => v.CanRead && v.GetCustomAttributes<TokenClaimAttribute>().Any())
                 .SelectMany(v =>
                 {
                     return v
-                        .GetCustomAttributes<StoragrClaimAttribute>(true)
+                        .GetCustomAttributes<TokenClaimAttribute>(true)
                         .Select(a => new Claim(a.Name, (string) v.GetValue(token)));
                 })
                 .Concat(new[]
@@ -63,11 +63,11 @@ namespace Storagr.Services
             var tokenData = Activator.CreateInstance<T>();
             var tokenProperties = typeof(T)
                 .GetProperties()
-                .Where(v => v.CanWrite && v.GetCustomAttributes<StoragrClaimAttribute>().Any());
+                .Where(v => v.CanWrite && v.GetCustomAttributes<TokenClaimAttribute>().Any());
 
             foreach (var tokenMember in tokenProperties)
             {
-                var claim = tokenMember.GetCustomAttributes<StoragrClaimAttribute>().Aggregate(
+                var claim = tokenMember.GetCustomAttributes<TokenClaimAttribute>().Aggregate(
                     default(Claim),
                     (current, attribute) => current ?? securityToken.Claims.First(c => c.Type == attribute?.Name)
                 );

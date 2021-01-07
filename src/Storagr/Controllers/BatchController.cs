@@ -17,12 +17,14 @@ namespace Storagr.Controllers
     public class BatchController : StoragrController
     {
         private readonly IUserService _userService;
+        private readonly IRepositoryService _repositoryService;
         private readonly IObjectService _objectService;
 
-        public BatchController(IUserService userService, IObjectService objectService)
+        public BatchController(IUserService userService, IObjectService objectService, IRepositoryService repositoryService)
         {
             _userService = userService;
             _objectService = objectService;
+            _repositoryService = repositoryService;
         }
         
         
@@ -41,10 +43,10 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
         public async Task<IActionResult> Batch([FromRoute] string rid, [FromBody] StoragrBatchRequest request)
         {
-            var repository = await _objectService.Get(rid);
-            if (repository == null)
+            if (await _repositoryService.Exists(rid))
                 return Error<RepositoryNotFoundError>();
-
+            
+            var repository = await _repositoryService.Get(rid);
             return request.Operation switch
             {
                 StoragrBatchOperation.Download => await Download(repository, request),
@@ -57,15 +59,14 @@ namespace Storagr.Controllers
         private async Task<IActionResult> Download(RepositoryEntity repository, StoragrBatchRequest batchRequest)
         {
             // TODO consider the "ref" property in request
-            if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
-            {
+            var user = await _userService.GetAuthenticatedUser();
+            if (!user.IsAdmin && !await _repositoryService.HasAccess(repository.Id, user.Id, RepositoryAccessType.Read))
                 return Error<ForbiddenError>();
-            }
 
             var requestObjects = batchRequest.Objects.ToList();
             var objects =
                 (await _objectService.GetMany(repository.Id,
-                    requestObjects.Select(v => v.ObjectId).ToArray())).ToList();
+                    requestObjects.Select(v => v.ObjectId))).ToList();
 
             var responseObjectsAsync = requestObjects.Select(async v =>
             {
@@ -101,15 +102,14 @@ namespace Storagr.Controllers
         private async Task<IActionResult> Upload(RepositoryEntity repository, StoragrBatchRequest batchRequest)
         {
             // TODO consider the "ref" property in request
-            if (!await _userService.HasAccess(repository, RepositoryAccessType.Read))
-            {
+            var user = await _userService.GetAuthenticatedUser();
+            if (!user.IsAdmin && !await _repositoryService.HasAccess(repository.Id, user.Id, RepositoryAccessType.Write))
                 return Error<ForbiddenError>();
-            }
 
             var requestObjects = batchRequest.Objects.ToList();
             var objects =
                 (await _objectService.GetMany(repository.Id,
-                    requestObjects.Select(v => v.ObjectId).ToArray())).ToList();
+                    requestObjects.Select(v => v.ObjectId))).ToList();
 
             var responseObjectsAsync = requestObjects.Select(async v =>
             {

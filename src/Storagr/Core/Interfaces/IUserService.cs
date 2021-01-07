@@ -1,31 +1,25 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Storagr.Data.Entities;
-using Storagr.Services;
 
 namespace Storagr
 {
-    public enum RepositoryAccessType
-    {
-        Read,
-        Write
-    }
-    
     public interface IUserService
     {
-        Task<UserEntity> GetAuthenticatedUser();
-        Task<string> GetAuthenticatedToken();
-        Task<bool> HasAccess(RepositoryEntity repository, RepositoryAccessType accessType);
-
-        Task<UserEntity> Authenticate(string username, string password);
+        Task<int> Count(string username = null, CancellationToken cancellationToken = default);
+        Task<bool> Exists(string userIdOrName, CancellationToken cancellationToken = default);
         
-        Task<bool> Exists(string username);
-        
-        Task<UserEntity> Create(string username, string password, bool isAdmin);
-        Task Modify(UserEntity entity, string newPassword);
-        Task Delete(string userId);
+        Task<UserEntity> Get(string userIdOrName, CancellationToken cancellationToken = default);
+        Task<IEnumerable<UserEntity>> GetMany(string username = null, CancellationToken cancellationToken = default);
+        Task<IEnumerable<UserEntity>> GetAll(CancellationToken cancellationToken = default);
 
-        Task<UserEntity> Get(string userId);
-        Task<IEnumerable<UserEntity>> GetAll();
+        Task<UserEntity> Create(UserEntity entity, CancellationToken cancellationToken = default);
+        Task<UserEntity> Modify(UserEntity entity, CancellationToken cancellationToken = default);
+        Task<UserEntity> Delete(string userId, CancellationToken cancellationToken = default);
+
+        Task<UserEntity> GetAuthenticatedUser(CancellationToken cancellationToken = default);
+        Task<string> GetAuthenticatedToken(CancellationToken cancellationToken = default);
+        Task<UserEntity> Authenticate(string username, string password, CancellationToken cancellationToken = default);
     }
 }

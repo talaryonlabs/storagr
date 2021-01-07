@@ -21,6 +21,13 @@ namespace Storagr
                     logging.AddDebug();
                     logging.AddStoragr();
                 })
+                .ConfigureAppConfiguration(configuration =>
+                {
+                    configuration
+                        .AddJsonFile("appsettings.json", true)
+                        .AddJsonFile("/usr/storagr/config/storagr.json", true)
+                        .AddEnvironmentVariables();
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

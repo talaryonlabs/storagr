@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace Storagr
 {
@@ -10,24 +11,10 @@ namespace Storagr
 
     public interface IAuthenticationAdapter
     {
-        /// <summary>
-        /// Returns the name of the adapter.
-        /// </summary>
         string Name { get; }
-
-        /// <summary>
-        /// Authenticates with a token.
-        /// </summary>
-        /// <param name="token">Token used to authenticate.</param>
-        /// <returns>Successful authenticated result, otherwise null.</returns>
-        Task<IAuthenticationResult> Authenticate(string token);
         
-        /// <summary>
-        /// Authenticates with username and password.
-        /// </summary>
-        /// <param name="username">Username</param>
-        /// <param name="password">Password</param>
-        /// <returns>Successful authenticated result, otherwise null.</returns>
-        Task<IAuthenticationResult> Authenticate(string username, string password);
+        Task<IAuthenticationResult> Authenticate(string token, CancellationToken cancellationToken = default);
+        
+        Task<IAuthenticationResult> Authenticate(string username, string password, CancellationToken cancellationToken = default);
     }
 }

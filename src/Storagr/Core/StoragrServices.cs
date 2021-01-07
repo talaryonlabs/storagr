@@ -72,7 +72,8 @@ namespace Storagr
                     options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                     options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
                 });
-            
+
+            services.AddSingleton<IRepositoryService, RepositoryService>();
             services.AddSingleton<IObjectService, ObjectService>();
             services.AddSingleton<ILockService, LockService>();
             services.AddSingleton<IUserService, UserService>();
@@ -173,7 +174,7 @@ namespace Storagr
             {
                 case StoragrBackendType.Sqlite:
                     services.AddConfig<SqliteOptions>(config);
-                    services.AddBackend<SqliteBackend>();
+                    services.AddBackend<SqliteAdapter>();
                     break;
                 
                 default:

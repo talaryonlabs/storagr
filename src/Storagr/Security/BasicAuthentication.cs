@@ -63,7 +63,7 @@ namespace Storagr.Security
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            if (Context.GetEndpoint()?.Metadata?.GetMetadata<IAllowAnonymous>() != null)
+            if (Context.GetEndpoint()?.Metadata?.GetMetadata<IAllowAnonymous>() is not null)
                 return AuthenticateResult.NoResult();
 
             if(!(Request.Headers.ContainsKey(HeaderNames.Authorization) && AuthenticationHeaderValue.TryParse(Request.Headers[HeaderNames.Authorization], out var header) && header.Scheme == Scheme.Name))
@@ -83,7 +83,7 @@ namespace Storagr.Security
             }
 
             var user = await _userService.Authenticate(credentialParams[0], credentialParams[1]);
-            if (user == null)
+            if (user is null)
             {
                 return AuthenticateResult.Fail("Username or Password invalid.");
             }

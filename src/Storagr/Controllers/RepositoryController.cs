@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Storagr.Data.Entities;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -11,41 +12,71 @@ namespace Storagr.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("/repositories")]
+    [ApiRoute("repositories")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class RepositoryController : StoragrController
     {
-        private readonly IObjectService _objectService;
+        private readonly IRepositoryService _repositoryService;
 
-        public RepositoryController(IObjectService objectService)
+        public RepositoryController(IRepositoryService repositoryService)
         {
-            _objectService = objectService;
+            _repositoryService = repositoryService;
         }
-        
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepositoryList))]
-        public async Task<IActionResult> List()
+        public async Task<IActionResult> List([FromQuery] StoragrRepositoryListArgs listArgs)
         {
-            return Ok(new StoragrRepositoryList()
-            {
-                Items = (await _objectService.GetAll()).Select(v => (StoragrRepository) v),
-                NextCursor = default // TODO
-            });
+            var count = await _repositoryService.Count();
+            if (count == 0)
+                return Ok<StoragrRepositoryList>();
+
+            var list = (string.IsNullOrEmpty(listArgs.Id)
+                    ? await _repositoryService.GetAll()
+                    : await _repositoryService.GetMany(listArgs.Id))
+                .Select(v => (StoragrRepository) v)
+                .ToList();
+
+            if (!string.IsNullOrEmpty(listArgs.Cursor))
+                list = list.SkipWhile(v => v.RepositoryId != listArgs.Cursor).Skip(1).ToList();
+
+            list = list.Take(listArgs.Limit > 0
+                ? Math.Max(listArgs.Limit, StoragrConstants.MaxListLimit)
+                : StoragrConstants.DefaultListLimit).ToList();
+
+            return !list.Any()
+                ? Ok<StoragrRepositoryList>()
+                : Ok(new StoragrRepositoryList()
+                {
+                    Items = list,
+                    NextCursor = list.Last().RepositoryId,
+                    TotalCount = count
+                });
         }
-        
+
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(StoragrRepository))]
         [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(StoragrError))]
         public async Task<IActionResult> Create([FromBody] StoragrRepository newRepository)
         {
-            var repository = await _objectService.Get(newRepository.RepositoryId);
-            if (repository == null)
-                return Error(new RepositoryAlreadyExistsError(newRepository));
+            if (await _repositoryService.Exists(newRepository.RepositoryId))
+            {
+                return Error(new RepositoryAlreadyExistsError(
+                    await _repositoryService.Get(newRepository.RepositoryId)
+                ));
+            }
 
-            if ((repository = await _objectService.Create(newRepository.RepositoryId, newRepository.OwnerId)) == null)
-                return Error(new StoragrError("Unable to create repository."));
-
-            return Created($"/{repository.Id}", (StoragrRepository)repository);
+            try
+            {
+                return Created(
+                    $"v1/repositories/{newRepository.RepositoryId}",
+                    await _repositoryService.Create(newRepository)
+                );
+            }
+            catch (Exception exception)
+            {
+                return Error(exception is StoragrError error ? error : exception);
+            }
         }
 
         [HttpGet("{repositoryId}")]
@@ -53,25 +84,29 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> Get([FromRoute] string repositoryId)
         {
-            var repository = await _objectService.Get(repositoryId);
-            if (repository == null)
-                return Error<RepositoryNotFoundError>();
-
-            return Ok((StoragrRepository)repository);
+            try
+            {
+                return Ok(await _repositoryService.Get(repositoryId));
+            }
+            catch (Exception exception)
+            {
+                return Error(exception is StoragrError error ? error : exception);
+            }
         }
-        
+
         [HttpDelete("{repositoryId}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
         public async Task<IActionResult> Delete([FromRoute] string repositoryId)
         {
-            var repository = await _objectService.Get(repositoryId);
-            if (repository == null)
-                return Error<RepositoryNotFoundError>();
-
-            await _objectService.Delete(repositoryId);
-            
-            return NoContent();
+            try
+            {
+                return Ok(await _repositoryService.Delete(repositoryId));
+            }
+            catch (Exception exception)
+            {
+                return Error(exception is StoragrError error ? error : exception);
+            }
         }
     }
 }
