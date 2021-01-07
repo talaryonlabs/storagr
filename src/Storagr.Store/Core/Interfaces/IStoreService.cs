@@ -22,6 +22,6 @@ namespace Storagr.Store
         
         Stream GetDownloadStream(string repositoryId, string objectId);
         Stream GetUploadStream(string repositoryId, string objectId);
-        bool FinalizeUpload(string repositoryId, string objectId, long expectedSize);
+        void FinalizeUpload(string repositoryId, string objectId, long expectedSize);
     }
 }

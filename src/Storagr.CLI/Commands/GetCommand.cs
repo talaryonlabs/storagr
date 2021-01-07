@@ -1,42 +1,49 @@
-﻿using System.CommandLine;
+﻿using System;
+using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.CommandLine.Rendering;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.CLI
 {
-    public class GetOptions
+    public class GetCommand : StoragrCommand
     {
-        public string Repository { get; set; }
-        public string Id { get; set; }
-    }
-    
-    public class GetCommand : Command
-    {
+        private class LocalOptions
+        {
+            public string Repository { get; set; }
+            public string Id { get; set; }
+            public string IdOrName { get; set; }
+        }
+        
         public GetCommand()
             : base("get", StoragrConstants.GetCommandDescription)
         {
             var getUserCmd = new Command("user", StoragrConstants.GetUserCommandDescription)
             {
-                
+                new IdOrNameArgument()
             };
             var getRepositoryCmd = new Command("repository", StoragrConstants.GetRepositoryCommandDescription)
             {
-                
+                new IdOrNameArgument()
             };
             var getObjectCmd = new Command("object", StoragrConstants.GetObjectCommandDescription)
             {
-                new RepositoryOption()
+                new RepositoryOption(),
+                new IdArgument()
             };
             var getLockCmd = new Command("lock", StoragrConstants.GetLockCommandDescription)
             {
-                new RepositoryOption()
+                new RepositoryOption(),
+                new IdArgument()
             };
             
-            getUserCmd.Handler = CommandHandler.Create<IHost, GetOptions>(GetUser);
-            getRepositoryCmd.Handler = CommandHandler.Create<IHost, GetOptions>(GetRepository);
-            getObjectCmd.Handler = CommandHandler.Create<IHost, GetOptions>(GetObject);
-            getLockCmd.Handler = CommandHandler.Create<IHost, GetOptions>(GetLock);
+            getUserCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(GetUser);
+            getRepositoryCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(GetRepository);
+            getObjectCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(GetObject);
+            getLockCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(GetLock);
 
             AddCommand(getUserCmd);
             AddCommand(getRepositoryCmd);
@@ -44,52 +51,104 @@ namespace Storagr.CLI
             AddCommand(getLockCmd);
         }
 
-        private static async Task<int> GetUser(IHost host, GetOptions options)
+        private static async Task<int> GetUser(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            var user = await client.GetUser(options.Id);
-            
-            // TODO what's next?
-            
-            return 0;
+            StoragrUser user = default;
+            try
+            {
+                await console.Wait(async token =>
+                {
+                    user = await client.GetUser(options.IdOrName, token);
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                return Abort();
+            }
+            catch (Exception exception)
+            {
+                return Error(console, exception);
+            }
+
+            return Success(console, user, globalOptions.AsJson);
         }
         
-        private static async Task<int> GetRepository(IHost host, GetOptions options)
+        private static async Task<int> GetRepository(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            var repository = await client.GetRepository(options.Id);
+            StoragrRepository repository = default;
+            try
+            {
+                await console.Wait(async token =>
+                {
+                    repository = await client.GetRepository(options.IdOrName, token); 
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                return Abort();
+            }
+            catch (Exception exception)
+            {
+                return Error(console, exception);
+            }
             
-            // TODO what's next?
-            
-            return 0;
+            return Success(console, repository, globalOptions.AsJson);
         }
         
-        private static async Task<int> GetObject(IHost host, GetOptions options)
+        private static async Task<int> GetObject(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            var obj = await client.GetObject(options.Repository, options.Id);
+            StoragrObject obj = default;
+            try
+            {
+                await console.Wait(async token =>
+                {
+                    obj = await client.GetObject(options.Repository, options.Id, token);
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                return Abort();
+            }
+            catch (Exception exception)
+            {
+                return Error(console, exception);
+            }
             
-            // TODO what's next?
-            
-            return 0;
+            return Success(console, obj, globalOptions.AsJson);
         }
         
-        private static async Task<int> GetLock(IHost host, GetOptions options)
+        private static async Task<int> GetLock(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            var lck = await client.GetLock(options.Repository, options.Id);
+            StoragrLock lck = default;
+            try
+            {
+                await console.Wait(async token =>
+                {
+                    lck = await client.GetLock(options.Repository, options.Id, token);
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                return Abort();
+            }
+            catch (Exception exception)
+            {
+                return Error(console, exception);
+            }
             
-            // TODO what's next?
-            
-            return 0;
+            return Success(console, lck, globalOptions.AsJson);
         }
     }
 }

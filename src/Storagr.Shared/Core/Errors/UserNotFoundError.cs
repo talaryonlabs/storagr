@@ -1,12 +1,12 @@
 ﻿using System.Runtime.Serialization;
-using Microsoft.AspNetCore.Http;
 
 namespace Storagr.Shared
 {
     [DataContract]
-    public class UserNotFoundError : StoragrError
+    public sealed class UserNotFoundError : NotFoundError
     {
-        public UserNotFoundError() : base(StatusCodes.Status404NotFound, "User not found.")
+        public UserNotFoundError() 
+            : base("User not found.")
         {
         }
     }

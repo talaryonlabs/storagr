@@ -6,22 +6,27 @@ namespace Storagr.CLI
     // TODO create descriptions
     public static class StoragrConstants
     {
+        
+
         public static string TokenFilePath => Path.Combine(new[]
         {
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             ".storagr",
             "token-file"
         });
-        
+
+
         /**
          * Commands
          */
+        public const string TestCommandDescription = "Just for testing";
+        
         public const string ConfigCommandDescription = "Gets or sets a local config value.";
         
-        public const string DeleteCommandDescription = "";
-        public const string DeleteRepositoryCommandDescription = "";
-        public const string DeleteUserCommandDescription = "";
-        public const string DeleteObjectCommandDescription = "";
+        public const string DeleteCommandDescription = "Deletes a resource";
+        public const string DeleteRepositoryCommandDescription = "Deletes a repository";
+        public const string DeleteUserCommandDescription = "Deletes a user";
+        public const string DeleteObjectCommandDescription = "Deletes an object from a repository";
         
         public const string GetCommandDescription = "";
         public const string GetUserCommandDescription = "";
@@ -39,6 +44,10 @@ namespace Storagr.CLI
         public const string NewUserCommandDescription = "";
         public const string NewRepositoryCommandDescription = "";
         
+        public const string ModifyCommandDescription = "";
+        public const string ModifyUserCommandDescription = "";
+        public const string ModifyRepositoryCommandDescription = "";
+        
         public const string LockCommandDescription = "";
         public const string UnlockCommandDescription = "";
         public const string LoginCommandDescription = "";
@@ -48,14 +57,26 @@ namespace Storagr.CLI
          * Options
          */
         public const string HostOptionDescription = "";
+        public const string AsJsonOptionDescription = "Outputs the result in json format";
         public const string TokenOptionDescription = "";
+        
+        public const string WithResultOptionDescription = "Shows the resulting object of your request.";
         
         public const string CursorOptionDescription = "";
         public const string ForceOptionDescription = "";
         public const string LimitOptionDescription = "";
         public const string RepositoryOptionDescription = "";
+        public const string UsernameOptionDescription = "";
+        public const string SizeLimitOptionDescription = "";
 
         public const string IdPatternOptionDescription = "";
         public const string PathPatternOptionDescription = "";
+        public const string UsernamePatternOptionDescription = "";
+        
+        /**
+         * Arguments
+         */
+        public const string IdArgumentDescription = "Identifier of the requested resource";
+        public const string IdOrNameArgumentDescription = "Id or (User-/Repository-)name of the requested resource";
     }
-}
+} 

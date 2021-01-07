@@ -1,6 +1,7 @@
 ﻿using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Parsing;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +35,10 @@ namespace Storagr.CLI
                             .AddSingleton<IConsoleService, ConsoleService>()
                             .AddSingleton<IConfigService, ConfigService>();
                     });
+                })
+                .UseMiddleware(async (context, next) =>
+                {
+                    await next(context);
                 })
                 .UseDefaults()
                 .Build()

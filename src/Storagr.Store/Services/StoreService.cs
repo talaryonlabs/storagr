@@ -20,13 +20,16 @@ namespace Storagr.Store.Services
         private readonly StoreConfig _options;
         private readonly DirectoryInfo _rootDirectory;
         private readonly DirectoryInfo _tmpDirectory;
+        private readonly DistributedCacheEntryOptions _cacheEntryOptions;
 
         public StoreService(IOptions<StoreConfig> optionsAccessor, IDistributedCache cache)
         {
-            _cache = cache ?? throw new ArgumentNullException(nameof(IDistributedCache));
+            _cache = cache ?? throw new ArgumentNullException(nameof(IDistributedCache), "Cache is null.");
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoreConfig));
             _rootDirectory = new DirectoryInfo(_options.RootPath);
             _tmpDirectory = new DirectoryInfo(Path.Combine(_options.RootPath, ".tmp"));
+
+            _cacheEntryOptions = new DistributedCacheEntryOptions().SetAbsoluteExpiration(_options.Expiration);
 
             if (!_rootDirectory.Exists)
                 _rootDirectory.Create();
@@ -74,7 +77,7 @@ namespace Storagr.Store.Services
         {
             var path = GetRepositoryPath(repositoryId);
             if (!Directory.Exists(path))
-                throw new RepositoryNotFoundException();
+                throw new RepositoryNotFoundError();
 
             return new StoreRepository()
             {
@@ -87,7 +90,7 @@ namespace Storagr.Store.Services
             var path = GetObjectPath(repositoryId, objectId);
             var file = new FileInfo(path);
             if(!file.Exists)
-                throw new ObjectNotFoundException();
+                throw new ObjectNotFoundError();
 
             return new StoreObject()
             {
@@ -103,7 +106,7 @@ namespace Storagr.Store.Services
         {
             var path = GetRepositoryPath(repositoryId);
             if (!Directory.Exists(path))
-                throw new RepositoryNotFoundException();
+                throw new RepositoryNotFoundError();
             
             return new DirectoryInfo(path)
                 .EnumerateFiles("*", SearchOption.AllDirectories)
@@ -119,7 +122,7 @@ namespace Storagr.Store.Services
         {
             var path = GetRepositoryPath(repositoryId);
             if (!Directory.Exists(path))
-                throw new RepositoryNotFoundException();
+                throw new RepositoryNotFoundError();
             
             Directory.Delete(path, true);
         }
@@ -127,7 +130,7 @@ namespace Storagr.Store.Services
         {
             var path = GetObjectPath(repositoryId, objectId);
             if (!File.Exists(path))
-                throw new ObjectNotFoundException();
+                throw new ObjectNotFoundError();
             
             File.Delete(path);
         }
@@ -136,7 +139,7 @@ namespace Storagr.Store.Services
         {
             var path = GetObjectPath(repositoryId, objectId);
             if (!File.Exists(path))
-                throw new ObjectNotFoundException();
+                throw new ObjectNotFoundError();
 
             return File.OpenRead(path);
         }
@@ -144,49 +147,52 @@ namespace Storagr.Store.Services
         public Stream GetUploadStream(string repositoryId, string objectId)
         {
             var path = GetObjectPath(repositoryId, objectId);
-            if (File.Exists(path))
+            var file = new FileInfo(path);
+            if (file.Exists)
             {
-                throw new ObjectAlreadyExistsException();
+                throw new ObjectAlreadyExistsError(new StoragrObject()
+                {
+                    ObjectId = objectId,
+                    RepositoryId = repositoryId,
+                    Size = file.Length
+                });
             }
-            var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
+            var key = StoreCaching.GetTempFileKey(repositoryId, objectId);
             var tmp = _cache.GetString(key) ?? CreateTemporaryFile();
-            var expiration = _options.Expiration;
-            
-            _cache.SetString(key, tmp, new DistributedCacheEntryOptions().SetAbsoluteExpiration(expiration));
+
+            _cache.SetString(key, tmp, _cacheEntryOptions);
 
             return File.OpenWrite(tmp);
         }
 
-        public bool FinalizeUpload(string repositoryId, string objectId, long expectedSize)
+        public void FinalizeUpload(string repositoryId, string objectId, long expectedSize)
         {
-            var key = $"STORAGR:STORE:TMP:{repositoryId}:{objectId}";
+            var key = StoreCaching.GetTempFileKey(repositoryId, objectId);
             var path = _cache.GetString(key);
-            if (path == null)
+            if (path is null)
             {
-                return false;
+                throw new ObjectNotFoundError();
             }
             _cache.Remove(key);
             
             var tmp = new FileInfo(path);
             if (!tmp.Exists)
-                return false;
+                throw new ObjectNotFoundError();
             if (tmp.Length != expectedSize)
             {
                 tmp.Delete();
-                return false;
+                throw new BadRequestError();
             }
             
             var file = new FileInfo(GetObjectPath(repositoryId, objectId));
 
             file.Directory?.Create();
             tmp.MoveTo(file.FullName, true);
-
-            return true;
         }
         
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 foreach (var tmp in _tmpDirectory.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
                     if (tmp.LastAccessTime.Add(_options.Expiration) < DateTime.Now)
@@ -194,7 +200,7 @@ namespace Storagr.Store.Services
                         tmp.Delete();
                     }
 
-                await Task.Delay(_options.ScanInterval, stoppingToken);
+                await Task.Delay(_options.ScanInterval, cancellationToken);
             }
         }
     }

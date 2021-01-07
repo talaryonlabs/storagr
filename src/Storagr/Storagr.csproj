@@ -28,13 +28,6 @@
 
     <ItemGroup>
       <Content Include=".github\workflows\dotnet-core.yml" />
-      <Content Include=".rest\auth-test.http" />
-      <Content Include=".rest\batch-test.http" />
-      <Content Include=".rest\http-client.env.json" />
-      <Content Include=".rest\http-client.private.env.json" />
-      <Content Include=".rest\lock-test.http" />
-      <Content Include=".rest\store-test.http" />
-      <Content Include=".rest\user-test.http" />
       <Content Remove=".github\**" />
     </ItemGroup>
 

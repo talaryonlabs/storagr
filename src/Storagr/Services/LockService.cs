@@ -144,12 +144,13 @@ namespace Storagr.Services
         
         public async Task<LockEntity> Lock(string repositoryId, string path, CancellationToken cancellationToken)
         {
-            var existingLock = await GetByPath(repositoryId, path, cancellationToken);
-            if (existingLock is not null)
+            if (await ExistsByPath(repositoryId, path, cancellationToken))
             {
-                throw new LockAlreadyExistsError(existingLock);
+                throw new LockAlreadyExistsError(
+                    await GetByPath(repositoryId, path, cancellationToken)
+                );
             }
-            
+
             var user = await _userService.GetAuthenticatedUser(cancellationToken);
             var newLock = new LockEntity()
             {
@@ -167,8 +168,7 @@ namespace Storagr.Services
 
         public async Task<LockEntity> Unlock(string repositoryId, string lockId, CancellationToken cancellationToken = default)
         {
-            var existingLock = await Get(repositoryId, lockId, cancellationToken) ??
-                               throw new LockNotFoundError();
+            var existingLock = await Get(repositoryId, lockId, cancellationToken);
 
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetLockCountKey(repositoryId), cancellationToken),

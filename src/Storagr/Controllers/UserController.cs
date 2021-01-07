@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Data.Entities;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -25,16 +24,17 @@ namespace Storagr.Controllers
         }
         
         [HttpGet("me")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult> ViewMe()
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrUser> ViewMe(CancellationToken cancellationToken)
         {
-            return Ok(
-                await _userService.GetAuthenticatedUser()
-            );
+            return await _userService.GetAuthenticatedUser(cancellationToken);
         }
         
         [HttpPatch("me")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public async Task<ActionResult> UpdateMe()
         {
             throw new NotImplementedException();
@@ -43,16 +43,17 @@ namespace Storagr.Controllers
         [HttpGet]
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUserList))]
-        public async Task<IActionResult> List([FromQuery] StoragrUserListArgs listArgs)
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrUserList> List([FromQuery] StoragrUserListArgs listArgs, CancellationToken cancellationToken)
         {
-            var count = await _userService.Count();
+            var count = await _userService.Count(cancellationToken: cancellationToken);
             if (count == 0)
-                return Ok<StoragrUserList>();
+                return new StoragrUserList();
 
             var list = (
                     string.IsNullOrEmpty(listArgs.Username)
-                        ? await _userService.GetAll()
-                        : await _userService.GetMany(listArgs.Username)
+                        ? await _userService.GetAll(cancellationToken)
+                        : await _userService.GetMany(listArgs.Username, cancellationToken)
                 )
                 .Select(v => (StoragrUser) v)
                 .ToList();
@@ -65,118 +66,82 @@ namespace Storagr.Controllers
                 : StoragrConstants.DefaultListLimit).ToList();
 
             return !list.Any()
-                ? Ok<StoragrUserList>()
-                : Ok(new StoragrUserList()
+                ? new StoragrUserList()
+                : new StoragrUserList()
                 {
                     Items = list,
                     NextCursor = list.Last().UserId,
                     TotalCount = count
-                });
+                };
         }
 
 
         [HttpPost]
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(UserAlreadyExistsError))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
+        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ConflictError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
-        public async Task<IActionResult> Create([FromBody] StoragrUserRequest createRequest)
+        public async Task<StoragrUser> Create([FromBody] StoragrUserRequest createRequest, CancellationToken cancellationToken)
         {
             // TODO!
-            try
-            {
                 // await _userService.Create(createRequest.User.Username, createRequest.NewPassword,
                 //     createRequest.User.IsAdmin);
-            }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
-            
-            return Created("", null);
+
+            return null;
         }
 
         [HttpGet("{userId}")]
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public async Task<IActionResult> View([FromRoute] string userId)
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrUser> View([FromRoute] string userId, CancellationToken cancellationToken)
         {
-            if (!await _userService.Exists(userId))
-                return Error<UserNotFoundError>();
-
-            return Ok(
-                (StoragrUser) await _userService.Get(userId)
-            );
+            return await _userService.Get(userId, cancellationToken);
         }
         
         [HttpPatch("{userId}")] 
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(UserNotFoundError))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
-        public async Task<IActionResult> Modify([FromRoute] string userId, [FromBody] StoragrUserRequest modifyRequest)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrUser> Modify([FromRoute] string userId, [FromBody] StoragrUserRequest modifyRequest, CancellationToken cancellationToken)
         {
             // TODO!
-            try
-            {
-                // await _userService.Modify(modifyRequest.User, modifyRequest.NewPassword);
-            }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
-            
-            return Ok();
+            // return await _userService.Modify(modifyRequest.User, modifyRequest.NewPassword);
+
+            return null;
         }
         
         [HttpDelete("{userId}")]
         [Authorize(Policy = StoragrConstants.ManagementPolicy)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(UserNotFoundError))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
-        public async Task<IActionResult> Delete([FromRoute] string userId)
+        public async Task<StoragrUser> Delete([FromRoute] string userId, CancellationToken cancellationToken)
         {
-            try
-            {
-                await _userService.Delete(userId);
-            }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
-
-            return NoContent();
+            return await _userService.Delete(userId, cancellationToken);
         }
         
         [AllowAnonymous]
         [HttpPost("authenticate")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrAuthenticationResponse))]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(AuthenticationError))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(UnauthorizedError))]
         [ProducesResponseType(StatusCodes.Status422UnprocessableEntity, Type = typeof(UsernameOrPasswordMissingError))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(StoragrError))]
-        public async Task<IActionResult> Authenticate([FromBody] StoragrAuthenticationRequest authenticationRequest)
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrAuthenticationResponse> Authenticate([FromBody] StoragrAuthenticationRequest authenticationRequest, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
-                return Error<UsernameOrPasswordMissingError>();
+                throw new UsernameOrPasswordMissingError();
 
-            try
+            var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password, cancellationToken);
+            
+            return new StoragrAuthenticationResponse()
             {
-                var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password);
-                if (user is null)
-                    return Error<AuthenticationError>();
-                
-                return Ok(new StoragrAuthenticationResponse()
-                {
-                    Token = user.Token
-                });
-            }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
+                Token = user.Token
+            };
         }
     }
 }

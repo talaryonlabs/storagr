@@ -1,15 +1,15 @@
 ﻿using System.Runtime.Serialization;
-using Microsoft.AspNetCore.Http;
 using Storagr.Shared.Data;
 
 namespace Storagr.Shared
 {
     [DataContract]
-    public class LockAlreadyExistsError : StoragrError
+    public sealed class LockAlreadyExistsError : ConflictError
     {
         [DataMember(Name = "lock")] public StoragrLock Lock;
         
-        public LockAlreadyExistsError(StoragrLock existingLock) : base(StatusCodes.Status409Conflict, "Lock already exists.")
+        public LockAlreadyExistsError(StoragrLock existingLock)
+            : base("Lock already exists.")
         {
             Lock = existingLock;
         }

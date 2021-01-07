@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -14,6 +15,7 @@ namespace Storagr.Client
     public class StoragrClientOptions : StoragrOptions<StoragrClientOptions>
     {
         public string Host { get; set; }
+        public string Token { get; set; }
     }
     
     public static class StoragrClientService
@@ -46,8 +48,10 @@ namespace Storagr.Client
             _mediaType = new StoragrMediaType();
             
             _httpClient = clientFactory.CreateClient();
-            _httpClient.BaseAddress = new Uri($"http://{_options.Host}/v1");
+            _httpClient.BaseAddress = new Uri($"http://{_options.Host}/v1/");
             _httpClient.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
+
+            Token = _options.Token;
         }
 
         private HttpRequestMessage CreateRequest(string uri, HttpMethod method)
@@ -76,7 +80,7 @@ namespace Storagr.Client
             return request;
         }
         
-        public async Task<bool> Authenticate(string token)
+        public async Task<bool> Authenticate(string token, CancellationToken cancellationToken)
         {
             var response = default(HttpResponseMessage);
             var request = new HttpRequestMessage(HttpMethod.Get, "users/me");
@@ -85,7 +89,7 @@ namespace Storagr.Client
             
             try
             {
-                response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
+                response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
             }
             catch
             {
@@ -94,7 +98,7 @@ namespace Storagr.Client
             if (!response.IsSuccessStatusCode)
                 return false;
             
-            var content = await response.Content.ReadAsByteArrayAsync();
+            var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             var user = StoragrHelper.DeserializeObject<StoragrUser>(content);
 
             User = user;
@@ -104,233 +108,246 @@ namespace Storagr.Client
             return true;
         }
 
-        public async Task<bool> Authenticate(string username, string password)
+        public async Task Authenticate(string username, string password, CancellationToken cancellationToken)
         {
-            var response = default(HttpResponseMessage);
-            var request = CreateRequest("users/authenticate", HttpMethod.Post, new StoragrAuthenticationRequest()
+            var request = CreateRequest($"users/authenticate", HttpMethod.Post, new StoragrAuthenticationRequest()
             {
                 Username = username,
                 Password = password
             });
-            try
-            {
-                response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead);
-            }
-            catch
-            {
-                return false;
-            }
-            if (!response.IsSuccessStatusCode)
-                return false;
             
-            var content = await response.Content.ReadAsByteArrayAsync();
-            var authenticationResponse = StoragrHelper.DeserializeObject<StoragrAuthenticationResponse>(content);
+            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+                throw (StoragrError) data;
+            
+            var authenticationResponse = StoragrHelper.DeserializeObject<StoragrAuthenticationResponse>(data);
 
             Token = authenticationResponse.Token;
             IsAuthenticated = true;
-
-            return true;
         }
 
-        public async Task<StoragrUser> GetUser(string userId)
+        public async Task<StoragrUser> CreateUser(StoragrUser user, string newPassword, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/users/{userId}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
-            
+            var request = CreateRequest($"users", HttpMethod.Post, new StoragrUserRequest()
+            {
+                User = user,
+                NewPassword = newPassword
+            });
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrUserList> GetUsers()
+        public async Task<StoragrUser> GetUser(string userId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest("/users", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var request = CreateRequest($"users/{userId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrLogList> GetLogs(StoragrLogQuery options)
+        public async Task<StoragrUserList> GetUsers(StoragrUserListArgs listArgs, CancellationToken cancellationToken)
+        {
+            var query = StoragrHelper.ToQueryString(listArgs);
+            var request = CreateRequest($"users?{query}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            
+            if (!response.IsSuccessStatusCode) 
+                throw (StoragrError) data;
+
+            return data;
+        }
+
+        public async Task DeleteUser(string userId, CancellationToken cancellationToken)
+        {
+            var request = CreateRequest($"users/{userId}", HttpMethod.Delete);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                throw (StoragrError) data;
+        }
+
+        public async Task<StoragrLogList> GetLogs(StoragrLogQuery options, CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(options);
-            var request = CreateRequest($"/logs?{query}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var request = CreateRequest($"logs?{query}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrRepository> CreateRepository(string repositoryId, string ownerId, long sizeLimit)
+        public async Task<StoragrRepository> CreateRepository(StoragrRepository repository, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories", HttpMethod.Post, new StoragrRepository()
-            {
-                RepositoryId = repositoryId,
-                OwnerId = ownerId,
-                SizeLimit = sizeLimit
-            });
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var request = CreateRequest($"repositories", HttpMethod.Post, repository);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrRepository> GetRepository(string repositoryId)
+        public async Task<StoragrRepository> GetRepository(string repositoryId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var request = CreateRequest($"repositories/{repositoryId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrRepositoryList> GetRepositories()
+        public async Task<StoragrRepositoryList> GetRepositories(StoragrRepositoryListArgs listArgs, CancellationToken cancellationToken)
         {
-            var request = CreateRequest("/repositories", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var query = StoragrHelper.ToQueryString(listArgs);
+            var request = CreateRequest($"repositories?{query}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task DeleteRepository(string repositoryId)
+        public async Task DeleteRepository(string repositoryId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}", HttpMethod.Delete);
-            var response = await _httpClient.SendAsync(request);
+            var request = CreateRequest($"repositories/{repositoryId}", HttpMethod.Delete);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
-            if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(
-                    await response.Content.ReadAsByteArrayAsync()
-                );
+            if (!response.IsSuccessStatusCode)
+                throw (StoragrError) data;
         }
 
-        public async Task<StoragrBatchObject> BatchObject(string repositoryId, StoragrBatchOperation operation, StoragrObject obj) =>
-            (await BatchObjects(repositoryId, operation, new[] {obj})).First();
+        public async Task<StoragrBatchObject> BatchObject(string repositoryId, StoragrBatchOperation operation, StoragrObject obj, CancellationToken cancellationToken) =>
+            (await BatchObjects(repositoryId, operation, new[] {obj}, cancellationToken)).First();
 
-        public async Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList)
+        public async Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
+            var request = CreateRequest($"repositories/{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
             {
                 Operation = operation,
                 Transfers = new []{"basic"}, // TODO
                 Ref = default, // TODO
                 Objects = objList
             });
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return ((StoragrBatchResponse) data).Objects;
         }
 
-        public async Task<StoragrObject> GetObject(string repositoryId, string objectId)
+        public async Task<StoragrObject> GetObject(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/objects/{objectId}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var request = CreateRequest($"repositories/{repositoryId}/objects/{objectId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListQuery listQuery)
+        public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListQuery listQuery, CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(listQuery);
-            var request = CreateRequest($"/repositories/{repositoryId}/objects?{query}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var request = CreateRequest($"repositories/{repositoryId}/objects?{query}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task DeleteObject(string repositoryId, string objectId)
+        public async Task DeleteObject(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
-            var response = await _httpClient.SendAsync(request);
-
+            var request = CreateRequest($"repositories/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            
             if (!response.IsSuccessStatusCode)
-                throw new StoragrException(
-                    await response.Content.ReadAsByteArrayAsync()
-                );
+                throw (StoragrError) data;
         }
 
-        public async Task<StoragrLock> CreateLock(string repositoryId, string path)
+        public async Task<StoragrLock> Lock(string repositoryId, string path, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
+            var request = CreateRequest($"repositories/{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
             {
                 Path = path,
                 Ref = default // TODO
             });
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return ((StoragrLockResponse) data).Lock;
         }
 
-        public async Task<StoragrLock> DeleteLock(string repositoryId, string lockId, bool force)
+        public async Task<StoragrLock> Unlock(string repositoryId, string lockId, bool force, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrUnlockRequest()
+            var request = CreateRequest($"repositories/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrUnlockRequest()
             {
                Force = force,
                Ref = default // TODO
             });
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode) 
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return ((StoragrUnlockResponse) data).Lock;
         }
 
-        public async Task<StoragrLock> GetLock(string repositoryId, string lockId)
+        public async Task<StoragrLock> GetLock(string repositoryId, string lockId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/repositories/{repositoryId}/locks/{lockId}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
-            
+            var request = CreateRequest($"repositories/{repositoryId}/locks/{lockId}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
             if (!response.IsSuccessStatusCode)
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }
 
-        public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListQuery listQuery)
+        public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListArgs listArgs, CancellationToken cancellationToken)
         {
-            var query = StoragrHelper.ToQueryString(listQuery);
-            var request = CreateRequest($"/repositories/{repositoryId}/locks?{query}", HttpMethod.Get);
-            var response = await _httpClient.SendAsync(request);
-            var data = await response.Content.ReadAsByteArrayAsync();
+            var query = StoragrHelper.ToQueryString(listArgs);
+            var request = CreateRequest($"repositories/{repositoryId}/locks?{query}", HttpMethod.Get);
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
             if (!response.IsSuccessStatusCode)
-                throw new StoragrException(data);
+                throw (StoragrError) data;
 
             return data;
         }

@@ -7,111 +7,114 @@ using Storagr.Shared;
 
 namespace Storagr.CLI
 {
-    public class DeleteOptions
+    public class DeleteCommand : StoragrCommand
     {
-        public bool Force { get; set; }
-        public string Repository { get; set; }
-        public string Id { get; set; }
-    }
-    
-    public class DeleteCommand : Command
-    {
+        private class LocalOptions
+        {
+            public bool Force { get; set; }
+            public string Repository { get; set; }
+            public string Id { get; set; }
+        }
+        
         public DeleteCommand()
             : base("delete", StoragrConstants.DeleteCommandDescription)
         {
             var deleteUserCmd = new Command("user", StoragrConstants.DeleteUserCommandDescription)
             {
+                new IdArgument(),
                 new ForceOption()
             };
             var deleteRepositoryCmd = new Command("repository", StoragrConstants.DeleteRepositoryCommandDescription)
             {
+                new IdArgument(),
                 new ForceOption()
             };
             var deleteObjectCmd = new Command("object", StoragrConstants.DeleteObjectCommandDescription)
             {
+                new IdArgument(),
                 new RepositoryOption(),
                 new ForceOption()
             };
 
-            deleteUserCmd.Handler = CommandHandler.Create<IHost, DeleteOptions>(DeleteUser);
-            deleteRepositoryCmd.Handler = CommandHandler.Create<IHost, DeleteOptions>(DeleteRepository);
-            deleteObjectCmd.Handler = CommandHandler.Create<IHost, DeleteOptions>(DeleteObject);
+            deleteUserCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(DeleteUser);
+            deleteRepositoryCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(DeleteRepository);
+            deleteObjectCmd.Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(DeleteObject);
             
             AddCommand(deleteUserCmd);
             AddCommand(deleteRepositoryCmd);
             AddCommand(deleteObjectCmd);
         }
 
-        private static async Task<int> DeleteUser(IHost host, DeleteOptions options)
+        private static async Task<int> DeleteUser(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
+            if (options.Force is false)
+                return Error(console, "You can only delete a user with the --force option.");
+            
             try
             {
-                await client.DeleteUser(options.Id);
+                await console.Wait(token => client.DeleteUser(options.Id, token));
             }
-            catch (StoragrException e)
+            catch (TaskCanceledException)
             {
-                console.WriteError(e);
-                return e.Code;
+                return Abort();
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                console.WriteError(e);
-                return -1;
+                return Error(console, exception);
             }
-            // TODO console output on success
-            
-            return 0;
+
+            return Success(console, "User successfully deleted.");
         }
 
-        private static async Task<int> DeleteRepository(IHost host, DeleteOptions options)
+        private static async Task<int> DeleteRepository(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
             
+            if (options.Force is false)
+                return Error(console, "You can only delete a repository with the --force option.");
+            
             try
             {
-                await client.DeleteRepository(options.Id);
+                await console.Wait(token => client.DeleteRepository(options.Id, token));
             }
-            catch (StoragrException e)
+            catch (TaskCanceledException)
             {
-                console.WriteError(e);
-                return e.Code;
+                return Abort();
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                console.WriteError(e);
-                return -1;
+                return Error(console, exception);
             }
-            // TODO console output on success
             
-            return 0;
+            return Success(console, "Repository successfully deleted.");
         }
 
-        private static async Task<int> DeleteObject(IHost host, DeleteOptions options)
+        private static async Task<int> DeleteObject(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
+            if (options.Force is false)
+                return Error(console, "You can only delete a object with the --force option.");
+            
             try
             {
-                await client.DeleteObject(options.Repository, options.Id);
+                await console.Wait(token => client.DeleteObject(options.Repository, options.Id, token));
             }
-            catch (StoragrException e)
+            catch (TaskCanceledException)
             {
-                console.WriteError(e);
-                return e.Code;
+                return Abort();
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                console.WriteError(e);
-                return -1;
+                return Error(console, exception);
             }
-            // TODO console output on success
             
-            return 0;
+            return Success(console, "Object successfully deleted.");
         }
     }
 }

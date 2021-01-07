@@ -2,8 +2,13 @@
 
 namespace Storagr.CLI
 {
-    public class TimelineCommand : Command
+    public class TimelineCommand : StoragrCommand
     {
+        private class LocalOptions
+        {
+            
+        }
+        
         public TimelineCommand() 
             : base("timeline", StoragrConstants.TimelineCommandDescription)
         {

@@ -42,7 +42,7 @@ namespace Storagr.IO
         {
             var token = _tokenService.Generate(_token, _options.DefaultExpiration);
             var client = _clientFactory.CreateClient();
-            client.BaseAddress = new Uri($"https://{_options.Host}/v1");
+            client.BaseAddress = new Uri($"https://{_options.Host}/v1/");
             client.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
@@ -69,7 +69,7 @@ namespace Storagr.IO
 
         public async Task<bool> Finalize(string repositoryId, string objectId, long expectedSize, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"/{repositoryId}/transfer/{objectId}", HttpMethod.Post, new StoreObject()
+            var request = CreateRequest($"{repositoryId}/transfer/{objectId}", HttpMethod.Post, new StoreObject()
             {
                 RepositoryId = repositoryId, ObjectId = objectId, Size = expectedSize
             });
@@ -80,7 +80,7 @@ namespace Storagr.IO
         public async Task<StoreRepository> Get(string repositoryId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
-            var request = CreateRequest($"/{repositoryId}");
+            var request = CreateRequest($"{repositoryId}");
             var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
@@ -92,7 +92,7 @@ namespace Storagr.IO
         public async Task<StoreObject> Get(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
-            var request = CreateRequest($"/{repositoryId}/objects/{objectId}");
+            var request = CreateRequest($"{repositoryId}/objects/{objectId}");
             var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
@@ -104,7 +104,7 @@ namespace Storagr.IO
         public async Task<IEnumerable<StoreRepository>> GetAll(CancellationToken cancellationToken)
         {
             var client = CreateClient();
-            var request = CreateRequest($"/");
+            var request = CreateRequest($"");
             var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
@@ -115,7 +115,7 @@ namespace Storagr.IO
         public async Task<IEnumerable<StoreObject>> GetAll(string repositoryId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
-            var request = CreateRequest($"/{repositoryId}/objects");
+            var request = CreateRequest($"{repositoryId}/objects");
             var response = await client.SendAsync(request, cancellationToken);
 
             if (!response.IsSuccessStatusCode) return null;
@@ -127,7 +127,7 @@ namespace Storagr.IO
         public async Task Delete(string repositoryId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
-            var request = CreateRequest($"/{repositoryId}", HttpMethod.Delete);
+            var request = CreateRequest($"{repositoryId}", HttpMethod.Delete);
 
             await client.SendAsync(request, cancellationToken);
         }
@@ -135,7 +135,7 @@ namespace Storagr.IO
         public async Task Delete(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
             var client = CreateClient();
-            var request = CreateRequest($"/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
+            var request = CreateRequest($"{repositoryId}/objects/{objectId}", HttpMethod.Delete);
             
             await client.SendAsync(request, cancellationToken);
         }

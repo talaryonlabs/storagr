@@ -1,12 +1,12 @@
 ﻿using System.Runtime.Serialization;
-using Microsoft.AspNetCore.Http;
 
 namespace Storagr.Shared
 {
     [DataContract]
-    public class LockNotFoundError : StoragrError
+    public sealed class LockNotFoundError : NotFoundError
     {
-        public LockNotFoundError() : base(StatusCodes.Status404NotFound, "Lock not found.")
+        public LockNotFoundError() 
+            : base("Lock not found.")
         {
             
         }

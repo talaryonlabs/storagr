@@ -15,7 +15,7 @@ namespace Storagr.Store
 
         public Startup(IConfiguration configuration)
         {
-            _config = new StoragrConfig("Store", configuration);
+            _config = new StoragrConfig("StoragrStore", configuration);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.

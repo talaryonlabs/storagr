@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Shared;
 using Storagr.Shared.Data;
-using Storagr.Store.Services;
 
 namespace Storagr.Store.Controllers
 {
@@ -23,38 +22,43 @@ namespace Storagr.Store.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoreObject>))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public IActionResult List([FromRoute] string repositoryId)
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public IEnumerable<StoreObject> List([FromRoute] string repositoryId)
         {
-            return !_storeService.Exists(repositoryId) ? Error<RepositoryNotFoundError>() : Ok(_storeService.List(repositoryId));
+            if (!_storeService.Exists(repositoryId))
+                throw new RepositoryNotFoundError();
+
+            return _storeService.List(repositoryId);
         }
 
         [HttpGet("{objectId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoreObject))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public IActionResult Get([FromRoute] string repositoryId, [FromRoute] string objectId)
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public StoreObject Get([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             if (!_storeService.Exists(repositoryId))
-                return Error<RepositoryNotFoundError>();
+                throw new RepositoryNotFoundError();
             if (!_storeService.Exists(repositoryId, objectId))
-                return Error<ObjectNotFoundError>();
+                throw new ObjectNotFoundError();
 
-            var obj = _storeService.Get(repositoryId, objectId);
-            return Ok(obj);
+            return _storeService.Get(repositoryId, objectId);
         }
         
         [HttpDelete("{objectId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public IActionResult Delete([FromRoute] string repositoryId, [FromRoute] string objectId)
         {
             if (!_storeService.Exists(repositoryId))
-                return Error<RepositoryNotFoundError>();
+                throw new RepositoryNotFoundError();
             if (!_storeService.Exists(repositoryId, objectId))
-                return Error<ObjectNotFoundError>();
+                throw new ObjectNotFoundError();
 
             _storeService.Delete(repositoryId, objectId);
-            
+
             return Ok();
         }
     }

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Data.Entities;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -25,15 +25,16 @@ namespace Storagr.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepositoryList))]
-        public async Task<IActionResult> List([FromQuery] StoragrRepositoryListArgs listArgs)
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrRepositoryList> List([FromQuery] StoragrRepositoryListArgs listArgs, CancellationToken cancellationToken)
         {
-            var count = await _repositoryService.Count();
+            var count = await _repositoryService.Count(cancellationToken: cancellationToken);
             if (count == 0)
-                return Ok<StoragrRepositoryList>();
+                return new StoragrRepositoryList();
 
             var list = (string.IsNullOrEmpty(listArgs.Id)
-                    ? await _repositoryService.GetAll()
-                    : await _repositoryService.GetMany(listArgs.Id))
+                    ? await _repositoryService.GetAll(cancellationToken)
+                    : await _repositoryService.GetMany(listArgs.Id, cancellationToken: cancellationToken))
                 .Select(v => (StoragrRepository) v)
                 .ToList();
 
@@ -45,68 +46,47 @@ namespace Storagr.Controllers
                 : StoragrConstants.DefaultListLimit).ToList();
 
             return !list.Any()
-                ? Ok<StoragrRepositoryList>()
-                : Ok(new StoragrRepositoryList()
+                ? new StoragrRepositoryList()
+                : new StoragrRepositoryList()
                 {
                     Items = list,
                     NextCursor = list.Last().RepositoryId,
                     TotalCount = count
-                });
+                };
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(StoragrRepository))]
-        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(StoragrError))]
-        public async Task<IActionResult> Create([FromBody] StoragrRepository newRepository)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
+        [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ConflictError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrRepository> Create([FromBody] StoragrRepository newRepository, CancellationToken cancellationToken)
         {
-            if (await _repositoryService.Exists(newRepository.RepositoryId))
+            if (await _repositoryService.Exists(newRepository.RepositoryId, cancellationToken))
             {
-                return Error(new RepositoryAlreadyExistsError(
-                    await _repositoryService.Get(newRepository.RepositoryId)
-                ));
-            }
-
-            try
-            {
-                return Created(
-                    $"v1/repositories/{newRepository.RepositoryId}",
-                    await _repositoryService.Create(newRepository)
+                throw new RepositoryAlreadyExistsError(
+                    await _repositoryService.Get(newRepository.RepositoryId, cancellationToken)
                 );
             }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
+
+            return await _repositoryService.Create(newRepository, cancellationToken);
         }
 
         [HttpGet("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public async Task<IActionResult> Get([FromRoute] string repositoryId)
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrRepository> Get([FromRoute] string repositoryId, CancellationToken cancellationToken)
         {
-            try
-            {
-                return Ok(await _repositoryService.Get(repositoryId));
-            }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
+            return await _repositoryService.Get(repositoryId, cancellationToken);
         }
 
         [HttpDelete("{repositoryId}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public async Task<IActionResult> Delete([FromRoute] string repositoryId)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public async Task<StoragrRepository> Delete([FromRoute] string repositoryId, CancellationToken cancellationToken)
         {
-            try
-            {
-                return Ok(await _repositoryService.Delete(repositoryId));
-            }
-            catch (Exception exception)
-            {
-                return Error(exception is StoragrError error ? error : exception);
-            }
+            return await _repositoryService.Delete(repositoryId, cancellationToken);
         }
     }
 }

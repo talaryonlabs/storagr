@@ -32,24 +32,24 @@ namespace Storagr.Shared
         }
 
         [Pure]
-        public static long ParseNamedSize(string namedSize)
+        public static ulong ParseNamedSize(string namedSize)
         {
-            var names = new[] {"K", "M", "G", "T", "P", "E", "Z", "Y"};
-            var alias = new[] {"KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+            var names = new[] {"K", "M", "G", "T", "P", "E"}; // "Z", "Y"
+            var alias = new[] {"KB", "MB", "GB", "TB", "PB", "EB"}; // "ZB", "YB"
 
             for (var i = 0; i < names.Length; i++)
                 if (namedSize.EndsWith(names[i], true, null))
                 {
-                    return long.Parse(namedSize.Substring(0, namedSize.Length - 1)) * (long)Math.Pow(1024, i + 1);
+                    return (ulong) (long.Parse(namedSize.Substring(0, namedSize.Length - 1)) * Math.Pow(1024, i + 1));
                 }
                 else if (namedSize.EndsWith(alias[i], true, null))
                 {
-                    return long.Parse(namedSize.Substring(0, namedSize.Length - 2)) * (long)Math.Pow(1024, i + 1);
+                    return (ulong) (long.Parse(namedSize.Substring(0, namedSize.Length - 2)) * Math.Pow(1024, i + 1));
                 }
 
-            return long.Parse(namedSize);
+            return ulong.Parse(namedSize);
         }
-        
+
         [Pure]
         public static TimeSpan ParseNamedDelay(string namedDelay)
         {

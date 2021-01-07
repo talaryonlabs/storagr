@@ -6,7 +6,8 @@ namespace Storagr.Shared
     [DataContract]
     public class NotImplementedError : StoragrError
     {
-        public NotImplementedError() : base(StatusCodes.Status501NotImplemented, "Method not implemented.")
+        public NotImplementedError() 
+            : base(StatusCodes.Status501NotImplemented, "Method not implemented.")
         {
         }
     }

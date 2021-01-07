@@ -24,6 +24,13 @@ namespace Storagr.Store
                     logging.AddConsole();
                     logging.AddDebug();
                 })
+                .ConfigureAppConfiguration(configuration =>
+                {
+                    configuration
+                        .AddJsonFile("appsettings.json", true)
+                        .AddJsonFile("/usr/storagr/config/storagr.store.json", true)
+                        .AddEnvironmentVariables();
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

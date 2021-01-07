@@ -1,19 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
 
         <IsPackable>false</IsPackable>
+
+        <LangVersion>9</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="nunit" Version="3.12.0" />
-        <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+        <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Storagr.Client\Storagr.Client.csproj" />
+      <ProjectReference Include="..\..\src\Storagr.CLI\Storagr.CLI.csproj" />
       <ProjectReference Include="..\..\src\Storagr.Store\Storagr.Store.csproj" />
       <ProjectReference Include="..\..\src\Storagr\Storagr.csproj" />
     </ItemGroup>

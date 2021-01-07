@@ -1,4 +1,5 @@
 ﻿@using System.ComponentModel.DataAnnotations
+@using Storagr.Shared
 
 <div class="is-flex is-flex-direction-column is-flex-grow-1 is-justify-content-center is-align-items-stretch">
     <div class="columns is-centered is-gapless">
@@ -54,18 +55,24 @@
         [Required] public string Password { get; set; }
     }
 
-    private LoginRequest _loginModel = new LoginRequest();
+    private LoginRequest _loginModel = new();
     private bool _isAuthenticating = false;
 
     private async Task CallbackAsync()
     {
         _isAuthenticating = true;
-        if (await StoragrClient.Authenticate(_loginModel.Username, _loginModel.Password))
+
+        try
         {
+            await StoragrClient.Authenticate(_loginModel.Username, _loginModel.Password);
             await LocalStorageService.SetItemAsync(Constants.StorageTokenKey, StoragrClient.Token);
             NavigationManager.NavigateTo(NavigationManager.Uri, true);
         }
-        else
+        catch (UnauthorizedError)
+        {
+            // TODO
+        }
+        finally
         {
             _isAuthenticating = false;
         }

@@ -19,4 +19,13 @@ namespace Storagr.CLI
 
         }
     }
+    
+    public class UsernamePatternOption : Option<string>
+    {
+        public UsernamePatternOption()
+            : base(new[] {"--username-pattern"}, StoragrConstants.UsernamePatternOptionDescription)
+        {
+
+        }
+    }
 }

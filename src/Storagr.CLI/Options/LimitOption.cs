@@ -7,7 +7,6 @@ namespace Storagr.CLI
         public LimitOption()
             : base(new[] {"--limit"}, StoragrConstants.LimitOptionDescription)
         {
-
         }
     }
 }

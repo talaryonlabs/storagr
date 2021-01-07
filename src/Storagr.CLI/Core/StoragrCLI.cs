@@ -1,4 +1,6 @@
-﻿using System.CommandLine;
+﻿using System;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 
 namespace Storagr.CLI
 {
@@ -11,7 +13,24 @@ namespace Storagr.CLI
             
             AddGlobalOption(new HostOption());
             AddGlobalOption(new TokenOption());
+            AddGlobalOption(new AsJsonOption());
             
+            AddCommand(new Command("help", "Prints this help page")
+            {
+                Handler = CommandHandler.Create(() =>
+                {
+                    this.Invoke("--help");
+                })
+            });
+            AddCommand(new Command("version", "Prints version information")
+            {
+                Handler = CommandHandler.Create(() =>
+                {
+                    this.Invoke("--version");
+                })
+            });
+            
+            AddCommand(new TestCommand());
             AddCommand(new ConfigCommand());
             
             AddCommand(new LoginCommand());
@@ -20,7 +39,7 @@ namespace Storagr.CLI
             AddCommand(new ListCommand());
             AddCommand(new GetCommand());
             AddCommand(new DeleteCommand());
-            // TODO AddCommand(new TimelineCommand());
+            AddCommand(new TimelineCommand());
             
             AddCommand(new LockCommand());
             AddCommand(new UnlockCommand());

@@ -22,29 +22,35 @@ namespace Storagr.Store.Controllers
         
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoreRepository>))]
-        public IActionResult List()
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public IEnumerable<StoreRepository> List()
         {
-            return Ok(_storeService.List());
+            return _storeService.List();
         }
 
         [HttpGet("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoreRepository))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
-        public IActionResult Get([FromRoute] string repositoryId)
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
+        public StoreRepository Get([FromRoute] string repositoryId)
         {
-            return !_storeService.Exists(repositoryId) ? Error<RepositoryNotFoundError>() : Ok(_storeService.Get(repositoryId));
+            if (!_storeService.Exists(repositoryId))
+                throw new RepositoryNotFoundError();
+            
+            return _storeService.Get(repositoryId);
         }
         
         [HttpDelete("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(StoragrError))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public IActionResult Delete([FromRoute] string repositoryId)
         {
             if (!_storeService.Exists(repositoryId))
-                return Error<RepositoryNotFoundError>();
+                throw new RepositoryNotFoundError();
 
             _storeService.Delete(repositoryId);
-            
+
             return Ok();
         }
     }

@@ -10,7 +10,7 @@ namespace Storagr.Data.Migrations
         {
             Create.Table("BackendAuth")
                 .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
-                .WithColumn("Username").AsString().NotNullable()
+                .WithColumn("Username").AsString().NotNullable().Unique()
                 .WithColumn("Password").AsString().NotNullable();
 
             Create.Table("User")
@@ -19,10 +19,11 @@ namespace Storagr.Data.Migrations
                 .WithColumn("AuthAdapter").AsString().NotNullable()
                 .WithColumn("IsEnabled").AsBoolean().WithDefaultValue(true)
                 .WithColumn("IsAdmin").AsBoolean().WithDefaultValue(false)
-                .WithColumn("Username").AsString().NotNullable();
+                .WithColumn("Username").AsString().NotNullable().Unique();
 
             Create.Table("Repository")
                 .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
+                .WithColumn("Name").AsString().NotNullable().Unique()
                 .WithColumn("OwnerId").AsString().NotNullable()
                 .WithColumn("SizeLimit").AsInt64().NotNullable();
 

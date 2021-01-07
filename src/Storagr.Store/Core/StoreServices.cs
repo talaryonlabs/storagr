@@ -45,6 +45,7 @@ namespace Storagr.Store
             services.AddMvcCore()
                 .AddMvcOptions(options =>
                 {
+                    options.Filters.Add(new StoragrExceptionFilter(mediaType));
                     options.Filters.Add(new ProducesAttribute(mediaType.MediaType.Buffer));
 
                     foreach (var input in options.InputFormatters.OfType<NewtonsoftJsonInputFormatter>())

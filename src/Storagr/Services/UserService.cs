@@ -34,6 +34,8 @@ namespace Storagr.Services
 
         public async Task<UserEntity> Authenticate(string username, string password, CancellationToken cancellationToken)
         {
+            // TODO throw exception on failure
+            
             var result = await _authenticator.Authenticate(username, password, cancellationToken);
             if (result is null)
                 return null;
@@ -159,26 +161,28 @@ namespace Storagr.Services
             return entity;
         }*/
         
-        public async Task<UserEntity> Create(UserEntity entity, CancellationToken cancellationToken)
+        public async Task<UserEntity> Create(UserEntity newUser, CancellationToken cancellationToken)
         {
-            var existingUser = await Get(entity.Id, cancellationToken);
-            if(existingUser is not null)
-                throw new UserAlreadyExistsError(existingUser);
+            if (await Exists(newUser.Username, cancellationToken))
+            {
+                throw new UserAlreadyExistsError(
+                    await Get(newUser.Username, cancellationToken)
+                );
+            }
 
-            entity.Id = StoragrHelper.UUID();
+            newUser.Id = StoragrHelper.UUID();
 
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetUserCountKey(), cancellationToken),
-                _database.Insert(entity, cancellationToken)
+                _database.Insert(newUser, cancellationToken)
             );
 
-            return entity;
+            return newUser;
         }
 
-        public async Task<UserEntity> Modify(UserEntity entity, CancellationToken cancellationToken)
+        public async Task<UserEntity> Modify(UserEntity updatedUser, CancellationToken cancellationToken)
         {
-            var user = await Get(entity.Id, cancellationToken) ??
-                       throw new UserNotFoundError();
+            var user = await Get(updatedUser.Id, cancellationToken);
 
             // TODO
             // if (_authenticator is BackendAuthenticator authenticator)
@@ -186,9 +190,9 @@ namespace Storagr.Services
             //     await authenticator.Modify(entity.AuthId, entity.Username, newPassword);
             // }
 
-            user.IsAdmin = entity.IsAdmin;
-            user.IsEnabled = entity.IsEnabled;
-            user.Username = entity.Username;
+            user.IsAdmin = updatedUser.IsAdmin;
+            user.IsEnabled = updatedUser.IsEnabled;
+            user.Username = updatedUser.Username;
 
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetUserCountKey(), cancellationToken),
@@ -222,8 +226,7 @@ namespace Storagr.Services
 
         public async Task<UserEntity> Delete(string userId, CancellationToken cancellationToken)
         {
-            var user = await Get(userId, cancellationToken) ??
-                       throw new UserNotFoundError();
+            var user = await Get(userId, cancellationToken);
             
             if (_authenticator is BackendAuthenticator authenticator)
             {

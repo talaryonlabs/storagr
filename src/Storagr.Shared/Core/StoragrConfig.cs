@@ -28,24 +28,26 @@ namespace Storagr.Shared
             {
                 return _cache.FirstOrDefault(v => v.GetType() == type);
             }
-            
-            var configAttribute = (StoragrConfigAttribute)type.GetCustomAttribute(typeof(StoragrConfigAttribute));
+
+            var configAttribute = (StoragrConfigAttribute) type.GetCustomAttribute(typeof(StoragrConfigAttribute));
             if (configAttribute is null)
                 throw new InvalidOperationException($"{nameof(StoragrConfigAttribute)} missing.");
 
-            var config = (object)Activator.CreateInstance(type);
-            
+            var config = (object) Activator.CreateInstance(type);
+
             var properties = type
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Where(v => v.CanWrite && v.GetCustomAttribute(typeof(StoragrConfigValueAttribute)) is not null);
             foreach (var property in properties)
             {
-                var attribute = (StoragrConfigValueAttribute)property.GetCustomAttribute(typeof(StoragrConfigValueAttribute));
+                var attribute =
+                    (StoragrConfigValueAttribute) property.GetCustomAttribute(typeof(StoragrConfigValueAttribute));
                 var value = ReadValue(configAttribute.Name, attribute?.Name ?? property.Name);
 
-                if (value is not null) 
+                if (value is not null)
                     property.SetValue(config, ParseValue(value, property.PropertyType, attribute));
             }
+
             _cache.Add(config);
 
             return config;
@@ -58,6 +60,7 @@ namespace Storagr.Shared
             {
                 keys.Add(sectionName);
             }
+
             keys.Add(valueName);
 
             return _configuration[string.Join("_", keys).ToUpper()] ?? _configuration[string.Join(":", keys)];
@@ -69,6 +72,7 @@ namespace Storagr.Shared
             {
                 return Enum.Parse(type, value);
             }
+
             if (type.IsPrimitive)
             {
                 return Convert.ChangeType(attribute.IsNamedSize
@@ -81,10 +85,12 @@ namespace Storagr.Shared
             {
                 return attribute.IsNamedDelay ? StoragrHelper.ParseNamedDelay(value) : TimeSpan.Parse(value);
             }
+
             if (type == typeof(IPEndPoint))
             {
                 return IPEndPoint.Parse(value);
             }
+
             return type.GetCustomAttribute<StoragrConfigAttribute>() is not null ? Get(type) : value;
         }
     }
@@ -97,12 +103,13 @@ namespace Storagr.Shared
         public StoragrConfigAttribute()
         {
         }
+
         public StoragrConfigAttribute(string name)
         {
             Name = name;
         }
     }
-    
+
     [AttributeUsage(AttributeTargets.Property)]
     public class StoragrConfigValueAttribute : Attribute
     {

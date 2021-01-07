@@ -1,22 +1,26 @@
-﻿using System.CommandLine;
+﻿using System;
 using System.CommandLine.Invocation;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Storagr.Shared.Data;
 
 namespace Storagr.CLI
 {
-    public class UnlockOptions
+    public class UnlockCommand : StoragrCommand
     {
-        public string Repository { get; set; }
-    }
-    
-    public class UnlockCommand : Command
-    {
+        private class LocalOptions
+        {
+            public bool Force { get; set; }
+            public string Repository { get; set; }
+            public string Id { get; set; }
+        }
+        
         public UnlockCommand()
             : base("unlock", StoragrConstants.UnlockCommandDescription)
         {
             AddOption(new RepositoryOption());
             AddOption(new ForceOption());
+            AddArgument(new IdArgument());
             // AddOption(new Option<string>(new []{"--by-path"}, "Unlock by path")
             // {
             // });
@@ -24,12 +28,32 @@ namespace Storagr.CLI
             // {
             // });
             
-            Handler = CommandHandler.Create<IHost, IConsole, UnlockOptions>(Unlock);
+            Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(Unlock);
         }
 
-        private static async Task<int> Unlock(IHost host, IConsole console, UnlockOptions options)
+        private static async Task<int> Unlock(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
-            return 0;
+            var console = host.GetConsole();
+            var client = host.GetStoragrClient();
+
+            StoragrLock lck = default;
+            try
+            {
+                await console.Wait(async token =>
+                {
+                    lck = await client.Unlock(options.Repository, options.Id, options.Force, token);
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                return Abort();
+            }
+            catch (Exception exception)
+            {
+                return Error(console, exception);
+            }
+
+            return Success(console, lck, "Successfully unlocked.", globalOptions.AsJson);
         }
     }
 }

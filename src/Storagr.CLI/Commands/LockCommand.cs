@@ -1,19 +1,21 @@
-﻿using System.CommandLine;
+﻿using System;
+using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.CommandLine.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.CLI
 {
-    public class LockOptions
+    public class LockCommand : StoragrCommand
     {
-        public string Repository { get; set; }
-        public string Path { get; set; }
-    }
-    
-    public class LockCommand : Command
-    {
+        private class LocalOptions
+        {
+            public string Repository { get; set; }
+            public string Path { get; set; }
+        }
+
         public LockCommand()
             : base("lock", StoragrConstants.LockCommandDescription)
         {
@@ -22,14 +24,32 @@ namespace Storagr.CLI
             {
             });
             
-            Handler = CommandHandler.Create<IHost, IConsole, LockOptions>(Lock);
+            Handler = CommandHandler.Create<IHost, LocalOptions, GlobalOptions>(Lock);
         }
 
-        private static async Task<int> Lock(IHost host, IConsole console, LockOptions options)
+        private static async Task<int> Lock(IHost host, LocalOptions options, GlobalOptions globalOptions)
         {
-            console.Out.WriteLine(options.Repository);
-            console.Out.WriteLine(options.Path);
-            return 0;
+            var console = host.GetConsole();
+            var client = host.GetStoragrClient();
+
+            StoragrLock lck = default;
+            try
+            {
+                await console.Wait(async token =>
+                {
+                    lck = await client.Lock(options.Repository, options.Path, token);
+                });
+            }
+            catch (TaskCanceledException)
+            {
+                return Abort();
+            }
+            catch (Exception exception)
+            {
+                return Error(console, exception);
+            }
+            
+            return Success(console, lck, "Successfully locked.", globalOptions.AsJson);
         }
     }
 }

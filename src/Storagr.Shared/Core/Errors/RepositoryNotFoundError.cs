@@ -1,12 +1,12 @@
 ﻿using System.Runtime.Serialization;
-using Microsoft.AspNetCore.Http;
 
 namespace Storagr.Shared
 {
     [DataContract]
-    public class RepositoryNotFoundError : StoragrError
+    public sealed class RepositoryNotFoundError : NotFoundError
     {
-        public RepositoryNotFoundError() : base(StatusCodes.Status404NotFound, "Repository not found.")
+        public RepositoryNotFoundError() 
+            : base("Repository not found.")
         {
             
         }

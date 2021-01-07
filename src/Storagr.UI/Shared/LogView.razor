@@ -71,13 +71,13 @@
 
 @inject IStoragrClient StoragrClient;
 @code {
-    private readonly StoragrLogQuery _logOptions = new StoragrLogQuery()
+    private readonly StoragrLogQuery _logOptions = new()
     {
         Limit = 8
     };
-    private readonly ExceptionViewer.ExceptionViewerParams _exceptionViewerParams = new ExceptionViewer.ExceptionViewerParams();
+    private readonly ExceptionViewer.ExceptionViewerParams _exceptionViewerParams = new();
 
-    private StoragrLogList _logs = new StoragrLogList();
+    private StoragrLogList _logs = new();
     private int _pageCount;
     private int _currentPage = 1;
     

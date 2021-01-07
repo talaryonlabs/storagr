@@ -94,9 +94,12 @@ namespace Storagr.Services
 
         public async Task<ObjectEntity> Add(string repositoryId, ObjectEntity newObject, CancellationToken cancellationToken)
         {
-            var existingObject = await Get(repositoryId, newObject.Id, cancellationToken);
-            if (existingObject is not null) 
-                throw new ObjectAlreadyExistsError(existingObject);
+            if (await Exists(repositoryId, newObject.Id, cancellationToken))
+            {
+                throw new ObjectAlreadyExistsError(
+                    await Get(repositoryId, newObject.Id, cancellationToken)
+                );
+            }
 
             if (!await _store.Finalize(repositoryId, newObject.Id, newObject.Size, cancellationToken))
             {
@@ -112,8 +115,7 @@ namespace Storagr.Services
 
         public async Task<ObjectEntity> Delete(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var deletingObject = await Get(repositoryId, objectId, cancellationToken) ??
-                                 throw new ObjectNotFoundError();
+            var deletingObject = await Get(repositoryId, objectId, cancellationToken);
 
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetObjectCountKey(repositoryId), cancellationToken),
@@ -166,9 +168,12 @@ namespace Storagr.Services
 
         public async Task<StoragrAction> NewUploadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var existingObject = await Get(repositoryId, objectId, cancellationToken);
-            if (existingObject is not null)
-                throw new ObjectAlreadyExistsError(existingObject);
+            if (await Exists(repositoryId, objectId, cancellationToken))
+            {
+                throw new ObjectAlreadyExistsError(
+                    await Get(repositoryId, objectId, cancellationToken)
+                );
+            }
 
             return await _store.NewUploadAction(repositoryId, objectId, cancellationToken);
         }

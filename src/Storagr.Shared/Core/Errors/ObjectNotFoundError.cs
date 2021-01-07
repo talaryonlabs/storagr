@@ -1,12 +1,12 @@
 ﻿using System.Runtime.Serialization;
-using Microsoft.AspNetCore.Http;
 
 namespace Storagr.Shared
 {
     [DataContract]
-    public class ObjectNotFoundError : StoragrError
+    public sealed class ObjectNotFoundError : NotFoundError
     {
-        public ObjectNotFoundError() : base(StatusCodes.Status404NotFound, "Object not found.")
+        public ObjectNotFoundError() 
+            : base("Object not found.")
         {
             
         }

@@ -16,19 +16,22 @@ namespace Storagr.Data.Entities
     public class RepositoryEntity
     {
         [ExplicitKey] public string Id { get; set; }
+        public string Name { get; set; }
         public string OwnerId { get; set; }
         public ulong SizeLimit { get; set; }
 
-        public static implicit operator StoragrRepository([NotNull] RepositoryEntity entity) => new StoragrRepository()
+        public static implicit operator StoragrRepository([NotNull] RepositoryEntity entity) => new()
         {
             RepositoryId = entity.Id,
+            Name = entity.Name,
             OwnerId = entity.OwnerId,
             SizeLimit = entity.SizeLimit
         };
         
-        public static implicit operator RepositoryEntity([NotNull] StoragrRepository repository) => new RepositoryEntity()
+        public static implicit operator RepositoryEntity([NotNull] StoragrRepository repository) => new()
         {
             Id = repository.RepositoryId,
+            Name = repository.Name,
             OwnerId = repository.OwnerId,
             SizeLimit = repository.SizeLimit
         };

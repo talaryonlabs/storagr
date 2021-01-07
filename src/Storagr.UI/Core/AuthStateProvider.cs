@@ -22,7 +22,7 @@ namespace Storagr.UI
             var identity = new ClaimsIdentity();
             var token = await _localStorage.GetItemAsStringAsync(Constants.StorageTokenKey);
             
-            if (token != null && await _client.Authenticate(token))
+            if (token is not null && await _client.Authenticate(token))
             {
                 identity = new ClaimsIdentity(new[]  
                 {  

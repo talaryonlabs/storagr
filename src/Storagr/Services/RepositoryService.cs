@@ -27,10 +27,10 @@ namespace Storagr.Services
             _cacheEntryOptions = new DistributedCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(30)); // TODO time from a global config
         }
 
-        public async Task<int> Count(string repositoryId, string ownerId, CancellationToken cancellationToken)
+        public async Task<int> Count(string repositoryIdOrName, string ownerId, CancellationToken cancellationToken)
         {
             var key = StoragrCaching.GetRepositoryCountKey();
-            var useCache = (repositoryId is null && ownerId is null);
+            var useCache = (repositoryIdOrName is null && ownerId is null);
             if (useCache && await _cache.ExistsAsync(key, cancellationToken))
             {
                 return await _cache.GetObjectAsync<int>(key, cancellationToken);
@@ -38,8 +38,13 @@ namespace Storagr.Services
             
             var count = await _database.Count<RepositoryEntity>(filter =>
             {
-                if (repositoryId is not null)
-                    filter.Like(nameof(RepositoryEntity.Id), repositoryId);
+                if (repositoryIdOrName is not null)
+                {
+                    filter
+                        .Like(nameof(RepositoryEntity.Id), repositoryIdOrName)
+                        .Or()
+                        .Like(nameof(RepositoryEntity.Name), repositoryIdOrName);
+                }
                 else if (ownerId is not null)
                     filter.Like(nameof(RepositoryEntity.OwnerId), ownerId);
             }, cancellationToken);
@@ -51,19 +56,31 @@ namespace Storagr.Services
 
             return count;
         }
-            
 
-        public async Task<bool> Exists(string repositoryId, CancellationToken cancellationToken) =>
-            await _cache.ExistsAsync(StoragrCaching.GetRepositoryKey(repositoryId), cancellationToken) 
+
+        public async Task<bool> Exists(string repositoryIdOrName, CancellationToken cancellationToken) =>
+            await _cache.ExistsAsync(StoragrCaching.GetRepositoryKey(repositoryIdOrName), cancellationToken)
             ||
-            await _database.Exists<RepositoryEntity>(repositoryId, cancellationToken);
+            await _database.Exists<RepositoryEntity>(filter =>
+            {
+                filter
+                    .Equal(nameof(RepositoryEntity.Id), repositoryIdOrName)
+                    .Or()
+                    .Equal(nameof(RepositoryEntity.Name), repositoryIdOrName);
+            }, cancellationToken);
 
-        public async Task<RepositoryEntity> Get(string repositoryId, CancellationToken cancellationToken)
+        public async Task<RepositoryEntity> Get(string repositoryIdOrName, CancellationToken cancellationToken)
         {
-            var key = StoragrCaching.GetRepositoryKey(repositoryId);
+            var key = StoragrCaching.GetRepositoryKey(repositoryIdOrName);
             var repository = 
                 await _cache.GetObjectAsync<RepositoryEntity>(key, cancellationToken) ??
-                await _database.Get<RepositoryEntity>(repositoryId, cancellationToken) ?? 
+                await _database.Get<RepositoryEntity>(filter =>
+                {
+                    filter
+                        .Equal(nameof(RepositoryEntity.Id), repositoryIdOrName)
+                        .Or()
+                        .Equal(nameof(RepositoryEntity.Name), repositoryIdOrName);
+                }, cancellationToken) ??
                 throw new RepositoryNotFoundError();
 
             await _cache.SetObjectAsync(key, repository, _cacheEntryOptions, cancellationToken);
@@ -71,29 +88,37 @@ namespace Storagr.Services
             return repository;
         }
 
-        public Task<IEnumerable<RepositoryEntity>> GetMany(string repositoryId, string ownerId, CancellationToken cancellationToken) =>
+        public Task<IEnumerable<RepositoryEntity>> GetMany(string repositoryIdOrName, string ownerId, CancellationToken cancellationToken) =>
             _database.GetMany<RepositoryEntity>(query => query.Where(filter =>
             {
-                if (repositoryId is not null)
-                    filter.Like(nameof(RepositoryEntity.Id), repositoryId);
+                if (repositoryIdOrName is not null)
+                {
+                    filter
+                        .Like(nameof(RepositoryEntity.Id), repositoryIdOrName)
+                        .Or()
+                        .Like(nameof(RepositoryEntity.Name), repositoryIdOrName);
+                }
                 else if (ownerId is not null)
                     filter.Like(nameof(RepositoryEntity.OwnerId), ownerId);
             }), cancellationToken);
 
         public Task<IEnumerable<RepositoryEntity>> GetAll(CancellationToken cancellationToken) =>
             _database.GetAll<RepositoryEntity>(cancellationToken);
-        
+
         public async Task<RepositoryEntity> Create(RepositoryEntity newRepository, CancellationToken cancellationToken)
         {
-            var user = await _userService.Get(newRepository.OwnerId, cancellationToken) ??
-                       throw new UserNotFoundError();
+            if (await Exists(newRepository.Name, cancellationToken))
+            {
+                throw new RepositoryAlreadyExistsError(
+                    await Get(newRepository.Name, cancellationToken)
+                );
+            }
 
-            var repository = await _database.Get<RepositoryEntity>(newRepository.Id, cancellationToken);
-            if(repository is not null)
-                throw new RepositoryAlreadyExistsError(repository);
+            var user = await _userService.Get(newRepository.OwnerId, cancellationToken);
 
+            newRepository.Id = StoragrHelper.UUID();
             newRepository.OwnerId = user.Id;
-            
+
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetRepositoryCountKey(), cancellationToken),
                 _database.Insert(newRepository, cancellationToken)
@@ -102,61 +127,55 @@ namespace Storagr.Services
             return newRepository;
         }
 
-        public async Task<RepositoryEntity> Delete(string repositoryId, CancellationToken cancellationToken)
+        public async Task<RepositoryEntity> Delete(string repositoryIdOrName, CancellationToken cancellationToken)
         {
-            var repository = await _database.Get<RepositoryEntity>(repositoryId, cancellationToken) ??
-                             throw new RepositoryNotFoundError();
-
+            var repository = await Get(repositoryIdOrName, cancellationToken);
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetRepositoryCountKey(), cancellationToken),
-                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repositoryId), cancellationToken),
+                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repositoryIdOrName), cancellationToken),
 
-                _lockService.UnlockAll(repositoryId, cancellationToken),
-                _objectService.DeleteAll(repositoryId, cancellationToken),
+                _lockService.UnlockAll(repositoryIdOrName, cancellationToken),
+                _objectService.DeleteAll(repositoryIdOrName, cancellationToken),
 
-                _database.Delete(new RepositoryEntity() {Id = repositoryId}, cancellationToken)
+                _database.Delete(new RepositoryEntity() {Id = repositoryIdOrName}, cancellationToken)
             );
 
             return repository;
         }
 
-        public async Task GrantAccess(string repositoryId, string userId, RepositoryAccessType accessType, CancellationToken cancellationToken)
+        public async Task GrantAccess(string repositoryIdOrName, string userId, RepositoryAccessType accessType, CancellationToken cancellationToken)
         {
-            var repository = await _database.Get<RepositoryEntity>(repositoryId, cancellationToken) ??
-                             throw new RepositoryNotFoundError();
-
+            var repository = await Get(repositoryIdOrName, cancellationToken);
             if (repository.OwnerId == userId) // why granting something? ... he owns the repo :-P
                 return;
 
             await _database.Insert(new RepositoryAccessEntity()
             {
-                RepositoryId = repositoryId,
+                RepositoryId = repositoryIdOrName,
                 UserId = userId,
                 AccessType = accessType
             }, cancellationToken);
         }
 
-        public async Task RevokeAccess(string repositoryId, string userId, CancellationToken cancellationToken)
+        public async Task RevokeAccess(string repositoryIdOrName, string userId, CancellationToken cancellationToken)
         {
-            if(!await Exists(repositoryId, cancellationToken))
-                throw new RepositoryNotFoundError();
-
+            var repository = await Get(repositoryIdOrName, cancellationToken);
+            
             await _database.Delete(new RepositoryAccessEntity()
             {
-                RepositoryId = repositoryId,
+                RepositoryId = repository.Id,
                 UserId = userId
             }, cancellationToken);
         }
 
-        public async Task<bool> HasAccess(string repositoryId, string userId, RepositoryAccessType accessType, CancellationToken cancellationToken)
+        public async Task<bool> HasAccess(string repositoryIdOrName, string userId, RepositoryAccessType accessType, CancellationToken cancellationToken)
         {
-            var repository = await _database.Get<RepositoryEntity>(repositoryId, cancellationToken) ??
-                             throw new RepositoryNotFoundError();
+            var repository = await Get(repositoryIdOrName, cancellationToken);
 
             return repository.OwnerId == userId || (await _database.Get<RepositoryAccessEntity>(query =>
             {
                 query.Where(filter => filter
-                    .Equal(nameof(RepositoryAccessEntity.RepositoryId), repositoryId)
+                    .Equal(nameof(RepositoryAccessEntity.RepositoryId), repository.Id)
                     .And()
                     .Equal(nameof(RepositoryAccessEntity.UserId), userId)
                     .And()
