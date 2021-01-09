@@ -13,14 +13,14 @@ namespace Storagr.Data.Entities
         [ExplicitKey] public string RepositoryId { get; set; }
         public long Size { get; set; }
         
-        public static implicit operator StoragrObject([NotNull] ObjectEntity entity) => new StoragrObject()
+        public static implicit operator StoragrObject([NotNull] ObjectEntity entity) => new ()
         {
             ObjectId = entity.Id,
             RepositoryId = entity.RepositoryId,
             Size =  entity.Size
         };
         
-        public static implicit operator ObjectEntity([NotNull] StoragrObject obj) => new ObjectEntity()
+        public static implicit operator ObjectEntity([NotNull] StoragrObject obj) => new ()
         {
             Id = obj.ObjectId,
             RepositoryId = obj.RepositoryId,

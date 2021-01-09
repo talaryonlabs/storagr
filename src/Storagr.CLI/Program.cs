@@ -1,7 +1,7 @@
 ﻿using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
+using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,34 +14,37 @@ namespace Storagr.CLI
     {
         public static Task<int> Main(string[] args) =>
             new CommandLineBuilder(new StoragrCLI())
-                .UseHost(host =>
+                .UseTypoCorrections()
+                .UseHost(hostBuilder =>
                 {
-                    host.ConfigureAppConfiguration(configuration =>
+                    hostBuilder.ConfigureAppConfiguration(configuration =>
                     {
                         configuration
                             .AddJsonFile("appsettings.json", true)
                             .AddConfigFile()
-                            .AddTokenFile()
-                            .AddCommandLine(args);
+                            .AddTokenFile();
                     });
-                    host.ConfigureServices((context, services) =>
+                    hostBuilder.ConfigureServices((context, services) =>
                     {
                         services
                             .AddStoragrClient(options =>
                             {
-                                options.Host = context.Configuration["host"];
-                                options.Token = context.Configuration["token"];
+                                context.Properties.TryGetValue(typeof(InvocationContext), out var invocationContext);
+                                var parseResult = (invocationContext as InvocationContext)?.ParseResult.RootCommandResult;
+
+                                options.DefaultPort = short.Parse(context.Configuration["defaultPort"]);
+                                options.Host = parseResult?.OptionResult("--host")?.GetValueOrDefault<string>() ??
+                                               context.Configuration["host"];
+                                options.Token = parseResult?.OptionResult("--token")?.GetValueOrDefault<string>() ??
+                                                context.Configuration["token"];
                             })
                             .AddSingleton<IConsoleService, ConsoleService>()
                             .AddSingleton<IConfigService, ConfigService>();
                     });
                 })
-                .UseMiddleware(async (context, next) =>
-                {
-                    await next(context);
-                })
                 .UseDefaults()
                 .Build()
                 .InvokeAsync(args);
+
     }
 }

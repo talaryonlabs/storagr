@@ -25,6 +25,7 @@ namespace Storagr
         Task Update<T>(T data, CancellationToken cancellationToken = default) where T : class;
 
         Task<bool> Delete<T>(T data, CancellationToken cancellationToken = default) where T : class;
+        Task<bool> Delete<T>(IEnumerable<T> list, CancellationToken cancellationToken = default) where T : class;
     }
 
     public interface IDatabaseQuery

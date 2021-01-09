@@ -6,8 +6,8 @@ namespace Storagr.Shared
     [DataContract]
     public class UnauthorizedError : StoragrError
     {
-        public UnauthorizedError() 
-            : base(StatusCodes.Status401Unauthorized, "Authentication failed. Username and Password correct?")
+        public UnauthorizedError(string message) 
+            : base(StatusCodes.Status401Unauthorized, message)
         {
         }
     }

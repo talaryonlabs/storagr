@@ -44,9 +44,9 @@ namespace Storagr.CLI
         public const string NewUserCommandDescription = "";
         public const string NewRepositoryCommandDescription = "";
         
-        public const string ModifyCommandDescription = "";
-        public const string ModifyUserCommandDescription = "";
-        public const string ModifyRepositoryCommandDescription = "";
+        public const string UpdateCommandDescription = "";
+        public const string UpdateUserCommandDescription = "";
+        public const string UpdateRepositoryCommandDescription = "";
         
         public const string LockCommandDescription = "";
         public const string UnlockCommandDescription = "";
@@ -56,7 +56,7 @@ namespace Storagr.CLI
         /**
          * Options
          */
-        public const string HostOptionDescription = "";
+        public const string HostOptionDescription = "API Endpoint [http|s://]hostname[:port] (protocol and port optional)";
         public const string AsJsonOptionDescription = "Outputs the result in json format";
         public const string TokenOptionDescription = "";
         

@@ -21,9 +21,10 @@ namespace Storagr.Data.Migrations
             Insert.IntoTable("Repository")
                 .Row(new
                 {
-                    Id = "test",
+                    Id = StoragrHelper.UUID(),
+                    Name = "test",
                     OwnerId = "_",
-                    SizeLimit = -1
+                    SizeLimit = 0
                 });
         }
 
@@ -37,7 +38,7 @@ namespace Storagr.Data.Migrations
             Delete.FromTable("Repository")
                 .Row(new
                 {
-                    Id = "test"
+                    Name = "test"
                 });
         }
     }

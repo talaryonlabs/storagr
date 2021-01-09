@@ -76,6 +76,31 @@ namespace Storagr.Shared
         }
 
         [Pure]
+        public static (string, string, short) ParseHostname(string hostname)
+        {
+            var position = 0;
+            var protocol = default(string);
+            var port = (short)-1;
+
+
+            if (hostname.Contains("://"))
+            {
+                position = hostname.IndexOf("://", StringComparison.Ordinal);
+                protocol = hostname.Substring(0, position);
+                hostname = hostname.Substring(position + 3, hostname.Length - 3 - position);
+            }
+
+            if (hostname.Contains(":"))
+            {
+                position = hostname.IndexOf(":", StringComparison.Ordinal) + 1;
+                port = short.Parse(hostname.Substring(position, hostname.Length - position));
+                hostname = hostname.Substring(0, position - 1);
+            }
+            
+            return (protocol, hostname, port);
+        }
+
+        [Pure]
         public static string ToQueryString<T>(T data)
         {
             return string.Join("&", typeof(T)

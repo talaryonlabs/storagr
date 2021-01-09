@@ -12,7 +12,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var obj in _objects)
+    @foreach (var obj in _objects.Items)
     {
         <tr>
             <td>@obj.ObjectId</td>
@@ -34,7 +34,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var lck in _locks)
+    @foreach (var lck in _locks.Items)
     {
         <tr>
             <td>@lck.LockId</td>

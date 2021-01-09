@@ -108,13 +108,13 @@ namespace Storagr.Services
         public async Task<RepositoryEntity> Create(RepositoryEntity newRepository, CancellationToken cancellationToken)
         {
             if (await Exists(newRepository.Name, cancellationToken))
-            {
                 throw new RepositoryAlreadyExistsError(
                     await Get(newRepository.Name, cancellationToken)
                 );
-            }
 
-            var user = await _userService.Get(newRepository.OwnerId, cancellationToken);
+            var user = await _userService.Exists(newRepository.OwnerId, cancellationToken)
+                ? await _userService.Get(newRepository.OwnerId, cancellationToken)
+                : await _userService.GetAuthenticatedUser(cancellationToken);
 
             newRepository.Id = StoragrHelper.UUID();
             newRepository.OwnerId = user.Id;
@@ -132,12 +132,13 @@ namespace Storagr.Services
             var repository = await Get(repositoryIdOrName, cancellationToken);
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetRepositoryCountKey(), cancellationToken),
-                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repositoryIdOrName), cancellationToken),
+                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repository.Id), cancellationToken),
+                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repository.Name), cancellationToken),
 
-                _lockService.UnlockAll(repositoryIdOrName, cancellationToken),
-                _objectService.DeleteAll(repositoryIdOrName, cancellationToken),
+                _lockService.UnlockAll(repository.Id, cancellationToken),
+                _objectService.DeleteAll(repository.Id, cancellationToken),
 
-                _database.Delete(new RepositoryEntity() {Id = repositoryIdOrName}, cancellationToken)
+                _database.Delete(new RepositoryEntity() {Id = repository.Id}, cancellationToken)
             );
 
             return repository;

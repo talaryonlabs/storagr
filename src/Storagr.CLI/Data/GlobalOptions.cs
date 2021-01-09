@@ -4,6 +4,7 @@
     {
         public string Host { get; set; }
         public string Token { get; set; }
+        public bool Insecure { get; set; }
         public bool AsJson { get; set; }
         
         public bool WithResult { get; set; }

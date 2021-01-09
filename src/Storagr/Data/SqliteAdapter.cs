@@ -21,8 +21,6 @@ namespace Storagr.Data
 
     public class SqliteAdapter : IDisposable, IDatabaseAdapter
     {
-        #region Class<QueryBuilder>
-
         private class QueryBuilder : IDatabaseQuery
         {
             private string _selector;
@@ -105,10 +103,6 @@ namespace Storagr.Data
                 return this;
             }
         }
-
-        #endregion
-
-        #region Class<FilterBuilder>
 
         private class FilterBuilder : IDatabaseFilter
         {
@@ -229,10 +223,6 @@ namespace Storagr.Data
             }
         }
 
-        #endregion
-
-        #region Class<OrderBuilder>
-
         private class OrderBuilder : IDatabaseOrder
         {
             private readonly List<string> _list;
@@ -254,15 +244,7 @@ namespace Storagr.Data
             }
         }
 
-        #endregion
-
-        #region Fields
-
         private readonly IDbConnection _connection;
-
-        #endregion
-
-        #region CTor
 
         public SqliteAdapter(IOptions<SqliteOptions> optionsAccessor)
         {
@@ -272,8 +254,6 @@ namespace Storagr.Data
             }
             _connection = new SqliteConnection($"Data Source={optionsAccessor.Value.DataSource}");
         }
-
-        #endregion
 
         private static string GetTableName<T>()
         {
@@ -286,11 +266,12 @@ namespace Storagr.Data
             if ((TableAttribute)typeof(T).GetCustomAttributes(typeof(TableAttribute)).FirstOrDefault() is null)
                 throw new Exception($"Type {typeof(T).Name} has no [Table] attribute.");
         }
-        
-        #region Methods<IBackendAdapter>
 
-        public Task<int> Count<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken) where T : class
+        public async Task<int> Count<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return 0;
+            
             var table = GetTableName<T>();
             var query = new QueryBuilder();
             
@@ -299,7 +280,7 @@ namespace Storagr.Data
             if(filterBuilder is not null)
                 query.Where(filterBuilder);
 
-            return Task.Run(() => _connection.QueryFirstAsync<int>(query.Build(table)), cancellationToken);
+            return await _connection.QuerySingleAsync<int>(query.Build(table));
         }
 
         public async Task<bool> Exists<T>(string id, CancellationToken cancellationToken) where T : class =>
@@ -307,88 +288,121 @@ namespace Storagr.Data
 
         public async Task<bool> Exists<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return false;
+            
             var table = GetTableName<T>();
             var query = new QueryBuilder();
             query.Where(filterBuilder);
 
-            return await Task.Run(() => _connection.QueryFirstAsync<T>(query.Build(table)), cancellationToken) is not null;
+            return await _connection.QueryFirstOrDefaultAsync<T>(query.Build(table)) is not null;
         }
 
-        public Task<T> Get<T>(string id, CancellationToken cancellationToken) where T : class
+        public async Task<T> Get<T>(string id, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            
             CheckTableAttribute<T>();
-            return Task.Run(() => _connection.GetAsync<T>(id), cancellationToken);
+            return await _connection.GetAsync<T>(id);
         }
 
-        public Task<T> Get<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class
+        public async Task<T> Get<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            
             var table = GetTableName<T>();
             var query = new QueryBuilder();
             query.Where(filterBuilder);
 
-            return Task.Run(() => _connection.QueryFirstAsync<T>(query.Build(table)), cancellationToken);
+            return await _connection.QueryFirstOrDefaultAsync<T>(query.Build(table));
         }
 
-        public Task<T> Get<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken) where T : class
+        public async Task<T> Get<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            
             var table = GetTableName<T>();
             var query = new QueryBuilder();
             queryBuilder.Invoke(query);
 
-            return Task.Run(() => _connection.QuerySingleOrDefaultAsync<T>(query.Build(table)), cancellationToken);
+            return await _connection.QueryFirstOrDefaultAsync<T>(query.Build(table));
         }
 
-        public Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken) where T : class
+        public async Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            
             var table = GetTableName<T>();
             var query = new QueryBuilder();
             queryBuilder.Invoke(query);
 
-            return Task.Run(() => _connection.QueryAsync<T>(query.Build(table)), cancellationToken);
+            return await _connection.QueryAsync<T>(query.Build(table));
         }
 
-        public Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class
+        public async Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            
             var table = GetTableName<T>();
             var query = new QueryBuilder();
             query.Where(filterBuilder);
 
-            return Task.Run(() => _connection.QueryAsync<T>(query.Build(table)), cancellationToken);
+            return await _connection.QueryAsync<T>(query.Build(table));
         }
 
-        public Task<IEnumerable<T>> GetAll<T>(CancellationToken cancellationToken) where T : class
+        public async Task<IEnumerable<T>> GetAll<T>(CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return null;
+            
             CheckTableAttribute<T>();
-            return Task.Run(() => _connection.GetAllAsync<T>(), cancellationToken);
+            return await _connection.GetAllAsync<T>();
         }
 
-        public Task<int> Insert<T>(T data, CancellationToken cancellationToken) where T : class
+        public async Task<int> Insert<T>(T data, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return 0;
+            
             CheckTableAttribute<T>();
-            return Task.Run(() => _connection.InsertAsync<T>(data), cancellationToken);
+            return await _connection.InsertAsync<T>(data);
         }
 
-        public Task Update<T>(T data, CancellationToken cancellationToken) where T : class
+        public async Task Update<T>(T data, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+            
             CheckTableAttribute<T>();
-            return Task.Run(() => _connection.UpdateAsync<T>(data), cancellationToken);
+            await _connection.UpdateAsync<T>(data);
         }
 
-        public Task<bool> Delete<T>(T data, CancellationToken cancellationToken) where T : class
+        public async Task<bool> Delete<T>(T data, CancellationToken cancellationToken) where T : class
         {
+            if (cancellationToken.IsCancellationRequested)
+                return false;
+            
             CheckTableAttribute<T>();
-            return Task.Run(() => _connection.DeleteAsync(data), cancellationToken);
+            return await _connection.DeleteAsync(data);
         }
-
-        #endregion
-
-        #region Methods<IDisposable>
+        
+        public async Task<bool> Delete<T>(IEnumerable<T> list, CancellationToken cancellationToken) where T : class
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return false;
+            
+            CheckTableAttribute<T>();
+            return await _connection.DeleteAsync(list);
+        }
 
         public void Dispose()
         {
             _connection?.Dispose();
         }
-
-        #endregion
     }
 }

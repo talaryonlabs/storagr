@@ -17,7 +17,7 @@ namespace Storagr.Data.Entities
         public string Message { get; set; }
         public string Exception { get; set; }
         
-        public static implicit operator StoragrLog([NotNull] LogEntity entity) => new StoragrLog()
+        public static implicit operator StoragrLog([NotNull] LogEntity entity) => new ()
         {
             LogId = entity.Id,
             Level = entity.Level,

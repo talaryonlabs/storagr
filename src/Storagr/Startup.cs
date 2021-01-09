@@ -1,9 +1,11 @@
+using System;
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Logging;
 using Storagr.Data.Entities;
 using Storagr.Shared;
@@ -26,12 +28,12 @@ namespace Storagr
             services.AddStoragrCore(_config);
             services.AddStoragrSecurity(_config);
             services.AddStoragrCache(_config);
-            services.AddStoragrBackend(_config);
+            services.AddStoragrDatabase(_config);
             services.AddStoragrStore(_config);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IMigrationRunner migrationRunner)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IMigrationRunner migrationRunner, IStoragrLoggerProvider loggerProvider)
         {
             if (env.IsDevelopment())
             {
@@ -47,8 +49,9 @@ namespace Storagr
             {
                 endpoints.MapControllers();
             });
-            
+
             migrationRunner.MigrateUp();
+            loggerProvider.Enable();
         }
     }
 }

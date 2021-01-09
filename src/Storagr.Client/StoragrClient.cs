@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Storagr.Shared;
@@ -15,7 +16,11 @@ namespace Storagr.Client
     public class StoragrClientOptions : StoragrOptions<StoragrClientOptions>
     {
         public string Host { get; set; }
+        
         public string Token { get; set; }
+
+        public short DefaultPort { get; set; } = 80;
+        public string DefaultProtocol { get; set; } = "https";
     }
     
     public static class StoragrClientService
@@ -32,8 +37,12 @@ namespace Storagr.Client
         }
     }
     
-    public class StoragrClient : IStoragrClient
+    public partial class StoragrClient : IStoragrClient
     {
+        public string Protocol { get; }
+        public string Hostname { get; }
+        public short Port { get; }
+        
         public bool IsAuthenticated { get; private set; }
         public string Token { get; private set; }
         public StoragrUser User { get; private set; }
@@ -46,12 +55,19 @@ namespace Storagr.Client
         {
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoragrClientOptions));
             _mediaType = new StoragrMediaType();
-            
+
+            (Protocol, Hostname, Port) = StoragrHelper.ParseHostname(_options.Host);
+
             _httpClient = clientFactory.CreateClient();
-            _httpClient.BaseAddress = new Uri($"http://{_options.Host}/v1/");
+            _httpClient.BaseAddress = new Uri($"{(Protocol ?? _options.DefaultProtocol)}://{Hostname}:{(Port > 0 ? Port : _options.DefaultPort)}/v1/");
             _httpClient.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
 
             Token = _options.Token;
+
+            if (Token is not null)
+                IsAuthenticated = true;
+            
+            
         }
 
         private HttpRequestMessage CreateRequest(string uri, HttpMethod method)
@@ -115,7 +131,7 @@ namespace Storagr.Client
                 Username = username,
                 Password = password
             });
-            
+
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
@@ -128,21 +144,11 @@ namespace Storagr.Client
             IsAuthenticated = true;
         }
 
-        public async Task<StoragrUser> CreateUser(StoragrUser user, string newPassword, CancellationToken cancellationToken)
-        {
-            var request = CreateRequest($"users", HttpMethod.Post, new StoragrUserRequest()
-            {
-                User = user,
-                NewPassword = newPassword
-            });
-            var response = await _httpClient.SendAsync(request, cancellationToken);
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        public IUserCreator CreateUser(string username) =>
+            new UserCreator(username, this, _httpClient);
 
-            if (!response.IsSuccessStatusCode) 
-                throw (StoragrError) data;
-
-            return data;
-        }
+        public IUserUpdater UpdateUser(string userId) =>
+            new UserUpdater(userId, this, _httpClient);
 
         public async Task<StoragrUser> GetUser(string userId, CancellationToken cancellationToken)
         {
@@ -192,17 +198,11 @@ namespace Storagr.Client
             return data;
         }
 
-        public async Task<StoragrRepository> CreateRepository(StoragrRepository repository, CancellationToken cancellationToken)
-        {
-            var request = CreateRequest($"repositories", HttpMethod.Post, repository);
-            var response = await _httpClient.SendAsync(request, cancellationToken);
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        public IRepositoryCreator CreateRepository(string name) =>
+            new RepositoryCreator(name, this, _httpClient);
 
-            if (!response.IsSuccessStatusCode) 
-                throw (StoragrError) data;
-
-            return data;
-        }
+        public IRepositoryUpdater UpdateRepository(string repositoryId) =>
+            new RepositoryUpdater(repositoryId, this, _httpClient);
 
         public async Task<StoragrRepository> GetRepository(string repositoryId, CancellationToken cancellationToken)
         {
@@ -222,7 +222,7 @@ namespace Storagr.Client
             var request = CreateRequest($"repositories?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode) 
                 throw (StoragrError) data;
 
@@ -244,7 +244,7 @@ namespace Storagr.Client
 
         public async Task<IEnumerable<StoragrBatchObject>> BatchObjects(string repositoryId, StoragrBatchOperation operation, IEnumerable<StoragrObject> objList, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"repositories/{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
+            var request = CreateRequest($"{repositoryId}/objects/batch", HttpMethod.Post, new StoragrBatchRequest()
             {
                 Operation = operation,
                 Transfers = new []{"basic"}, // TODO
@@ -262,7 +262,7 @@ namespace Storagr.Client
 
         public async Task<StoragrObject> GetObject(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"repositories/{repositoryId}/objects/{objectId}", HttpMethod.Get);
+            var request = CreateRequest($"{repositoryId}/objects/{objectId}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
@@ -275,7 +275,7 @@ namespace Storagr.Client
         public async Task<StoragrObjectList> GetObjects(string repositoryId, StoragrObjectListQuery listQuery, CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(listQuery);
-            var request = CreateRequest($"repositories/{repositoryId}/objects?{query}", HttpMethod.Get);
+            var request = CreateRequest($"{repositoryId}/objects?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
@@ -287,7 +287,7 @@ namespace Storagr.Client
 
         public async Task DeleteObject(string repositoryId, string objectId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"repositories/{repositoryId}/objects/{objectId}", HttpMethod.Delete);
+            var request = CreateRequest($"{repositoryId}/objects/{objectId}", HttpMethod.Delete);
             var response = await _httpClient.SendAsync(request, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
@@ -297,7 +297,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> Lock(string repositoryId, string path, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"repositories/{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
+            var request = CreateRequest($"{repositoryId}/locks", HttpMethod.Post, new StoragrLockRequest()
             {
                 Path = path,
                 Ref = default // TODO
@@ -313,7 +313,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> Unlock(string repositoryId, string lockId, bool force, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"repositories/{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrUnlockRequest()
+            var request = CreateRequest($"{repositoryId}/locks/{lockId}/unlock", HttpMethod.Post, new StoragrUnlockRequest()
             {
                Force = force,
                Ref = default // TODO
@@ -329,7 +329,7 @@ namespace Storagr.Client
 
         public async Task<StoragrLock> GetLock(string repositoryId, string lockId, CancellationToken cancellationToken)
         {
-            var request = CreateRequest($"repositories/{repositoryId}/locks/{lockId}", HttpMethod.Get);
+            var request = CreateRequest($"{repositoryId}/locks/{lockId}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
@@ -342,7 +342,7 @@ namespace Storagr.Client
         public async Task<StoragrLockList> GetLocks(string repositoryId, StoragrLockListArgs listArgs, CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(listArgs);
-            var request = CreateRequest($"repositories/{repositoryId}/locks?{query}", HttpMethod.Get);
+            var request = CreateRequest($"{repositoryId}/locks?{query}", HttpMethod.Get);
             var response = await _httpClient.SendAsync(request, cancellationToken);
             var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             
@@ -355,6 +355,24 @@ namespace Storagr.Client
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+    }
+
+    internal abstract class StoragrClientHelper : IDisposable
+    {
+        protected StoragrClient StoragrClient { get; private set; }
+        protected HttpClient HttpClient { get; private set; }
+
+        protected StoragrClientHelper(StoragrClient storagrClient, HttpClient httpClient)
+        {
+            StoragrClient = storagrClient;
+            HttpClient = httpClient;
+        }
+
+        public void Dispose()
+        {
+            StoragrClient = null;
+            HttpClient = null;
         }
     }
 }

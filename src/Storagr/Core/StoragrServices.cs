@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Storagr.Data;
@@ -107,6 +110,34 @@ namespace Storagr
                     options.RequireHttpsMetadata = true;
                     options.SaveToken = true;
                     options.TokenValidationParameters = tokenConfig;
+                    options.Events = new JwtBearerEvents()
+                    {
+                        OnChallenge = (context) =>
+                        {
+
+                            
+                            
+                            
+                            if (context.AuthenticateFailure is not SecurityTokenException) 
+                                return Task.CompletedTask;
+                            
+                            context.HandleResponse();
+                            
+                            var error = context.AuthenticateFailure switch
+                            {
+                                SecurityTokenExpiredException e => new TokenExpiredError()
+                                {
+                                    ExpiredAt = e.Expires
+                                },
+                                _ => new UnauthorizedError(context.AuthenticateFailure.Message) 
+                            };
+                            var data = StoragrHelper.SerializeObject(error);
+
+                            context.Response.StatusCode = error.Code;
+                            context.Response.ContentType = (new StoragrMediaType()).MediaType.Value;
+                            return context.Response.Body.WriteAsync(data, 0, data.Length);
+                        }
+                    };
                 });
             
             services.AddAuthorization(options =>
@@ -152,7 +183,7 @@ namespace Storagr
             return services;
         }
 
-        public static IServiceCollection AddStoragrBackend(this IServiceCollection services, StoragrConfig config)
+        public static IServiceCollection AddStoragrDatabase(this IServiceCollection services, StoragrConfig config)
         {
             var storagrConfig = config.Get<StoragrCoreConfig>();
             
@@ -168,6 +199,7 @@ namespace Storagr
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
                 options.ScanIn(typeof(Setup).Assembly).For.Migrations();
             });
 

@@ -36,10 +36,11 @@ namespace Storagr.CLI
             AddCommand(new LoginCommand());
             
             AddCommand(new NewCommand());
+            AddCommand(new UpdateCommand());
             AddCommand(new ListCommand());
             AddCommand(new GetCommand());
             AddCommand(new DeleteCommand());
-            AddCommand(new TimelineCommand());
+            // AddCommand(new TimelineCommand());
             
             AddCommand(new LockCommand());
             AddCommand(new UnlockCommand());

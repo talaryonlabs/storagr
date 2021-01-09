@@ -68,7 +68,7 @@ namespace Storagr.CLI
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
             
-            IEnumerable<StoragrUser> list = default;
+            StoragrUserList list = default;
             try
             {
                 await console.Wait(async token =>
@@ -90,7 +90,7 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
 
-            return Success(console, list, globalOptions.AsJson);
+            return Success(console, list.Items, globalOptions.AsJson);
         }
         
         private static async Task<int> ListRepositories(IHost host, LocalOptions options, GlobalOptions globalOptions)
@@ -98,7 +98,7 @@ namespace Storagr.CLI
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            IEnumerable<StoragrRepository> list = default;
+            StoragrRepositoryList list = default;
             try
             {
                 await console.Wait(async token =>
@@ -120,7 +120,7 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
             
-            return Success(console, list, globalOptions.AsJson);
+            return Success(console, list.Items, globalOptions.AsJson);
         }
         
         private static async Task<int> ListObjects(IHost host, LocalOptions options, GlobalOptions globalOptions)
@@ -128,7 +128,7 @@ namespace Storagr.CLI
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            IEnumerable<StoragrObject> list = default;
+            StoragrObjectList list = default;
             try
             {
                 await console.Wait(async token =>
@@ -149,7 +149,7 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
             
-            return Success(console, list, globalOptions.AsJson);
+            return Success(console, list.Items, globalOptions.AsJson);
         }
         
         private static async Task<int> ListLocks(IHost host, LocalOptions options, GlobalOptions globalOptions)
@@ -157,7 +157,7 @@ namespace Storagr.CLI
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
 
-            IEnumerable<StoragrLock> list = default;
+            StoragrLockList list = default;
             try
             {
                 await console.Wait(async token =>
@@ -180,7 +180,7 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
             
-            return Success(console, list, globalOptions.AsJson);
+            return Success(console, list.Items, globalOptions.AsJson);
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -17,10 +18,12 @@ namespace Storagr.Controllers
     public class UserController : StoragrController
     {
         private readonly IUserService _userService;
+        private readonly ILogger _logger;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, ILogger<UserController> logger)
         {
             _userService = userService;
+            _logger = logger;
         }
         
         [HttpGet("me")]
@@ -84,11 +87,7 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
         public async Task<StoragrUser> Create([FromBody] StoragrUserRequest createRequest, CancellationToken cancellationToken)
         {
-            // TODO!
-                // await _userService.Create(createRequest.User.Username, createRequest.NewPassword,
-                //     createRequest.User.IsAdmin);
-
-            return null;
+            return await _userService.Create(createRequest.User, createRequest.NewPassword, cancellationToken);
         }
 
         [HttpGet("{userId}")]
@@ -106,11 +105,13 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrUser> Modify([FromRoute] string userId, [FromBody] StoragrUserRequest modifyRequest, CancellationToken cancellationToken)
+        public async Task<StoragrUser> Update([FromRoute] string userId, [FromBody] StoragrUpdateRequest updateRequest, CancellationToken cancellationToken)
         {
-            // TODO!
-            // return await _userService.Modify(modifyRequest.User, modifyRequest.NewPassword);
-
+            if (updateRequest.Type != StoragrUpdateType.User)
+                throw new BadRequestError();
+            
+            // TODO
+            
             return null;
         }
         
@@ -136,6 +137,8 @@ namespace Storagr.Controllers
             if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
                 throw new UsernameOrPasswordMissingError();
 
+            _logger.LogInformation("hallo du!");
+            
             var user = await _userService.Authenticate(authenticationRequest.Username, authenticationRequest.Password, cancellationToken);
             
             return new StoragrAuthenticationResponse()

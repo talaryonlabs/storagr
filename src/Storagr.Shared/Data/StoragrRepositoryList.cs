@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Storagr.Shared.Data
 {
     [DataContract]
-    public class StoragrRepositoryListArgs : IStoragrListQuery
+    public class StoragrRepositoryListArgs
     {
         [QueryMember(Name = "id")] public string Id { get; set; }
         [QueryMember(Name = "cursor")] public string Cursor { get; set; }
@@ -15,18 +15,13 @@ namespace Storagr.Shared.Data
     }
     
     [DataContract]
-    public class StoragrRepositoryList : IStoragrList<StoragrRepository>
+    public class StoragrRepositoryList
     {
-        public static implicit operator StoragrRepositoryList(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrRepositoryList>(data);
-        
         [DataMember(Name = "repositories")] public IEnumerable<StoragrRepository> Items { get; set; } = new List<StoragrRepository>();
         [DataMember(Name = "next_cursor")] public string NextCursor { get; set; }
         [DataMember(Name = "total_count")] public int TotalCount { get; set; }
-
-        public IEnumerator<StoragrRepository> GetEnumerator() =>
-            Items.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() =>
-            GetEnumerator();
+        
+        public static implicit operator StoragrRepositoryList(byte[] data) =>
+            StoragrHelper.DeserializeObject<StoragrRepositoryList>(data);
     }
 }

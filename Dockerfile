@@ -1,4 +1,4 @@
-# 2020 Copyright Talaryon Studios
+# 2021 Copyright Talaryon Studios
 
 
 #
@@ -10,13 +10,15 @@ EXPOSE 80 443
 
 RUN mkdir -p /etc/storagr /usr/storagr/bin /usr/storagr/config /usr/storagr/wwwroot
 
-#ln -s /usr/storagr/bin/Storagr /usr/bin/storagr
-RUN ln -s /usr/storagr/bin/Storagr.CLI /usr/bin/storagrcli \
- && ln -s /usr/storagr/bin/Storagr.Store /usr/bin/storagrstore \
- && ln -s /usr/storagr/bin/Storagr.UI /usr/bin/storagrui
 
-#ln -s /usr/storagr/config/storagr.json /etc/storagr/storagr.json
-RUN ln -s /usr/storagr/config/storagr.store.json /etc/storagr/storagr.store.json \
+RUN ln -s /usr/storagr/bin/storagr /usr/bin/storagrcli \
+ && ln -s /usr/storagr/bin/storagrserver /usr/bin/storagrserver \
+ && ln -s /usr/storagr/bin/storagrstore /usr/bin/storagrstore \
+ && ln -s /usr/storagr/bin/storagrui /usr/bin/storagrui
+
+
+RUN ln -s /usr/storagr/config/storagr.json /etc/storagr/storagr.json \
+ && ln -s /usr/storagr/config/storagr.store.json /etc/storagr/storagr.store.json \
  && ln -s /usr/storagr/config/storagr.ui.json /etc/storagr/storagr.ui.json \
  && ln -s /usr/storagr/config/storagr.cli.json /etc/storagr/storagr.cli.json
 
@@ -31,11 +33,11 @@ RUN mkdir -p /app/bin /app/config /app/wwwroot
 COPY src/Storagr.Shared Storagr.Shared
 COPY src/Storagr.Client Storagr.Client
 
-#COPY src/Storagr Storagr
-#RUN dotnet publish "Storagr/Storagr.csproj" -c Release -o /publish \
-# && cp /publish/Storagr /app/bin \
-# && cp /publish/appsettings.json /bin/config/storagr.json \
-# && rm /publish/appsettings.json
+COPY src/Storagr Storagr
+RUN dotnet publish "Storagr/Storagr.csproj" -c Release -o /publish \
+ && cp /publish/Storagr /app/bin \
+ && cp /publish/appsettings.json /bin/config/storagr.json \
+ && rm /publish/appsettings.json
 
 COPY src/Storagr.CLI Storagr.CLI
 RUN dotnet publish "Storagr.CLI/Storagr.CLI.csproj" -c Release -o /publish \

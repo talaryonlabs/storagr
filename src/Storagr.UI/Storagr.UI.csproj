@@ -4,6 +4,7 @@
         <TargetFramework>net5.0</TargetFramework>
         <UserSecretsId>aspnet-Storagr.UI-1DBBBB80-A29C-453B-9C72-C55311B5072F</UserSecretsId>
         <LangVersion>9</LangVersion>
+        <AssemblyName>storagrui</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

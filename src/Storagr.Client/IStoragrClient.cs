@@ -20,11 +20,10 @@ namespace Storagr.Client
         /**
          * Users
          */
-        Task<StoragrUser> CreateUser(StoragrUser user, CancellationToken cancellationToken = default) =>
-            CreateUser(user, null, cancellationToken);
-        Task<StoragrUser> CreateUser(StoragrUser user, string newPassword = null, CancellationToken cancellationToken = default);
-        Task<StoragrUser> GetUser(string userId, CancellationToken cancellationToken = default);
+        IUserCreator CreateUser(string username);
+        IUserUpdater UpdateUser(string userId);
 
+        Task<StoragrUser> GetUser(string userId, CancellationToken cancellationToken = default);
         Task<StoragrUserList> GetUsers(CancellationToken cancellationToken = default) => GetUsers(new StoragrUserListArgs(), cancellationToken);
         Task<StoragrUserList> GetUsers(StoragrUserListArgs listArgs, CancellationToken cancellationToken = default);
 
@@ -38,8 +37,9 @@ namespace Storagr.Client
         /**
          * Repositories
          */
-        Task<StoragrRepository> CreateRepository(StoragrRepository repository, CancellationToken cancellationToken = default);
-
+        IRepositoryCreator CreateRepository(string name);
+        IRepositoryUpdater UpdateRepository(string repositoryId);
+        
         Task<StoragrRepository> GetRepository(string repositoryId, CancellationToken cancellationToken = default);
         Task<StoragrRepositoryList> GetRepositories(CancellationToken cancellationToken = default) => GetRepositories(new StoragrRepositoryListArgs(), cancellationToken);
         Task<StoragrRepositoryList> GetRepositories(StoragrRepositoryListArgs listArgs, CancellationToken cancellationToken = default);

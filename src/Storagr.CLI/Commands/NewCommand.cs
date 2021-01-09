@@ -17,7 +17,7 @@ namespace Storagr.CLI
              */
             public string Username { get; set; }
             public bool IsAdmin { get; set; } = false;
-            public bool IsEnabled { get; set; } = false;
+            public bool IsEnabled { get; set; } = true;
 
             /**
              * Repository
@@ -60,14 +60,8 @@ namespace Storagr.CLI
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
             var password = default(string);
-            var user = new StoragrUser()
-            {
-                IsEnabled = options.IsEnabled,
-                IsAdmin = options.IsAdmin,
-                
-                Username = options.Username
-            };
-            
+            var user = default(StoragrUser);
+
             if ((password = console.ReadPassword("Password")) is null)
                 return Abort();
 
@@ -78,7 +72,12 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    user = await client.CreateUser(user, password);
+                    user = await client
+                        .CreateUser(options.Username)
+                        .SetPassword(password)
+                        .SetEnabled(options.IsEnabled)
+                        .SetAdmin(options.IsAdmin)
+                        .Create(token);
                 });
             }
             catch (TaskCanceledException)
@@ -99,18 +98,17 @@ namespace Storagr.CLI
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
-            var repository = new StoragrRepository()
-            {
-                RepositoryId = options.Name,
-                SizeLimit = options.SizeLimit,
-                OwnerId = options.Owner
-            };
+            var repository = default(StoragrRepository);
             
             try
             {
                 await console.Wait(async token =>
                 {
-                    repository = await client.CreateRepository(repository, token);
+                    repository = await client
+                        .CreateRepository(options.Name)
+                        .SetOwner(options.Owner)
+                        .SetSizeLimit(options.SizeLimit)
+                        .Create(token);
                 });
             }
             catch (TaskCanceledException)

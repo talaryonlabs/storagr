@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Storagr.Data.Entities;
 using Storagr.Shared;
 using Storagr.Shared.Data;
@@ -17,11 +18,11 @@ namespace Storagr.Controllers
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class LogController : StoragrController
     {
-        private readonly IDatabaseAdapter _backendAdapter;
+        private readonly IDatabaseAdapter _database;
 
-        public LogController(IDatabaseAdapter backendAdapter)
+        public LogController(IDatabaseAdapter database)
         {
-            _backendAdapter = backendAdapter;
+            _database = database;
         }
 
         [HttpGet]
@@ -31,7 +32,7 @@ namespace Storagr.Controllers
         {
             const int max = 100;
 
-            var logs = await _backendAdapter.GetMany<LogEntity>(x =>
+            var logs = await _database.GetMany<LogEntity>(x =>
             {
                 x.OrderBy(o => o.Column("Date", DatabaseOrderType.Desc));
                 x.Limit(options.Limit > max ? max : options.Limit);
@@ -45,7 +46,7 @@ namespace Storagr.Controllers
                 {
                     Items = list.Select(v => (StoragrLog) v).ToList(),
                     NextCursor = options.Cursor + list.Count,
-                    TotalCount = await _backendAdapter.Count<LogEntity>(cancellationToken)
+                    TotalCount = await _database.Count<LogEntity>(cancellationToken)
                 };
         }
     }

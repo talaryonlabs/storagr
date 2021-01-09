@@ -200,7 +200,7 @@ namespace Storagr.Services
                     .Concat(new[]
                     {
                         _cache.RemoveAsync(StoragrCaching.GetLockCountKey(repositoryId), cancellationToken),
-                        _database.Delete(list, cancellationToken)
+                        _database.Delete<LockEntity>(list, cancellationToken)
                     })
             );
 

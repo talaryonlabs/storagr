@@ -190,7 +190,7 @@ namespace Storagr.CLI
             WriteError($"Code: {e.Code}\nMessage: {e.Message}");
 
         public void WriteError(Exception e) =>
-            WriteError(e.Message);
+            WriteError(e.Message + "\n" + e.StackTrace);
 
         public void WriteView(View view)
         {

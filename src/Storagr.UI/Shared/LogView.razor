@@ -12,7 +12,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var log in _logs)
+    @foreach (var log in _logs.Items)
     {
         var color = log.Level switch
         {

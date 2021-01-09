@@ -56,8 +56,12 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
 
-            Directory.CreateDirectory(StoragrConstants.TokenFilePath);
-            await using var writer = File.CreateText(StoragrConstants.TokenFilePath);
+            var file = new FileInfo(StoragrConstants.TokenFilePath);
+            if(file.Exists)
+                file.Delete();
+
+            Directory.CreateDirectory(file.DirectoryName!);
+            await using var writer = file.CreateText();
             new JsonSerializer().Serialize(writer, new Dictionary<string, string> {{"token", client.Token}});
 
             return Success(console, "Login successful.");

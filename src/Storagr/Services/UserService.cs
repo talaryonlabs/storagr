@@ -38,7 +38,9 @@ namespace Storagr.Services
             
             var result = await _authenticator.Authenticate(username, password, cancellationToken);
             if (result is null)
-                return null;
+            {
+                throw new UnauthorizedError("Invalid username and/or password.");
+            }
 
             var user = await _database.Get<UserEntity>(filter =>
             {
@@ -137,40 +139,22 @@ namespace Storagr.Services
 
         public Task<IEnumerable<UserEntity>> GetAll(CancellationToken cancellationToken) =>
             _database.GetAll<UserEntity>(cancellationToken);
-
-        /*public async Task<UserEntity> Create(string username, string password, bool isAdmin)
+        
+        public async Task<UserEntity> Create(UserEntity newUser, string newPassword, CancellationToken cancellationToken)
         {
             if (!(_authenticator is BackendAuthenticator authenticator))
                 throw new NotImplementedError();
-            if(await ExistsByUsername(username))
-                throw new UserAlreadyExistsError(null); // TODO
-
-            var entity = default(UserEntity);
-            var result = await authenticator.Create(username, password);
-
-            await _database.Insert(entity = new UserEntity()
-            {
-                Id = StoragrHelper.UUID(),
-                IsEnabled = true,
-                IsAdmin = isAdmin,
-                AuthAdapter = _authenticator.Name,
-                AuthId = result.Id,
-                Username = result.Username,
-            });
-
-            return entity;
-        }*/
-        
-        public async Task<UserEntity> Create(UserEntity newUser, CancellationToken cancellationToken)
-        {
+            
             if (await Exists(newUser.Username, cancellationToken))
-            {
                 throw new UserAlreadyExistsError(
                     await Get(newUser.Username, cancellationToken)
                 );
-            }
+
+            var result = await authenticator.Create(newUser.Username, newPassword);
 
             newUser.Id = StoragrHelper.UUID();
+            newUser.AuthId = result.Id;
+            newUser.AuthAdapter = authenticator.Name;
 
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetUserCountKey(), cancellationToken),
@@ -180,15 +164,14 @@ namespace Storagr.Services
             return newUser;
         }
 
-        public async Task<UserEntity> Modify(UserEntity updatedUser, CancellationToken cancellationToken)
+        public async Task<UserEntity> Modify(UserEntity updatedUser, string newPassword, CancellationToken cancellationToken)
         {
             var user = await Get(updatedUser.Id, cancellationToken);
 
-            // TODO
-            // if (_authenticator is BackendAuthenticator authenticator)
-            // {
-            //     await authenticator.Modify(entity.AuthId, entity.Username, newPassword);
-            // }
+            if (_authenticator is BackendAuthenticator authenticator)
+            {
+                await authenticator.Modify(user.AuthId, updatedUser.Username, newPassword);
+            }
 
             user.IsAdmin = updatedUser.IsAdmin;
             user.IsEnabled = updatedUser.IsEnabled;

@@ -17,7 +17,7 @@ namespace Storagr.Data.Entities
 
         [Computed] public UserEntity Owner { get; set; }
         
-        public static implicit operator StoragrLock([NotNull] LockEntity entity) => new StoragrLock()
+        public static implicit operator StoragrLock([NotNull] LockEntity entity) => new ()
         {
             LockId = entity.Id,
             Path = entity.Path,

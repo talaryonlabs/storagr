@@ -13,9 +13,9 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var repository in _repositories)
+    @foreach (var repository in _repositories.Items)
     {
-        var user = _users.FirstOrDefault(v => v.UserId == repository.OwnerId);
+        var user = _users.Items.FirstOrDefault(v => v.UserId == repository.OwnerId);
         <tr>
             <td>
                 <a href="repositories/@repository.RepositoryId">@repository.RepositoryId</a>

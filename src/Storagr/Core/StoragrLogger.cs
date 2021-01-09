@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using FluentMigrator;
+using FluentMigrator.Infrastructure;
+using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,11 +10,16 @@ using Storagr.Data.Entities;
 
 namespace Storagr
 {
+    public interface IStoragrLoggerProvider : ILoggerProvider
+    {
+        void Enable();
+    }
+    
     public static class StoragrLoggerExtension
     {
         public static ILoggingBuilder AddStoragr(this ILoggingBuilder builder)
         {
-            builder.Services.AddSingleton<ILoggerProvider, StoragrLoggerProvider>();
+            builder.Services.AddSingleton<IStoragrLoggerProvider, StoragrLoggerProvider>();
             
             return builder;
         }
@@ -20,12 +28,14 @@ namespace Storagr
     public class StoragrLogger : ILogger
     {
         private readonly string _name;
-        private readonly IDatabaseAdapter _backendAdapter;
+        private readonly bool _enabled;
+        private readonly IDatabaseAdapter _database;
 
-        public StoragrLogger(string name, IDatabaseAdapter backendAdapter)
+        public StoragrLogger(string name, bool enabled, IDatabaseAdapter database)
         {
             _name = name;
-            _backendAdapter = backendAdapter;
+            _enabled = enabled;
+            _database = database;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
@@ -41,30 +51,36 @@ namespace Storagr
                 Message = exception is not null ? exception.Message : formatter(state, exception),
                 Exception = exception is not null ? exception.StackTrace : ""
             };
-            _backendAdapter?.Insert(log);
+            _database?.Insert(log);
         }
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return true; // TODO
+            return _enabled; // TODO
         }
 
         public IDisposable BeginScope<TState>(TState state) => default;
     }
 
-    public class StoragrLoggerProvider : ILoggerProvider
+    public class StoragrLoggerProvider : IStoragrLoggerProvider
     {
-        private readonly IDatabaseAdapter _backendAdapter;
-        private readonly ConcurrentDictionary<string, StoragrLogger> _loggers =
-            new ConcurrentDictionary<string, StoragrLogger>();
+        private readonly IDatabaseAdapter _databaseAdapter;
+        private readonly ConcurrentDictionary<string, StoragrLogger> _loggers = new();
+        
+        private bool _enabled;
 
-        public StoragrLoggerProvider(IDatabaseAdapter backendAdapter)
+        public StoragrLoggerProvider(IDatabaseAdapter databaseAdapter)
         {
-            _backendAdapter = backendAdapter;
+            _databaseAdapter = databaseAdapter;
+        }
+
+        public void Enable()
+        {
+            _enabled = true;
         }
 
         public ILogger CreateLogger(string categoryName) =>
-            _loggers.GetOrAdd(categoryName, name => new StoragrLogger(name, _backendAdapter));
+            _loggers.GetOrAdd(categoryName, name => new StoragrLogger(name, _enabled, _databaseAdapter));
 
         public void Dispose() =>
             _loggers.Clear();

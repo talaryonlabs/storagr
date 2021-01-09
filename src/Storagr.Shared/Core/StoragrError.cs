@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.Serialization;
-using Microsoft.AspNetCore.Http;
 
 namespace Storagr.Shared
 {
@@ -13,17 +12,22 @@ namespace Storagr.Shared
         [DataMember(Name = "documentation_url")] public string DocumentationUrl { get; set; }
         [DataMember(Name = "stack_trace")] private new string StackTrace { get; set; }
 
+        public StoragrError()
+        {
+            DocumentationUrl = "https://github.com/talaryonstudios/storagr";
+        }
+
+        public StoragrError(int code, string message)
+            : this()
+        {
+            Code = code;
+            Message = message;
+        }
+
         public StoragrError(int code, Exception e)
             : this(code, e.Message)
         {
             StackTrace = e.StackTrace;
-        }
-
-        public StoragrError(int code, string message)
-        {
-            Code = code;
-            Message = message;
-            DocumentationUrl = "https://github.com/talaryonstudios/storagr";
         }
 
         public static implicit operator StoragrError(byte[] data) =>

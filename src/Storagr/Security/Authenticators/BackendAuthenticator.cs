@@ -25,11 +25,11 @@ namespace Storagr.Security.Authenticators
         
         public string Name => "storagr-backend";
 
-        private readonly IDatabaseAdapter _backend;
+        private readonly IDatabaseAdapter _database;
 
-        public BackendAuthenticator(IDatabaseAdapter backend)
+        public BackendAuthenticator(IDatabaseAdapter database)
         {
-            _backend = backend;
+            _database = database;
         }
 
         public Task<IAuthenticationResult> Authenticate(string token, CancellationToken cancellationToken)
@@ -39,7 +39,7 @@ namespace Storagr.Security.Authenticators
 
         public async Task<IAuthenticationResult> Authenticate(string username, string password, CancellationToken cancellationToken)
         {
-            var backendUser = await _backend.Get<Entity>(filter =>
+            var backendUser = await _database.Get<Entity>(filter =>
             {
                 filter
                     .Equal(nameof(Entity.Username), username);
@@ -61,17 +61,17 @@ namespace Storagr.Security.Authenticators
                 Username = username,
                 Password = new PasswordHasher<Entity>().HashPassword(null, password),
             };
-            await _backend.Insert(entity);
+            await _database.Insert(entity);
 
             return entity;
         }
 
         public async Task Modify([NotNull] string id, [AllowNull] string username, [AllowNull] string password)
         {
-            var user = await _backend.Get<Entity>(q => q.Where(f => f.Equal(nameof(Entity.Id), id)));
+            var user = await _database.Get<Entity>(q => q.Where(f => f.Equal(nameof(Entity.Id), id)));
             var newPassword = (password is not null ? new PasswordHasher<Entity>().HashPassword(null, password) : null);
             
-            await _backend.Update(new Entity()
+            await _database.Update(new Entity()
             {
                 Id = user.Id,
                 Username = username ?? user.Username,
@@ -80,6 +80,6 @@ namespace Storagr.Security.Authenticators
         }
 
         public Task Delete([NotNull] string authId, CancellationToken cancellationToken) =>
-            _backend.Delete(new Entity() {Id = authId}, cancellationToken);
+            _database.Delete(new Entity() {Id = authId}, cancellationToken);
     }
 }

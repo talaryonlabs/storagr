@@ -9,6 +9,7 @@
         <PublicSign>false</PublicSign>
         <LangVersion>9</LangVersion>
         <TargetFramework>net5.0</TargetFramework>
+        <AssemblyName>storagrserver</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

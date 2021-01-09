@@ -144,7 +144,7 @@ namespace Storagr.Services
                     {
                         _cache.RemoveAsync(StoragrCaching.GetObjectCountKey(repositoryId), cancellationToken),
                         _store.Delete(repositoryId, cancellationToken),
-                        _database.Delete(list, cancellationToken)
+                        _database.Delete<ObjectEntity>(list, cancellationToken)
                     })
             );
 
