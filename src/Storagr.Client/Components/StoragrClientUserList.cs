@@ -7,7 +7,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientUserList : StoragrClientHelper, IStoragrClientUserList, IStoragrUserParams
+    internal class StoragrClientUserList : 
+        StoragrClientHelper<IStoragrList<StoragrUser>>, 
+        IStoragrClientUserList, 
+        IStoragrUserParams
     {
         private readonly StoragrUserListArgs _listArgs;
         
@@ -16,18 +19,15 @@ namespace Storagr.Client
         {
             _listArgs = new StoragrUserListArgs();
         }
-        
-        public IStoragrList<StoragrUser> Run()
-        {
-            var task = RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
 
-        public Task<IStoragrList<StoragrUser>> RunAsync(CancellationToken cancellationToken = default)
+        protected override Task<IStoragrList<StoragrUser>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return Request<IStoragrList<StoragrUser>>($"users?{query}", HttpMethod.Get, cancellationToken);
+            return clientRequest.Send<IStoragrList<StoragrUser>>(
+                $"users?{query}",
+                HttpMethod.Get,
+                cancellationToken
+            );
         }
 
         public IStoragrClientList<StoragrUser, IStoragrUserParams> Take(int count)

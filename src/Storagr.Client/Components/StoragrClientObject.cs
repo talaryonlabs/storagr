@@ -5,7 +5,9 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientObject : StoragrClientHelper, IStoragrClientObject
+    internal class StoragrClientObject : 
+        StoragrClientHelper<StoragrObject>, 
+        IStoragrClientObject
     {
         private readonly string _repositoryIdOrName;
         private readonly string _objectId;
@@ -19,16 +21,9 @@ namespace Storagr.Client
             _objectId = objectId;
         }
 
-        StoragrObject IStoragrClientRunner<StoragrObject>.Run()
+        protected override Task<StoragrObject> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
-            var task = (this as IStoragrClientObject).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
-
-        Task<StoragrObject> IStoragrClientRunner<StoragrObject>.RunAsync(CancellationToken cancellationToken)
-        {
-            return Request<StoragrObject>(
+            return clientRequest.Send<StoragrObject>(
                 $"repositories/{_repositoryIdOrName}/objects/{_objectId}",
                 _deleteRequest
                     ? HttpMethod.Delete
@@ -36,7 +31,7 @@ namespace Storagr.Client
                 cancellationToken);
         }
 
-        IStoragrClientRunner<StoragrObject> IStoragrClientDeletable<StoragrObject>.Delete()
+        IStoragrClientRunner<StoragrObject> IStoragrClientDeletable<StoragrObject>.Delete(bool force)
         {
             _deleteRequest = true;
             return this;

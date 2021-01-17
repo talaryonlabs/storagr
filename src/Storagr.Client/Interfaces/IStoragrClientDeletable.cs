@@ -2,6 +2,6 @@
 {
     public interface IStoragrClientDeletable<TItem>
     {
-        IStoragrClientRunner<TItem> Delete();
+        IStoragrClientRunner<TItem> Delete(bool force = false);
     }
 }

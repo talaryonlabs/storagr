@@ -7,7 +7,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientRepositoryList : StoragrClientHelper, IStoragrClientRepositoryList, IStoragrRepositoryParams
+    internal class StoragrClientRepositoryList : 
+        StoragrClientHelper<IStoragrList<StoragrRepository>>, 
+        IStoragrClientRepositoryList, 
+        IStoragrRepositoryParams
     {
         private readonly StoragrRepositoryListArgs _listArgs;
 
@@ -17,17 +20,14 @@ namespace Storagr.Client
             _listArgs = new StoragrRepositoryListArgs();
         }
 
-        IStoragrList<StoragrRepository> IStoragrClientRunner<IStoragrList<StoragrRepository>>.Run()
-        {
-            var task = (this as IStoragrClientRepositoryList).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
-
-        Task<IStoragrList<StoragrRepository>> IStoragrClientRunner<IStoragrList<StoragrRepository>>.RunAsync(CancellationToken cancellationToken)
+        protected override Task<IStoragrList<StoragrRepository>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return Request<IStoragrList<StoragrRepository>>($"repositories?{query}", HttpMethod.Get, cancellationToken);
+            return clientRequest.Send<IStoragrList<StoragrRepository>>(
+                $"repositories?{query}",
+                HttpMethod.Get,
+                cancellationToken
+            );
         }
 
         IStoragrClientList<StoragrRepository, IStoragrRepositoryParams> IStoragrClientList<StoragrRepository, IStoragrRepositoryParams>.Take(int count)

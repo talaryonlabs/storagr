@@ -7,7 +7,11 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientUser : StoragrClientHelper, IStoragrClientParams<StoragrUser, IStoragrUserParams>, IStoragrClientUser, IStoragrUserParams
+    internal class StoragrClientUser : 
+        StoragrClientHelper<StoragrUser>, 
+        IStoragrClientParams<StoragrUser, IStoragrUserParams>, 
+        IStoragrClientUser, 
+        IStoragrUserParams
     {
         private readonly string _userIdOrName;
 
@@ -22,32 +26,33 @@ namespace Storagr.Client
             _userIdOrName = userIdOrName;
             
         }
-        
-        StoragrUser IStoragrClientRunner<StoragrUser>.Run()
-        {
-            var task = (this as IStoragrClientRunner<StoragrUser>).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
 
-        Task<StoragrUser> IStoragrClientRunner<StoragrUser>.RunAsync(CancellationToken cancellationToken)
+        protected override Task<StoragrUser> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             if (_userCreateRequest is not null)
-                return Request<StoragrUser, StoragrUpdateRequest>($"users", HttpMethod.Post, _userCreateRequest,
-                    cancellationToken);
+                return clientRequest.Send<StoragrUser, StoragrUpdateRequest>(
+                    $"users",
+                    HttpMethod.Post,
+                    _userCreateRequest,
+                    cancellationToken
+                );
 
             if (_userUpdateRequest is not null)
-                return Request<StoragrUser, StoragrUpdateRequest>($"users/{_userIdOrName}", HttpMethod.Patch, _userUpdateRequest,
-                    cancellationToken);
+                return clientRequest.Send<StoragrUser, StoragrUpdateRequest>(
+                    $"users/{_userIdOrName}",
+                    HttpMethod.Patch,
+                    _userUpdateRequest,
+                    cancellationToken
+                );
 
-            return Request<StoragrUser>(
+            return clientRequest.Send<StoragrUser>(
                 $"users/{_userIdOrName}",
                 _userDeleting
                     ? HttpMethod.Delete
                     : HttpMethod.Get,
                 cancellationToken);
         }
-        
+
         public IStoragrClientRunner<StoragrUser> With(Action<IStoragrUserParams> withParams)
         {
             withParams(this);
@@ -66,7 +71,7 @@ namespace Storagr.Client
             return this;
         }
 
-        IStoragrClientRunner<StoragrUser> IStoragrClientDeletable<StoragrUser>.Delete()
+        IStoragrClientRunner<StoragrUser> IStoragrClientDeletable<StoragrUser>.Delete(bool force)
         {
             _userDeleting = true;
             return this;

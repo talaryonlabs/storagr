@@ -6,8 +6,13 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientRepository : StoragrClientHelper, IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams>, IStoragrClientRepository, IStoragrRepositoryParams
+    internal class StoragrClientRepository : 
+        StoragrClientHelper<StoragrRepository>, 
+        IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams>, 
+        IStoragrClientRepository, 
+        IStoragrRepositoryParams
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly string _repositoryIdOrName;
         
         private bool _deleteRequest;
@@ -17,27 +22,29 @@ namespace Storagr.Client
         public StoragrClientRepository(IStoragrClientRequest clientRequest, string repositoryIdOrName) 
             : base(clientRequest)
         {
+            _clientRequest = clientRequest;
             _repositoryIdOrName = repositoryIdOrName;
         }
 
-        StoragrRepository IStoragrClientRunner<StoragrRepository>.Run()
-        {
-            var task = (this as IStoragrClientRepository).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
-
-        Task<StoragrRepository> IStoragrClientRunner<StoragrRepository>.RunAsync(CancellationToken cancellationToken)
+        protected override Task<StoragrRepository> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             if (_createRequest is not null)
-                return Request<StoragrRepository, StoragrUpdateRequest>($"repositories", HttpMethod.Post, _createRequest,
-                    cancellationToken);
+                return clientRequest.Send<StoragrRepository, StoragrUpdateRequest>(
+                    $"repositories",
+                    HttpMethod.Post,
+                    _createRequest,
+                    cancellationToken
+                );
 
             if (_updateRequest is not null)
-                return Request<StoragrRepository, StoragrUpdateRequest>($"repositories/{_repositoryIdOrName}", HttpMethod.Patch, _updateRequest,
-                    cancellationToken);
+                return clientRequest.Send<StoragrRepository, StoragrUpdateRequest>(
+                    $"repositories/{_repositoryIdOrName}",
+                    HttpMethod.Patch,
+                    _updateRequest,
+                    cancellationToken
+                );
 
-            return Request<StoragrRepository>(
+            return clientRequest.Send<StoragrRepository>(
                 $"repositories/{_repositoryIdOrName}",
                 _deleteRequest
                     ? HttpMethod.Delete
@@ -63,7 +70,7 @@ namespace Storagr.Client
             return this;
         }
 
-        IStoragrClientRunner<StoragrRepository> IStoragrClientDeletable<StoragrRepository>.Delete()
+        IStoragrClientRunner<StoragrRepository> IStoragrClientDeletable<StoragrRepository>.Delete(bool force)
         {
             _deleteRequest = true;
             return this;
@@ -71,22 +78,22 @@ namespace Storagr.Client
 
         IStoragrClientObject IStoragrClientRepository.Object(string objectId)
         {
-            return new StoragrClientObject(ClientRequest, _repositoryIdOrName, objectId);
+            return new StoragrClientObject(_clientRequest, _repositoryIdOrName, objectId);
         }
 
         IStoragrClientObjectList IStoragrClientRepository.Objects()
         {
-            return new StoragrClientObjectList(ClientRequest, _repositoryIdOrName);
+            return new StoragrClientObjectList(_clientRequest, _repositoryIdOrName);
         }
 
         IStoragrClientLock IStoragrClientRepository.Lock(string lockIdOrPath)
         {
-            return new StoragrClientLock(ClientRequest, _repositoryIdOrName, lockIdOrPath);
+            return new StoragrClientLock(_clientRequest, _repositoryIdOrName, lockIdOrPath);
         }
 
         IStoragrClientLockList IStoragrClientRepository.Locks()
         {
-            return new StoragrClientLockList(ClientRequest, _repositoryIdOrName);
+            return new StoragrClientLockList(_clientRequest, _repositoryIdOrName);
         }
 
         IStoragrRepositoryParams IStoragrRepositoryParams.Id(string repositoryId)

@@ -5,7 +5,9 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientAuthenticator : StoragrClientHelper, IStoragrClientAuthenticator, IStoragrClientRunner<bool>
+    internal class StoragrClientAuthenticator : 
+        StoragrClientHelper<bool>, 
+        IStoragrClientAuthenticator
     {
         private readonly IStoragrClient _client;
         private StoragrAuthenticationRequest _userdata;
@@ -16,7 +18,30 @@ namespace Storagr.Client
         {
             _client = client;
         }
-        
+
+        protected override async Task<bool> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        {
+            if (_token is not null)
+            {
+                // TODO                
+            }
+
+            if (_userdata is not null)
+            {
+                var request = await clientRequest.Send<StoragrAuthenticationResponse, StoragrAuthenticationRequest>(
+                    $"users/authenticate",
+                    HttpMethod.Post,
+                    _userdata,
+                    cancellationToken
+                );
+                _token = request.Token;
+            }
+
+            _client.UseToken(_token);
+
+            return false;
+        }
+
         IStoragrClientRunner<bool> IStoragrClientAuthenticator.With(string username, string password)
         {
             _userdata = new StoragrAuthenticationRequest()
@@ -31,36 +56,6 @@ namespace Storagr.Client
         {
             _token = token;
             return this;
-        }
-
-        bool IStoragrClientRunner<bool>.Run()
-        {
-            var task = (this as IStoragrClientRunner<bool>).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
-
-        async Task<bool> IStoragrClientRunner<bool>.RunAsync(CancellationToken cancellationToken)
-        {
-            if (_token is not null)
-            {
-                // TODO                
-            }
-
-            if (_userdata is not null)
-            {
-                var request = await Request<StoragrAuthenticationResponse, StoragrAuthenticationRequest>(
-                    $"users/authenticate",
-                    HttpMethod.Post,
-                    _userdata,
-                    cancellationToken
-                );
-                _token = request.Token;
-            }
-
-            _client.UseToken(_token);
-
-            return false;
         }
     }
 }

@@ -7,7 +7,7 @@ using Storagr.Shared.Data;
 namespace Storagr.Client
 {
     internal class StoragrClientLock :
-        StoragrClientHelper,
+        StoragrClientHelper<StoragrLock>,
         IStoragrClientLock
     {
         private readonly string _repositoryIdOrName;
@@ -23,20 +23,13 @@ namespace Storagr.Client
             _lockIdOrPath = lockIdOrPath;
         }
 
-        StoragrLock IStoragrClientRunner<StoragrLock>.Run()
-        {
-            var task = (this as IStoragrClientLock).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
-
-        Task<StoragrLock> IStoragrClientRunner<StoragrLock>.RunAsync(CancellationToken cancellationToken)
+        protected override Task<StoragrLock> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             if (_createRequest is not null)
-                return Request<StoragrLock, StoragrUpdateRequest>($"repositories/{_repositoryIdOrName}/locks", HttpMethod.Post, _createRequest,
+                return clientRequest.Send<StoragrLock, StoragrUpdateRequest>($"repositories/{_repositoryIdOrName}/locks", HttpMethod.Post, _createRequest,
                     cancellationToken);
 
-            return Request<StoragrLock>(
+            return clientRequest.Send<StoragrLock>(
                 $"repositories/{_repositoryIdOrName}/locks/{_lockIdOrPath}",
                 _deleteRequest
                     ? HttpMethod.Delete
@@ -51,7 +44,7 @@ namespace Storagr.Client
             return this;
         }
 
-        IStoragrClientRunner<StoragrLock> IStoragrClientDeletable<StoragrLock>.Delete()
+        IStoragrClientRunner<StoragrLock> IStoragrClientDeletable<StoragrLock>.Delete(bool force)
         {
             _deleteRequest = true;
             return this;

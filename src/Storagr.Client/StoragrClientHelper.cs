@@ -4,20 +4,27 @@ using System.Threading.Tasks;
 
 namespace Storagr.Client
 {
-    internal abstract class StoragrClientHelper
+    internal abstract class StoragrClientHelper<T> : IStoragrClientRunner<T>
     {
-        protected IStoragrClientRequest ClientRequest { get; }
+        private readonly IStoragrClientRequest _clientRequest;
 
         protected StoragrClientHelper(IStoragrClientRequest clientRequest)
         {
-            ClientRequest = clientRequest;
+            _clientRequest = clientRequest;
         }
 
-        protected Task<TResult> Request<TResult>(string uri, HttpMethod method, CancellationToken cancellationToken = default) =>
-            ClientRequest.Send<TResult>(uri, method, cancellationToken);
+        protected abstract Task<T> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default);
+        
+        public T Run()
+        {
+            var task = (this as IStoragrClientRunner<T>).RunAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
 
-        protected Task<TResult> Request<TResult, TData>(string uri, HttpMethod method, TData data,
-            CancellationToken cancellationToken = default) =>
-            ClientRequest.Send<TResult, TData>(uri, method, data, cancellationToken);
+        public Task<T> RunAsync(CancellationToken cancellationToken = default)
+        {
+            return RunAsync(_clientRequest, cancellationToken);
+        }
     }
 }

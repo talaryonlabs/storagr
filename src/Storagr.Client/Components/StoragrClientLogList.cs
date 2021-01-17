@@ -8,7 +8,10 @@ using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientLogList : StoragrClientHelper, IStoragrLogList, IStoragrLogParams
+    internal class StoragrClientLogList : 
+        StoragrClientHelper<IStoragrList<StoragrLog>>, 
+        IStoragrLogList, 
+        IStoragrLogParams
     {
         private readonly StoragrLogListArgs _listArgs;
         
@@ -18,17 +21,14 @@ namespace Storagr.Client
             _listArgs = new StoragrLogListArgs();
         }
 
-        IStoragrList<StoragrLog> IStoragrClientRunner<IStoragrList<StoragrLog>>.Run()
-        {
-            var task = (this as IStoragrLogList).RunAsync();
-            task.RunSynchronously();
-            return task.Result;
-        }
-
-        Task<IStoragrList<StoragrLog>> IStoragrClientRunner<IStoragrList<StoragrLog>>.RunAsync(CancellationToken cancellationToken)
+        protected override Task<IStoragrList<StoragrLog>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return Request<IStoragrList<StoragrLog>>($"logs?{query}", HttpMethod.Get, cancellationToken);
+            return clientRequest.Send<IStoragrList<StoragrLog>>(
+                $"logs?{query}",
+                HttpMethod.Get,
+                cancellationToken
+            );
         }
 
         IStoragrClientList<StoragrLog, IStoragrLogParams> IStoragrClientList<StoragrLog, IStoragrLogParams>.Take(int count)
