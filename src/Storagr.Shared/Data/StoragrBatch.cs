@@ -39,9 +39,6 @@ namespace Storagr.Shared.Data
     {
         [JsonProperty("transfers")] public IEnumerable<string> Transfers { get; set; }
         [JsonProperty("objects")] public IEnumerable<StoragrBatchObject> Objects { get; set; }
-        
-        public static implicit operator StoragrBatchResponse(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrBatchResponse>(data);
     }
     
     [JsonObject]

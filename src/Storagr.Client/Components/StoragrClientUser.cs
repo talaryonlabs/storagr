@@ -17,8 +17,8 @@ namespace Storagr.Client
 
         private bool _userDeleting;
         
-        private StoragrUpdateRequest _userCreateRequest;
-        private StoragrUpdateRequest _userUpdateRequest;
+        private StoragrRequest<StoragrUser> _createRequest;
+        private StoragrRequest<StoragrUser> _updateRequest;
         
         public StoragrClientUser(IStoragrClientRequest clientRequest, string userIdOrName) : 
             base(clientRequest)
@@ -29,19 +29,19 @@ namespace Storagr.Client
 
         protected override Task<StoragrUser> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
-            if (_userCreateRequest is not null)
-                return clientRequest.Send<StoragrUser, StoragrUpdateRequest>(
+            if (_createRequest is not null)
+                return clientRequest.Send<StoragrUser, StoragrRequest<StoragrUser>>(
                     $"users",
                     HttpMethod.Post,
-                    _userCreateRequest,
+                    _createRequest,
                     cancellationToken
                 );
 
-            if (_userUpdateRequest is not null)
-                return clientRequest.Send<StoragrUser, StoragrUpdateRequest>(
+            if (_updateRequest is not null)
+                return clientRequest.Send<StoragrUser, StoragrRequest<StoragrUser>>(
                     $"users/{_userIdOrName}",
                     HttpMethod.Patch,
-                    _userUpdateRequest,
+                    _updateRequest,
                     cancellationToken
                 );
 
@@ -61,13 +61,13 @@ namespace Storagr.Client
 
         IStoragrClientParams<StoragrUser, IStoragrUserParams> IStoragrClientCreatable<StoragrUser, IStoragrUserParams>.Create()
         {
-            _userCreateRequest = new StoragrUpdateRequest() {Type = StoragrUpdateType.User};
+            _createRequest = new StoragrRequest<StoragrUser>();
             return this;
         }
 
         IStoragrClientParams<StoragrUser, IStoragrUserParams> IStoragrClientUpdatable<StoragrUser, IStoragrUserParams>.Update()
         {
-            _userUpdateRequest = new StoragrUpdateRequest() {Type = StoragrUpdateType.User};
+            _updateRequest = new StoragrRequest<StoragrUser>();
             return this;
         }
 
@@ -85,25 +85,25 @@ namespace Storagr.Client
 
         IStoragrUserParams IStoragrUserParams.Username(string username)
         {
-            (_userCreateRequest ?? _userUpdateRequest).Updates.Add("username", username);
+            (_createRequest ?? _updateRequest).Items.Add("username", username);
             return this;
         }
 
         IStoragrUserParams IStoragrUserParams.Password(string password)
         {
-            (_userCreateRequest ?? _userUpdateRequest).Updates.Add("password", password);
+            (_createRequest ?? _updateRequest).Items.Add("password", password);
             return this;
         }
 
         IStoragrUserParams IStoragrUserParams.IsEnabled(bool isEnabled)
         {
-            (_userCreateRequest ?? _userUpdateRequest).Updates.Add("is_enabled", isEnabled);
+            (_createRequest ?? _updateRequest).Items.Add("is_enabled", isEnabled);
             return this;
         }
 
         IStoragrUserParams IStoragrUserParams.IsAdmin(bool isAdmin)
         {
-            (_userCreateRequest ?? _userUpdateRequest).Updates.Add("is_admin", isAdmin);
+            (_createRequest ?? _updateRequest).Items.Add("is_admin", isAdmin);
             return this;
         }
     }

@@ -1,16 +1,33 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoragrRepository
     {
-        [DataMember(Name = "rid", IsRequired = true)] public string RepositoryId { get; set; }
-        [DataMember(Name = "name", IsRequired = true)] public string Name { get; set; }
-        [DataMember(Name = "owner")] public string Owner { get; set; }
-        [DataMember(Name = "size_limit")] public ulong SizeLimit { get; set; }
-        
-        public static implicit operator StoragrRepository(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrRepository>(data);
+        [JsonProperty("rid", Required = Required.Always)] public string RepositoryId { get; set; }
+        [JsonProperty("name")] public string Name { get; set; }
+        [JsonProperty("owner")] public string Owner { get; set; }
+        [JsonProperty("size_limit")] public ulong SizeLimit { get; set; }
+    }
+    
+    [JsonObject]
+    public class StoragrRepositoryList : StoragrList<StoragrRepository>
+    {
+        [JsonProperty("repositories")]
+        public override IEnumerable<StoragrRepository> Items { get; set; } = new List<StoragrRepository>();
+    }
+    
+    [DataContract]
+    public class StoragrRepositoryListArgs : StoragrListArgs
+    {
+        [QueryMember("id")] public string Id { get; set; }
+        [QueryMember("name")] public string Name { get; set; }
+        [QueryMember("owner")] public string Owner { get; set; }
+        [QueryMember("size_limit")] public ulong SizeLimit { get; set; }
+
+        // [QueryMember("refspec")] public string RefSpec;
     }
 }

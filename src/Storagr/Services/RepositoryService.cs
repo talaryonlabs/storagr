@@ -112,7 +112,7 @@ namespace Storagr.Services
                     await Get(newRepository.Name, cancellationToken)
                 );
 
-            var user = await _userService.Exists(newRepository.OwnerId, cancellationToken)
+            var user = newRepository.OwnerId is not null
                 ? await _userService.Get(newRepository.OwnerId, cancellationToken)
                 : await _userService.GetAuthenticatedUser(cancellationToken);
 
@@ -125,6 +125,33 @@ namespace Storagr.Services
             );
 
             return newRepository;
+        }
+
+        public async Task<RepositoryEntity> Update(RepositoryEntity updatedRepository, CancellationToken cancellationToken = default)
+        {
+            var repository = await Get(updatedRepository.Id, cancellationToken);
+            if (repository.Name != updatedRepository.Name && await Exists(updatedRepository.Name, cancellationToken))
+                throw new RepositoryAlreadyExistsError(
+                    await Get(updatedRepository.Name, cancellationToken)
+                );
+
+            if (repository.OwnerId != updatedRepository.OwnerId)
+            {
+                var user = updatedRepository.OwnerId is not null
+                    ? await _userService.Get(updatedRepository.OwnerId, cancellationToken)
+                    : await _userService.GetAuthenticatedUser(cancellationToken);
+                
+                updatedRepository.OwnerId = user.Id;
+            }
+            
+            await Task.WhenAll(
+                _cache.RemoveAsync(StoragrCaching.GetRepositoryCountKey(), cancellationToken),
+                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repository.Id), cancellationToken),
+                _cache.RemoveAsync(StoragrCaching.GetRepositoryKey(repository.Name), cancellationToken),
+                _database.Update(updatedRepository, cancellationToken)
+            );
+
+            return updatedRepository;
         }
 
         public async Task<RepositoryEntity> Delete(string repositoryIdOrName, CancellationToken cancellationToken)

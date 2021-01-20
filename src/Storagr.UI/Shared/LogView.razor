@@ -71,7 +71,7 @@
 
 @inject IStoragrClient StoragrClient;
 @code {
-    private readonly StoragrLogQuery _logOptions = new()
+    private readonly StoragrLogListArgs _logOptions = new()
     {
         Limit = 8
     };
@@ -83,7 +83,10 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _logs = await StoragrClient.GetLogs(_logOptions);
+        _logs = (StoragrLogList) await StoragrClient
+            .Logs()
+            .Take(_logOptions.Limit)
+            .RunAsync();
         _pageCount = (int) Math.Ceiling((double) _logs.TotalCount / _logOptions.Limit);
     }
 
@@ -99,8 +102,11 @@
         if ((page = Math.Clamp(page, 1, _pageCount)) == _currentPage)
             return;
 
-        _logOptions.Cursor = (page - 1) * _logOptions.Limit;
-        _logs = await StoragrClient.GetLogs(_logOptions);
+        _logs = (StoragrLogList) await StoragrClient
+            .Logs()
+            .Skip((page - 1) * _logOptions.Limit)
+            .Take(_logOptions.Limit)
+            .RunAsync();
         _currentPage = page;
     }
 

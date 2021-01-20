@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
@@ -11,9 +10,6 @@ namespace Storagr.Shared.Data
     {
         [JsonProperty("items")]
         public IDictionary<string, object> Items { get; set; } = new Dictionary<string, object>();
-        
-        public static implicit operator StoragrRequest<T>(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrRequest<T>>(data);
 
         public static T operator +(T a, StoragrRequest<T> b)
         {
@@ -25,10 +21,10 @@ namespace Storagr.Shared.Data
             var obj = Activator.CreateInstance<T>();
             foreach (var property in typeof(T).GetProperties())
             {
-                var attribute = property.GetCustomAttribute<DataMemberAttribute>();
-                if (attribute is not null && a.Items.ContainsKey(attribute.Name ?? property.Name))
+                var attribute = property.GetCustomAttribute<JsonPropertyAttribute>();
+                if (attribute is not null && a.Items.ContainsKey(attribute.PropertyName ?? property.Name))
                 {
-                    property.SetValue(obj, a.Items[attribute.Name ?? property.Name]);
+                    property.SetValue(obj, a.Items[attribute.PropertyName ?? property.Name]);
                 }
                 else
                 {

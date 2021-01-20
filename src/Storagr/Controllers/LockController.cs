@@ -14,7 +14,7 @@ namespace Storagr.Controllers
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("{repositoryId}/locks")]
+    [ApiRoute("repositories/{repositoryId}/locks")]
     public class LockController : StoragrController
     {
         private readonly ILockService _lockService;
@@ -49,13 +49,16 @@ namespace Storagr.Controllers
                 return new StoragrLockList();
 
             var list = (
-                    string.IsNullOrEmpty(listArgs.LockId) && string.IsNullOrEmpty(listArgs.Path)
+                    string.IsNullOrEmpty(listArgs.Id) && string.IsNullOrEmpty(listArgs.Path)
                         ? await _lockService.GetAll(repositoryId, cancellationToken)
-                        : await _lockService.GetMany(repositoryId, listArgs.LockId, listArgs.Path, cancellationToken)
+                        : await _lockService.GetMany(repositoryId, listArgs.Id, listArgs.Path, cancellationToken)
                 )
                 .Select(v => (StoragrLock) v)
                 .ToList();
 
+            if (listArgs.Skip > 0)
+                list = list.Skip(listArgs.Skip).ToList();
+            
             if (!string.IsNullOrEmpty(listArgs.Cursor))
                 list = list.SkipWhile(v => v.LockId != listArgs.Cursor).Skip(1).ToList();
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr.Shared.Data;
@@ -13,9 +12,9 @@ namespace Storagr.Client
         private readonly string _repositoryIdOrName;
         private readonly string _lockIdOrPath;
 
-        private bool _deleteRequest;
-        private StoragrUpdateRequest _createRequest;
-
+        private StoragrLockRequest _lockRequest;
+        private StoragrUnlockRequest _unlockRequest;
+        
         public StoragrClientLock(IStoragrClientRequest clientRequest, string repositoryIdOrName, string lockIdOrPath) 
             : base(clientRequest)
         {
@@ -25,28 +24,44 @@ namespace Storagr.Client
 
         protected override Task<StoragrLock> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
-            if (_createRequest is not null)
-                return clientRequest.Send<StoragrLock, StoragrUpdateRequest>($"repositories/{_repositoryIdOrName}/locks", HttpMethod.Post, _createRequest,
-                    cancellationToken);
+            if (_lockRequest is not null)
+                return clientRequest.Send<StoragrLock, StoragrLockRequest>(
+                    $"repositories/{_repositoryIdOrName}/locks",
+                    HttpMethod.Post,
+                    _lockRequest,
+                    cancellationToken
+                );
+            
+            if (_unlockRequest is not null)
+                return clientRequest.Send<StoragrLock, StoragrUnlockRequest>(
+                    $"repositories/{_repositoryIdOrName}/locks/{_lockIdOrPath}/unlock",
+                    HttpMethod.Post,
+                    _unlockRequest,
+                    cancellationToken
+                );
 
             return clientRequest.Send<StoragrLock>(
                 $"repositories/{_repositoryIdOrName}/locks/{_lockIdOrPath}",
-                _deleteRequest
-                    ? HttpMethod.Delete
-                    : HttpMethod.Get,
-                cancellationToken);
+                HttpMethod.Get,
+                cancellationToken
+            );
         }
 
         IStoragrClientRunner<StoragrLock> IStoragrClientCreatable<StoragrLock>.Create()
         {
-            _createRequest = new StoragrUpdateRequest();
-            _createRequest.Updates.Add("path", _lockIdOrPath);
+            _lockRequest = new StoragrLockRequest()
+            {
+                Path = _lockIdOrPath
+            };
             return this;
         }
 
         IStoragrClientRunner<StoragrLock> IStoragrClientDeletable<StoragrLock>.Delete(bool force)
         {
-            _deleteRequest = true;
+            _unlockRequest = new StoragrUnlockRequest()
+            {
+                Force = force
+            };
             return this;
         }
     }

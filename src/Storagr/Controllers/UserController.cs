@@ -61,6 +61,9 @@ namespace Storagr.Controllers
                 .Select(v => (StoragrUser) v)
                 .ToList();
 
+            if (listArgs.Skip > 0)
+                list = list.Skip(listArgs.Skip).ToList();
+            
             if (!string.IsNullOrEmpty(listArgs.Cursor))
                 list = list.SkipWhile(v => v.UserId != listArgs.Cursor).Skip(1).ToList();
 
@@ -85,9 +88,15 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ConflictError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         [ProducesResponseType(StatusCodes.Status501NotImplemented, Type = typeof(NotImplementedError))]
-        public async Task<StoragrUser> Create([FromBody] StoragrUserRequest createRequest, CancellationToken cancellationToken)
+        public async Task<StoragrUser> Create([FromBody] StoragrRequest<StoragrUser> createRequest, CancellationToken cancellationToken)
         {
-            return await _userService.Create(createRequest.User, createRequest.NewPassword, cancellationToken);
+            var user = new StoragrUser();
+            var password = (string) (createRequest.Items.ContainsKey("password")
+                    ? createRequest.Items["password"]
+                    : null
+                );
+
+            return await _userService.Create(user + createRequest, password, cancellationToken);
         }
 
         [HttpGet("{userId}")]
@@ -105,14 +114,15 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrUser))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrUser> Update([FromRoute] string userId, [FromBody] StoragrUpdateRequest updateRequest, CancellationToken cancellationToken)
+        public async Task<StoragrUser> Update([FromRoute] string userId, [FromBody] StoragrRequest<StoragrUser> updateRequest, CancellationToken cancellationToken)
         {
-            if (updateRequest.Type != StoragrUpdateType.User)
-                throw new BadRequestError();
+            var user = await _userService.Get(userId, cancellationToken);
+            var newPassword = default(string);
             
-            // TODO
-            
-            return null;
+            if (updateRequest.Items.ContainsKey("password"))
+                newPassword = (string) updateRequest.Items["password"];
+
+            return await _userService.Update(user + updateRequest, newPassword, cancellationToken);
         }
         
         [HttpDelete("{userId}")]

@@ -12,7 +12,7 @@ namespace Storagr.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("{repositoryId}/objects")]
+    [ApiRoute("repositories/{repositoryId}/objects")]
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class ObjectController : StoragrController
     {
@@ -29,7 +29,7 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrObjectList))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrObjectList> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListQuery listArgs, CancellationToken cancellationToken)
+        public async Task<StoragrObjectList> List([FromRoute] string repositoryId, [FromQuery] StoragrObjectListArgs listArgs, CancellationToken cancellationToken)
         {
             if (!await _repositoryService.Exists(repositoryId, cancellationToken))
                 throw new RepositoryNotFoundError();
@@ -42,6 +42,9 @@ namespace Storagr.Controllers
                 .Select(v => (StoragrObject) v)
                 .ToList();
 
+            if (listArgs.Skip > 0)
+                list = list.Skip(listArgs.Skip).ToList();
+            
             if (!string.IsNullOrEmpty(listArgs.Cursor))
                 list = list.SkipWhile(v => v.ObjectId != listArgs.Cursor).Skip(1).ToList();
 

@@ -16,8 +16,8 @@ namespace Storagr.Client
         private readonly string _repositoryIdOrName;
         
         private bool _deleteRequest;
-        private StoragrUpdateRequest _createRequest;
-        private StoragrUpdateRequest _updateRequest;
+        private StoragrRequest<StoragrRepository> _createRequest;
+        private StoragrRequest<StoragrRepository> _updateRequest;
         
         public StoragrClientRepository(IStoragrClientRequest clientRequest, string repositoryIdOrName) 
             : base(clientRequest)
@@ -29,7 +29,7 @@ namespace Storagr.Client
         protected override Task<StoragrRepository> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             if (_createRequest is not null)
-                return clientRequest.Send<StoragrRepository, StoragrUpdateRequest>(
+                return clientRequest.Send<StoragrRepository, StoragrRequest<StoragrRepository>>(
                     $"repositories",
                     HttpMethod.Post,
                     _createRequest,
@@ -37,7 +37,7 @@ namespace Storagr.Client
                 );
 
             if (_updateRequest is not null)
-                return clientRequest.Send<StoragrRepository, StoragrUpdateRequest>(
+                return clientRequest.Send<StoragrRepository, StoragrRequest<StoragrRepository>>(
                     $"repositories/{_repositoryIdOrName}",
                     HttpMethod.Patch,
                     _updateRequest,
@@ -60,13 +60,13 @@ namespace Storagr.Client
 
         IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams> IStoragrClientCreatable<StoragrRepository, IStoragrRepositoryParams>.Create()
         {
-            _createRequest = new StoragrUpdateRequest();
+            _createRequest = new StoragrRequest<StoragrRepository>();
             return this;
         }
 
         IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams> IStoragrClientUpdatable<StoragrRepository, IStoragrRepositoryParams>.Update()
         {
-            _updateRequest = new StoragrUpdateRequest();
+            _updateRequest = new StoragrRequest<StoragrRepository>();
             return this;
         }
 
@@ -104,19 +104,19 @@ namespace Storagr.Client
 
         IStoragrRepositoryParams IStoragrRepositoryParams.Name(string name)
         {
-            (_createRequest ?? _updateRequest).Updates.Add("name", name);
+            (_createRequest ?? _updateRequest).Items.Add("name", name);
             return this;
         }
 
         IStoragrRepositoryParams IStoragrRepositoryParams.Owner(string owner)
         {
-            (_createRequest ?? _updateRequest).Updates.Add("owner", owner);
+            (_createRequest ?? _updateRequest).Items.Add("owner", owner);
             return this;
         }
 
         IStoragrRepositoryParams IStoragrRepositoryParams.SizeLimit(ulong sizeLimit)
         {
-            (_createRequest ?? _updateRequest).Updates.Add("size_limit", sizeLimit);
+            (_createRequest ?? _updateRequest).Items.Add("size_limit", sizeLimit);
             return this;
         }
     }

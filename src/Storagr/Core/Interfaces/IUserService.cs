@@ -15,7 +15,7 @@ namespace Storagr
         Task<IEnumerable<UserEntity>> GetAll(CancellationToken cancellationToken = default);
 
         Task<UserEntity> Create(UserEntity newUser, string newPassword, CancellationToken cancellationToken = default);
-        Task<UserEntity> Modify(UserEntity updatedUser, string newPassword = null, CancellationToken cancellationToken = default);
+        Task<UserEntity> Update(UserEntity updatedUser, string newPassword = null, CancellationToken cancellationToken = default);
         Task<UserEntity> Delete(string userId, CancellationToken cancellationToken = default);
 
         Task<UserEntity> GetAuthenticatedUser(CancellationToken cancellationToken = default);

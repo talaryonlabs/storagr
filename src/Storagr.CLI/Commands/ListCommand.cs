@@ -14,11 +14,16 @@ namespace Storagr.CLI
         private class LocalOptions
         {
             public int Limit { get; set; }
+            public int Skip { get; set; }
             public string Cursor { get; set; }
             public string Repository { get; set; }
             public string IdPattern { get; set; }
             public string PathPattern { get; set; }
             public string UsernamePattern { get; set; }
+            public string NamePattern { get; set; }
+            public bool IsAdmin { get; set; }
+            public bool IsEnabled { get; set; }
+            public string Owner { get; set; }
         }
         
         public ListCommand() 
@@ -73,12 +78,17 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    list = await client.GetUsers(new StoragrUserListArgs()
-                    {
-                        Cursor = options.Cursor,
-                        Limit = options.Limit,
-                        Username = options.UsernamePattern
-                    }, token);
+                    list = (StoragrUserList)await client
+                        .Users()
+                        .Skip(options.Skip)
+                        .SkipUntil(options.Cursor)
+                        .Take(options.Limit)
+                        .Where(u => u
+                            .Username(options.UsernamePattern)
+                            .IsAdmin(options.IsAdmin)
+                            .IsEnabled(options.IsEnabled)
+                        )
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -103,12 +113,16 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    list = await client.GetRepositories(new StoragrRepositoryListArgs()
-                    {
-                        Cursor = options.Cursor,
-                        Limit = options.Limit,
-                        Id = options.IdPattern
-                    }, token);
+                    list = (StoragrRepositoryList)await client
+                        .Repositories()
+                        .Skip(options.Skip)
+                        .SkipUntil(options.Cursor)
+                        .Take(options.Limit)
+                        .Where(r => r
+                            .Name(options.NamePattern)
+                            .Owner(options.Owner)
+                        )
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -133,11 +147,13 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    list = await client.GetObjects(options.Repository, new StoragrObjectListQuery()
-                    {
-                        Cursor = options.Cursor,
-                        Limit = options.Limit
-                    }, token);
+                    list = (StoragrObjectList)await client
+                        .Repository(options.Repository)
+                        .Objects()
+                        .Skip(options.Skip)
+                        .SkipUntil(options.Cursor)
+                        .Take(options.Limit)
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -162,13 +178,17 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    list = await client.GetLocks(options.Repository, new StoragrLockListArgs()
-                    {
-                        Cursor = options.Cursor,
-                        Limit = options.Limit,
-                        LockId = options.IdPattern,
-                        Path = options.PathPattern
-                    }, token);
+                    list = (StoragrLockList)await client
+                        .Repository(options.Repository)
+                        .Locks()
+                        .Skip(options.Skip)
+                        .SkipUntil(options.Cursor)
+                        .Take(options.Limit)
+                        .Where(l => l
+                            .Id(options.IdPattern)
+                            .Path(options.PathPattern)
+                        )
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)

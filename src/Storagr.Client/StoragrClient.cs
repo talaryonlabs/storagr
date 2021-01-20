@@ -3,8 +3,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Storagr.Shared;
 using Storagr.Shared.Data;
 
@@ -12,25 +10,14 @@ namespace Storagr.Client
 {
     public class StoragrClient : IStoragrClient, IStoragrClientRequest
     {
-        public short Port { get; private set; }
-        public string Hostname { get;private set; }
-        public string Protocol { get;private set; }
+        public short Port { get; private set; } = 80;
+        public string Hostname { get; private set; } = "localhost";
+        public string Protocol { get;private set; } = "https";
         public string Token { get;private set; }
         
         private readonly HttpClient _httpClient;
         private readonly StoragrMediaType _mediaType;
-        private readonly StoragrClientOptions _options;
 
-        [ActivatorUtilitiesConstructor]
-        internal StoragrClient(IOptions<StoragrClientOptions> options, IHttpClientFactory clientFactory)
-            : this(clientFactory.CreateClient())
-        {
-            _options = options.Value;
-
-            UseHostname(_options.Host);
-            UseToken(_options.Token);
-        }
-        
         public StoragrClient(HttpClient httpClient)
         {
             _mediaType = new StoragrMediaType();
@@ -51,9 +38,9 @@ namespace Storagr.Client
             var responseData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-                throw (StoragrError) responseData;
+                throw StoragrHelper.DeserializeObject<StoragrError>(responseData);
 
-            return (TResponse) (object) responseData;
+            return StoragrHelper.DeserializeObject<TResponse>(responseData);
         }
         async Task<TResponse> IStoragrClientRequest.Send<TResponse, TRequestData>(string uri, HttpMethod method, TRequestData requestData, CancellationToken cancellationToken)
         {
@@ -73,9 +60,9 @@ namespace Storagr.Client
             var responseData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-                throw (StoragrError) responseData;
+                throw StoragrHelper.DeserializeObject<StoragrError>(responseData);
 
-            return (TResponse) (object) responseData;
+            return StoragrHelper.DeserializeObject<TResponse>(responseData);
         }
 
         public IStoragrClient UseToken(string token)
@@ -87,7 +74,7 @@ namespace Storagr.Client
         public IStoragrClient UseHostname(string hostname)
         {
             (Protocol, Hostname, Port) = StoragrHelper.ParseHostname(hostname);
-            _httpClient.BaseAddress = new Uri($"{(Protocol ?? _options.DefaultProtocol)}://{Hostname}:{(Port > 0 ? Port : _options.DefaultPort)}/v1/");
+            _httpClient.BaseAddress = new Uri($"{Protocol}://{Hostname}:{Port}/v1/");
             return this;
         }
 

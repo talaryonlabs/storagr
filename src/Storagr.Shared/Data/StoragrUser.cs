@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
@@ -9,8 +11,22 @@ namespace Storagr.Shared.Data
         [JsonProperty("username")] public string Username { get; set; }
         [JsonProperty("is_enabled")] public bool IsEnabled { get; set; }
         [JsonProperty("is_admin")] public bool IsAdmin { get; set; }
-        
-        public static implicit operator StoragrUser(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrUser>(data);
+    }
+    
+    [JsonObject]
+    public class StoragrUserList : StoragrList<StoragrUser>
+    {
+        [JsonProperty("users")] 
+        public override IEnumerable<StoragrUser> Items { get; set; } = new List<StoragrUser>();
+    }
+    
+    [DataContract]
+    public class StoragrUserListArgs : StoragrListArgs
+    {
+        [QueryMember("id")] public string Id { get; set; }
+        [QueryMember("username")] public string Username { get; set; }
+        [QueryMember("is_enabled")] public bool IsEnabled { get; set; }
+        [QueryMember("is_admin")] public bool IsAdmin { get; set; }
+        // [QueryMember("refspec")] public string RefSpec;
     }
 }

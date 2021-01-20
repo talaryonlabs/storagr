@@ -55,7 +55,11 @@ namespace Storagr.CLI
             
             try
             {
-                await console.Wait(token => client.DeleteUser(options.Id, token));
+                await console.Wait(token => client
+                    .User(options.Id)
+                    .Delete(options.Force)
+                    .RunAsync(token)
+                );
             }
             catch (TaskCanceledException)
             {
@@ -79,7 +83,11 @@ namespace Storagr.CLI
             
             try
             {
-                await console.Wait(token => client.DeleteRepository(options.Id, token));
+                await console.Wait(token => client
+                    .Repository(options.Id)
+                    .Delete(options.Force)
+                    .RunAsync(token)
+                );
             }
             catch (TaskCanceledException)
             {
@@ -103,7 +111,12 @@ namespace Storagr.CLI
             
             try
             {
-                await console.Wait(token => client.DeleteObject(options.Repository, options.Id, token));
+                await console.Wait(token => client
+                    .Repository(options.Repository)
+                    .Object(options.Id)
+                    .Delete(options.Force)
+                    .RunAsync(token)
+                );
             }
             catch (TaskCanceledException)
             {

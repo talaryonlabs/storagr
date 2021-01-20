@@ -164,24 +164,24 @@ namespace Storagr.Services
             return newUser;
         }
 
-        public async Task<UserEntity> Modify(UserEntity updatedUser, string newPassword, CancellationToken cancellationToken)
+        public async Task<UserEntity> Update(UserEntity updatedUser, string newPassword, CancellationToken cancellationToken)
         {
             var user = await Get(updatedUser.Id, cancellationToken);
-
+            if (user.Username != updatedUser.Username && await Exists(updatedUser.Username, cancellationToken))
+                throw new UserAlreadyExistsError(
+                    await Get(updatedUser.Username, cancellationToken)
+                );
+            
             if (_authenticator is BackendAuthenticator authenticator)
             {
                 await authenticator.Modify(user.AuthId, updatedUser.Username, newPassword);
             }
 
-            user.IsAdmin = updatedUser.IsAdmin;
-            user.IsEnabled = updatedUser.IsEnabled;
-            user.Username = updatedUser.Username;
-
             await Task.WhenAll(
                 _cache.RemoveAsync(StoragrCaching.GetUserCountKey(), cancellationToken),
                 _cache.RemoveAsync(StoragrCaching.GetUserKey(user.Id), cancellationToken),
                 _cache.RemoveAsync(StoragrCaching.GetUserKey(user.Username), cancellationToken),
-                _database.Update(user, cancellationToken)
+                _database.Update(updatedUser, cancellationToken)
             );
 
             return user;

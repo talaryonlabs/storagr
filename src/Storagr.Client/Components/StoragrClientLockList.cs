@@ -22,10 +22,10 @@ namespace Storagr.Client
             _listArgs = new StoragrLockListArgs();
         }
 
-        protected override Task<IStoragrList<StoragrLock>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        protected override async Task<IStoragrList<StoragrLock>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return clientRequest.Send<IStoragrList<StoragrLock>>(
+            return await clientRequest.Send<StoragrLockList>(
                 $"repositories/{_repositoryId}/locks?{query}",
                 HttpMethod.Get,
                 cancellationToken

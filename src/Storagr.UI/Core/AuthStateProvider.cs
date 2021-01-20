@@ -22,12 +22,13 @@ namespace Storagr.UI
             var identity = new ClaimsIdentity();
             var token = await _localStorage.GetItemAsStringAsync(Constants.StorageTokenKey);
             
-            if (token is not null && await _client.Authenticate(token))
+            if (token is not null && await _client.Authenticate().With(token).RunAsync())
             {
-                identity = new ClaimsIdentity(new[]  
-                {  
-                    new Claim(ClaimTypes.Name, _client.User.Username),  
-                }, "storagr");
+                // TODO
+                // identity = new ClaimsIdentity(new[]  
+                // {  
+                //     // TODO new Claim(ClaimTypes.Name, _client.User.Username),
+                // }, "storagr");
             }
 
             return await Task.FromResult(

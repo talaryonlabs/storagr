@@ -37,7 +37,11 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    lck = await client.Lock(options.Repository, options.Path, token);
+                    lck = await client
+                        .Repository(options.Repository)
+                        .Lock(options.Path)
+                        .Create()
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)

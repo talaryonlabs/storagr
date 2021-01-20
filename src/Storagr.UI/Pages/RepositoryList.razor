@@ -15,7 +15,7 @@
     <tbody>
     @foreach (var repository in _repositories.Items)
     {
-        var user = _users.Items.FirstOrDefault(v => v.UserId == repository.OwnerId);
+        var user = _users.Items.FirstOrDefault(v => v.UserId == repository.Owner);
         <tr>
             <td>
                 <a href="repositories/@repository.RepositoryId">@repository.RepositoryId</a>
@@ -42,8 +42,12 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _users = await StoragrClient.GetUsers();
-        _repositories = await StoragrClient.GetRepositories();
+        _users = (StoragrUserList)await StoragrClient
+            .Users()
+            .RunAsync();
+        _repositories = (StoragrRepositoryList)await StoragrClient
+            .Repositories()
+            .RunAsync();
     }
 
 }

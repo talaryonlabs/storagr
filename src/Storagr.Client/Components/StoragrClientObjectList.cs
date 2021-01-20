@@ -13,19 +13,19 @@ namespace Storagr.Client
         IStoragrObjectParams
     {
         private readonly string _repositoryIdOrName;
-        private readonly StoragrObjectListQuery _listArgs;
+        private readonly StoragrObjectListArgs _listArgs;
 
         public StoragrClientObjectList(IStoragrClientRequest clientRequest, string repositoryIdOrName) 
             : base(clientRequest)
         {
             _repositoryIdOrName = repositoryIdOrName;
-            _listArgs = new StoragrObjectListQuery();
+            _listArgs = new StoragrObjectListArgs();
         }
 
-        protected override Task<IStoragrList<StoragrObject>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        protected override async Task<IStoragrList<StoragrObject>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return clientRequest.Send<IStoragrList<StoragrObject>>(
+            return await clientRequest.Send<StoragrObjectList>(
                 $"repositories/{_repositoryIdOrName}/objects?{query}",
                 HttpMethod.Get,
                 cancellationToken

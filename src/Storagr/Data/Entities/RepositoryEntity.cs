@@ -24,7 +24,7 @@ namespace Storagr.Data.Entities
         {
             RepositoryId = entity.Id,
             Name = entity.Name,
-            OwnerId = entity.OwnerId,
+            Owner = entity.OwnerId,
             SizeLimit = entity.SizeLimit
         };
         
@@ -32,7 +32,7 @@ namespace Storagr.Data.Entities
         {
             Id = repository.RepositoryId,
             Name = repository.Name,
-            OwnerId = repository.OwnerId,
+            OwnerId = repository.Owner,
             SizeLimit = repository.SizeLimit
         };
     }

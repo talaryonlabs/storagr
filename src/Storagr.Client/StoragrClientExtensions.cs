@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Storagr.Shared;
 
 namespace Storagr.Client
@@ -7,11 +9,7 @@ namespace Storagr.Client
     public class StoragrClientOptions : StoragrOptions<StoragrClientOptions>
     {
         public string Host { get; set; }
-        
         public string Token { get; set; }
-
-        public short DefaultPort { get; set; } = 80;
-        public string DefaultProtocol { get; set; } = "https";
     }
     
     public static class StoragrClientExtensions
@@ -22,7 +20,15 @@ namespace Storagr.Client
                 .AddOptions()
                 .Configure(configureOptions)
                 .AddHttpClient()
-                .AddScoped<IStoragrClient, StoragrClient>();
+                .AddScoped(provider =>
+                {
+                    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+                    var options = provider.GetRequiredService<IOptions<StoragrClientOptions>>().Value;
+
+                    return new StoragrClient(httpClientFactory.CreateClient())
+                        .UseHostname(options.Host)
+                        .UseToken(options.Token);
+                });
             
             return services;
         }

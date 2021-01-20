@@ -45,7 +45,11 @@ namespace Storagr.CLI
             var client = host.GetStoragrClient();
             try
             {
-                await console.Wait(token => client.Authenticate(options.Username, options.Password, token));
+                await console.Wait(token => client
+                    .Authenticate()
+                    .With(options.Username, options.Password)
+                    .RunAsync(token)
+                );
             }
             catch (TaskCanceledException)
             {

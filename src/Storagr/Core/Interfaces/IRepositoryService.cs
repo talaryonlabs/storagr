@@ -18,6 +18,7 @@ namespace Storagr
         Task<IEnumerable<RepositoryEntity>> GetAll(CancellationToken cancellationToken = default);
 
         Task<RepositoryEntity> Create(RepositoryEntity newRepository, CancellationToken cancellationToken = default);
+        Task<RepositoryEntity> Update(RepositoryEntity updatedRepository, CancellationToken cancellationToken = default);
         Task<RepositoryEntity> Delete(string repositoryIdOrName, CancellationToken cancellationToken = default);
 
         Task GrantAccess(string repositoryIdOrName, string userId, RepositoryAccessType accessType,

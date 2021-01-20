@@ -28,7 +28,7 @@ namespace Storagr.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLogList))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrLogList> List([FromQuery] StoragrLogQuery options, CancellationToken cancellationToken)
+        public async Task<StoragrLogList> List([FromQuery] StoragrLogListArgs options, CancellationToken cancellationToken)
         {
             const int max = 100;
 
@@ -36,7 +36,7 @@ namespace Storagr.Controllers
             {
                 x.OrderBy(o => o.Column("Date", DatabaseOrderType.Desc));
                 x.Limit(options.Limit > max ? max : options.Limit);
-                x.Offset(options.Cursor);
+                x.Offset(options.Skip);
             }, cancellationToken);
 
             var list = logs.ToList();
@@ -45,7 +45,7 @@ namespace Storagr.Controllers
                 : new StoragrLogList()
                 {
                     Items = list.Select(v => (StoragrLog) v).ToList(),
-                    NextCursor = options.Cursor + list.Count,
+                    // NextCursor = options.Cursor + list.Count, // TODO
                     TotalCount = await _database.Count<LogEntity>(cancellationToken)
                 };
         }

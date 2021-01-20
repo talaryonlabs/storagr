@@ -20,10 +20,10 @@ namespace Storagr.Client
             _listArgs = new StoragrRepositoryListArgs();
         }
 
-        protected override Task<IStoragrList<StoragrRepository>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        protected override async Task<IStoragrList<StoragrRepository>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return clientRequest.Send<IStoragrList<StoragrRepository>>(
+            return await clientRequest.Send<StoragrRepositoryList>(
                 $"repositories?{query}",
                 HttpMethod.Get,
                 cancellationToken

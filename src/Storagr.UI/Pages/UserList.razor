@@ -27,7 +27,9 @@
     
     protected override async Task OnInitializedAsync()
     {
-        _users = await StoragrClient.GetUsers();
+        _users = (StoragrUserList)await StoragrClient
+            .Users()
+            .RunAsync();
     }
 
 }

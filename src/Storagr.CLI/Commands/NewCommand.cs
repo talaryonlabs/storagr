@@ -73,11 +73,14 @@ namespace Storagr.CLI
                 await console.Wait(async token =>
                 {
                     user = await client
-                        .CreateUser(options.Username)
-                        .SetPassword(password)
-                        .SetEnabled(options.IsEnabled)
-                        .SetAdmin(options.IsAdmin)
-                        .Create(token);
+                        .User(options.Username)
+                        .Create()
+                        .With(u => u
+                            .Password(password)
+                            .IsAdmin(options.IsAdmin)
+                            .IsEnabled(options.IsEnabled)
+                        )
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -105,10 +108,13 @@ namespace Storagr.CLI
                 await console.Wait(async token =>
                 {
                     repository = await client
-                        .CreateRepository(options.Name)
-                        .SetOwner(options.Owner)
-                        .SetSizeLimit(options.SizeLimit)
-                        .Create(token);
+                        .Repository(options.Name)
+                        .Create()
+                        .With(r => r
+                            .Owner(options.Owner)
+                            .SizeLimit(options.SizeLimit)
+                        )
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)

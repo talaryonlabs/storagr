@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
@@ -10,15 +12,14 @@ namespace Storagr.Shared.Data
         [JsonProperty("path")] public string Path { get; set; }
         [JsonProperty("locked_at")] public DateTime LockedAt { get; set; }
         [JsonProperty("owner")] public StoragrOwner Owner { get; set; }
-
-        public static implicit operator StoragrLock(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrLock>(data);
     }
 
     [JsonObject]
     public class StoragrLockRequest
     {
-        [JsonProperty("path", Required = Required.Always)] public string Path { get; set; }
+        [JsonProperty("path", Required = Required.Always)]
+        public string Path { get; set; }
+
         [JsonProperty("ref")] public StoragrRef Ref { get; set; }
     }
 
@@ -26,11 +27,8 @@ namespace Storagr.Shared.Data
     public class StoragrLockResponse
     {
         [JsonProperty("lock")] public StoragrLock Lock { get; set; }
-        
-        public static implicit operator StoragrLockResponse(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrLockResponse>(data);
     }
-    
+
     [JsonObject]
     public class StoragrUnlockRequest
     {
@@ -42,8 +40,36 @@ namespace Storagr.Shared.Data
     public class StoragrUnlockResponse
     {
         [JsonProperty("lock")] public StoragrLock Lock { get; set; }
-        
-        public static implicit operator StoragrUnlockResponse(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrUnlockResponse>(data);
+    }
+
+    [JsonObject]
+    public class StoragrLockList : StoragrList<StoragrLock>
+    {
+        [JsonProperty("locks")] 
+        public override IEnumerable<StoragrLock> Items { get; set; } = new List<StoragrLock>();
+    }
+
+    [DataContract]
+    public sealed class StoragrLockListArgs : StoragrListArgs
+    {
+        [QueryMember("path")] public string Path { get; set; }
+        [QueryMember("id")] public string Id { get; set; }
+
+        [QueryMember("refspec")] public string RefSpec { get; set; }
+    }
+
+    [JsonObject]
+    public sealed class StoragrLockVerifyList
+    {
+        [JsonProperty("ours")] public IEnumerable<StoragrLock> Ours { get; set; } = new List<StoragrLock>();
+        [JsonProperty("theirs")] public IEnumerable<StoragrLock> Theirs { get; set; } = new List<StoragrLock>();
+        [JsonProperty("next_cursor")] public string NextCursor { get; set; }
+        [JsonProperty("total_count")] public int TotalCount { get; set; }
+    }
+
+    [DataContract]
+    public sealed class StoragrLockVerifyListArgs : StoragrListArgs
+    {
+        // [JsonProperty("ref")] public StoragrRef Ref { get; set; }
     }
 }

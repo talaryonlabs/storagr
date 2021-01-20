@@ -15,7 +15,7 @@ namespace Storagr.Controllers
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("{repositoryId}/objects/batch")]
+    [ApiRoute("repositories/{repositoryId}/objects/batch")]
     public class BatchController : StoragrController
     {
         private readonly IUserService _userService;

@@ -60,28 +60,32 @@ namespace Storagr.CLI
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
-            var updater = client.UpdateUser(options.IdOrName);
             var user = default(StoragrUser);
-
-            if (context.ParseResult.HasOption("--username"))
-                updater.SetUsername(options.Username);
-            
-            if (context.ParseResult.HasOption("--enable"))
-                updater.SetEnabled(true);
-            else if (context.ParseResult.HasOption("--disable"))
-                updater.SetEnabled(false);
-
-            if (context.ParseResult.HasOption("--change-password"))
-            {
-                var password = console.ReadPassword("New Password");
-                updater.SetPassword(password);
-            }
 
             try
             {
                 await console.Wait(async token =>
                 {
-                    user = await updater.Update(token); 
+                    user = await client
+                        .User(options.IdOrName)
+                        .Update()
+                        .With(u =>
+                        {
+                            if (context.ParseResult.HasOption("--username"))
+                                u.Username(options.Username);
+            
+                            if (context.ParseResult.HasOption("--enable"))
+                                u.IsEnabled(true);
+                            else if (context.ParseResult.HasOption("--disable"))
+                                u.IsEnabled(false);
+
+                            if (context.ParseResult.HasOption("--change-password"))
+                            {
+                                var password = console.ReadPassword("New Password");
+                                u.Password(password);
+                            }
+                        })
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -93,7 +97,9 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
 
-            return Success(console, user, "User successfully updated.", globalOptions.AsJson);
+            return globalOptions.WithResult
+                ? Success(console, user, "User successfully updated.", globalOptions.AsJson)
+                : Success(console, "User successfully updated.");
         }
 
         private static async Task<int> UpdateRepository(IHost host, InvocationContext context, LocalOptions options,
@@ -101,23 +107,27 @@ namespace Storagr.CLI
         {
             var console = host.GetConsole();
             var client = host.GetStoragrClient();
-            var updater = client.UpdateRepository(options.IdOrName);
             var repository = default(StoragrRepository);
-
-            if (context.ParseResult.HasOption("--name"))
-                updater.SetName(options.Name);
-            
-            if (context.ParseResult.HasOption("--owner"))
-                updater.SetOwner(options.Owner);
-            
-            if (context.ParseResult.HasOption("--size-limit"))
-                updater.SetSizeLimit(options.SizeLimit);
             
             try
             {
                 await console.Wait(async token =>
                 {
-                    repository = await updater.Update(token); 
+                    repository = await client
+                        .Repository(options.IdOrName)
+                        .Update()
+                        .With(r =>
+                        {
+                            if (context.ParseResult.HasOption("--name"))
+                                r.Name(options.Name);
+            
+                            if (context.ParseResult.HasOption("--owner"))
+                                r.Owner(options.Owner);
+            
+                            if (context.ParseResult.HasOption("--size-limit"))
+                                r.SizeLimit(options.SizeLimit);
+                        })
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -129,7 +139,9 @@ namespace Storagr.CLI
                 return Error(console, exception);
             }
 
-            return Success(console, repository, "Repository successfully updated.", globalOptions.AsJson);
+            return globalOptions.WithResult
+                ? Success(console, repository, "Repository successfully updated.", globalOptions.AsJson)
+                : Success(console, "Repository successfully updated.");
         }
     }
 }

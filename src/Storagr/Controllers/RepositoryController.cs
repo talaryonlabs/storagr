@@ -38,6 +38,9 @@ namespace Storagr.Controllers
                 .Select(v => (StoragrRepository) v)
                 .ToList();
 
+            if (listArgs.Skip > 0)
+                list = list.Skip(listArgs.Skip).ToList();
+            
             if (!string.IsNullOrEmpty(listArgs.Cursor))
                 list = list.SkipWhile(v => v.RepositoryId != listArgs.Cursor).Skip(1).ToList();
 
@@ -59,41 +62,31 @@ namespace Storagr.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
         [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ConflictError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrRepository> Create([FromBody] StoragrRepository newRepository, CancellationToken cancellationToken)
-        {
-            return await _repositoryService.Create(newRepository, cancellationToken);
-        }
+        public async Task<StoragrRepository> Create([FromBody] StoragrRequest<StoragrRepository> createRequest, CancellationToken cancellationToken)
+            => await _repositoryService.Create(new StoragrRepository() + createRequest, cancellationToken);
 
         [HttpGet("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public async Task<StoragrRepository> Get([FromRoute] string repositoryId, CancellationToken cancellationToken)
-        {
-            return await _repositoryService.Get(repositoryId, cancellationToken);
-        }
+            => await _repositoryService.Get(repositoryId, cancellationToken);
         
         [HttpPatch("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrRepository> Update([FromRoute] string repositoryId, [FromBody] StoragrUpdateRequest updateRequest, CancellationToken cancellationToken)
+        public async Task<StoragrRepository> Update([FromRoute] string repositoryId, [FromBody] StoragrRequest<StoragrRepository> updateRequest, CancellationToken cancellationToken)
         {
-            if (updateRequest.Type != StoragrUpdateType.Repository)
-                throw new BadRequestError();
-
-            // TODO
-            
-            return await _repositoryService.Get(repositoryId, cancellationToken);
+            var repository = await _repositoryService.Get(repositoryId, cancellationToken);
+            return await _repositoryService.Update(repository + updateRequest, cancellationToken);
         }
 
         [HttpDelete("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrRepository))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrRepository> Delete([FromRoute] string repositoryId, CancellationToken cancellationToken)
-        {
-            return await _repositoryService.Delete(repositoryId, cancellationToken);
-        }
+        public async Task<StoragrRepository> Delete([FromRoute] string repositoryId, CancellationToken cancellationToken) 
+            => await _repositoryService.Delete(repositoryId, cancellationToken);
     }
 }

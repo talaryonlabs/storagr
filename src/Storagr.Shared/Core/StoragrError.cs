@@ -29,8 +29,5 @@ namespace Storagr.Shared
         {
             StackTrace = e.StackTrace;
         }
-
-        public static implicit operator StoragrError(byte[] data) =>
-            StoragrHelper.DeserializeObject<StoragrError>(data);
     }
 }

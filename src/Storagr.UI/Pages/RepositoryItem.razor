@@ -1,5 +1,6 @@
 ﻿@page "/repositories/{RepositoryId}"
 @using Storagr.Shared.Data
+@using System.Threading
 <h3>Repository @RepositoryId</h3>
 
 <span class="title">Objects</span>
@@ -52,13 +53,21 @@
     [Parameter]
     public string RepositoryId { get; set; }
 
-    private StoragrObjectList _objects = new StoragrObjectList();
-    private StoragrLockList _locks = new StoragrLockList();
+    private StoragrObjectList _objects = new ();
+    private StoragrLockList _locks = new ();
 
     protected override async Task OnInitializedAsync()
     {
-        _objects = await StoragrClient.GetObjects(RepositoryId);
-        _locks = await StoragrClient.GetLocks(RepositoryId);
+        var repository = StoragrClient
+            .Repository(RepositoryId);
+
+        _objects = (StoragrObjectList) await repository
+            .Objects()
+            .RunAsync();
+        
+        _locks = (StoragrLockList)await repository
+            .Locks()
+            .RunAsync();
     }
 
 }

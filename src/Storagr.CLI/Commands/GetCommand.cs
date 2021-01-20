@@ -61,7 +61,9 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    user = await client.GetUser(options.IdOrName, token);
+                    user = await client
+                        .User(options.IdOrName)
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -86,7 +88,9 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    repository = await client.GetRepository(options.IdOrName, token); 
+                    repository = await client
+                        .Repository(options.IdOrName)
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -111,7 +115,10 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    obj = await client.GetObject(options.Repository, options.Id, token);
+                    obj = await client
+                        .Repository(options.Repository)
+                        .Object(options.IdOrName)
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)
@@ -136,7 +143,10 @@ namespace Storagr.CLI
             {
                 await console.Wait(async token =>
                 {
-                    lck = await client.GetLock(options.Repository, options.Id, token);
+                    lck = await client
+                        .Repository(options.Repository)
+                        .Lock(options.Id)
+                        .RunAsync(token);
                 });
             }
             catch (TaskCanceledException)

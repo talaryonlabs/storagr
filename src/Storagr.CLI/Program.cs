@@ -31,8 +31,7 @@ namespace Storagr.CLI
                             {
                                 context.Properties.TryGetValue(typeof(InvocationContext), out var invocationContext);
                                 var parseResult = (invocationContext as InvocationContext)?.ParseResult.RootCommandResult;
-
-                                options.DefaultPort = short.Parse(context.Configuration["defaultPort"]);
+                                
                                 options.Host = parseResult?.OptionResult("--host")?.GetValueOrDefault<string>() ??
                                                context.Configuration["host"];
                                 options.Token = parseResult?.OptionResult("--token")?.GetValueOrDefault<string>() ??

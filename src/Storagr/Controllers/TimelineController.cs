@@ -7,7 +7,7 @@ namespace Storagr.Controllers
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("{repositoryId}/timeline")]
+    [ApiRoute("repositories/{repositoryId}/timeline")]
     public class TimelineController : StoragrController
     {
         

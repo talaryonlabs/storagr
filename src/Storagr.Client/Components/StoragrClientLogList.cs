@@ -21,10 +21,10 @@ namespace Storagr.Client
             _listArgs = new StoragrLogListArgs();
         }
 
-        protected override Task<IStoragrList<StoragrLog>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        protected override async Task<IStoragrList<StoragrLog>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return clientRequest.Send<IStoragrList<StoragrLog>>(
+            return await clientRequest.Send<StoragrLogList>(
                 $"logs?{query}",
                 HttpMethod.Get,
                 cancellationToken

@@ -64,7 +64,10 @@
 
         try
         {
-            await StoragrClient.Authenticate(_loginModel.Username, _loginModel.Password);
+            await StoragrClient
+                .Authenticate()
+                .With(_loginModel.Username, _loginModel.Password)
+                .RunAsync();
             await LocalStorageService.SetItemAsync(Constants.StorageTokenKey, StoragrClient.Token);
             NavigationManager.NavigateTo(NavigationManager.Uri, true);
         }
