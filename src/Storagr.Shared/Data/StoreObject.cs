@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Runtime.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoreObject
     {
-        [DataMember(Name = "oid")] public string ObjectId { get; set; }
-        [DataMember(Name = "rid")] public string RepositoryId { get; set; }
-        [DataMember(Name = "size")] public long Size { get; set; }
+        [JsonProperty("oid")] public string ObjectId { get; set; }
+        [JsonProperty("rid")] public string RepositoryId { get; set; }
+        [JsonProperty("size")] public long Size { get; set; }
     }
 }

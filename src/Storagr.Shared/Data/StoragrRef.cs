@@ -1,10 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoragrRef
     {
-        [DataMember(Name = "name")] public string Name { get; set; }
+        [JsonProperty("name")] public string Name { get; set; }
     }
 }

@@ -1,8 +1,8 @@
-﻿using System.Runtime.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoragrInformation
     {
         

@@ -1,17 +1,17 @@
-﻿using System.Runtime.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoragrAuthenticationRequest
     {
-        [DataMember(Name = "username", IsRequired = true)] public string Username { get; set; }
-        [DataMember(Name = "password", IsRequired = true)] public string Password { get; set; }
+        [JsonProperty("username", Required = Required.Always)] public string Username { get; set; }
+        [JsonProperty("password", Required = Required.Always)] public string Password { get; set; }
     }
 
-    [DataContract]
+    [JsonObject]
     public class StoragrAuthenticationResponse
     {
-        [DataMember(Name = "token")] public string Token { get; set; }
+        [JsonProperty("token")] public string Token { get; set; }
     }
 }

@@ -1,11 +1,11 @@
-﻿using System.Runtime.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoreRepository
     {
-        [DataMember(Name = "rid")] public string RepositoryId { get; set; }
-        [DataMember(Name = "used_space")] public long UsedSpace { get; set; }
+        [JsonProperty("rid")] public string RepositoryId { get; set; }
+        [JsonProperty("used_space")] public long UsedSpace { get; set; }
     }
 }

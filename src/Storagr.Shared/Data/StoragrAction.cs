@@ -1,23 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Storagr.Shared.Data
 {
-    [DataContract]
+    [JsonObject]
     public class StoragrAction
     {
-        [DataMember(Name = "href", IsRequired = true)] public string Href { get; set; }
-        [DataMember(Name = "header")] public IDictionary<string, string> Header { get; set; }
-        [DataMember(Name = "expires_in")] public int ExpiresIn { get; set; }
-        [DataMember(Name = "expires_at")] public DateTime ExpiresAt { get; set; }
+        [JsonProperty("href", Required = Required.Always)] public string Href { get; set; }
+        [JsonProperty("header")] public IDictionary<string, string> Header { get; set; }
+        [JsonProperty("expires_in")] public int ExpiresIn { get; set; }
+        [JsonProperty("expires_at")] public DateTime ExpiresAt { get; set; }
     }
 
-    [DataContract]
+    [JsonObject]
     public class StoragrActions
     {
-        [DataMember(Name = "download")] public StoragrAction Download { get; set; }
-        [DataMember(Name = "upload")] public StoragrAction Upload { get; set; }
-        [DataMember(Name = "verify")] public StoragrAction Verify { get; set; }
+        [JsonProperty("download")] public StoragrAction Download { get; set; }
+        [JsonProperty("upload")] public StoragrAction Upload { get; set; }
+        [JsonProperty("verify")] public StoragrAction Verify { get; set; }
     }
 }
