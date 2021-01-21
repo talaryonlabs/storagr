@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
@@ -8,6 +9,8 @@ namespace Storagr
 {
     public interface IDatabaseAdapter
     {
+        IDatabaseAdapter UseConnection(IDbConnection connection);
+        
         Task<int> Count<T>(CancellationToken cancellationToken = default) where T : class => Count<T>(null, cancellationToken);
         Task<int> Count<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class;
 

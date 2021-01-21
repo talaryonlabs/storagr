@@ -1,6 +1,6 @@
 ﻿namespace Storagr
 {
-    public class StoragrConstants
+    public static class StoragrConstants
     {
         public const int MaxListLimit = 250;
         public const int DefaultListLimit = 50;

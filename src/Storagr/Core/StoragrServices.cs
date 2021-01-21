@@ -77,12 +77,11 @@ namespace Storagr
                     options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ssK";
                 });
 
-            services.AddSingleton<IRepositoryService, RepositoryService>();
-            services.AddSingleton<IObjectService, ObjectService>();
-            services.AddSingleton<ILockService, LockService>();
-            services.AddSingleton<IUserService, UserService>();
-            
-            return services;
+            return services
+                .AddSingleton<IRepositoryService, RepositoryService>()
+                .AddSingleton<IObjectService, ObjectService>()
+                .AddSingleton<ILockService, LockService>()
+                .AddSingleton<IUserService, UserService>();
         }
 
         public static IServiceCollection AddStoragrSecurity(this IServiceCollection services, StoragrConfig config)
@@ -186,28 +185,50 @@ namespace Storagr
         public static IServiceCollection AddStoragrDatabase(this IServiceCollection services, StoragrConfig config)
         {
             var storagrConfig = config.Get<StoragrCoreConfig>();
-            
-            services.AddFluentMigratorCore().ConfigureRunner(options =>
-            {
-                switch (storagrConfig.Backend)
-                {
-                    case StoragrBackendType.Sqlite:
-                        var sqliteConfig = config.Get<SqliteOptions>();
-                        options.AddSQLite().WithGlobalConnectionString($"Data Source={sqliteConfig.DataSource}");
-                        break;
-                    
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
 
-                options.ScanIn(typeof(Setup).Assembly).For.Migrations();
-            });
+            services
+                .AddFluentMigratorCore()
+                .ConfigureRunner(options =>
+                {
+                    switch (storagrConfig.Backend)
+                    {
+                        case StoragrBackendType.Sqlite:
+                            var sqliteConfig = config.Get<SqliteOptions>();
+                            options
+                                .AddSQLite()
+                                .WithGlobalConnectionString($"Data Source={sqliteConfig.DataSource}");
+                            break;
+
+                        case StoragrBackendType.MySql:
+                            var mysqlConfig = config.Get<MysqlOptions>();
+                            options
+                                .AddMySql5()
+                                .WithGlobalConnectionString(
+                                    $"server={mysqlConfig.Server};" +
+                                    $"uid={mysqlConfig.User};" +
+                                    $"pwd={mysqlConfig.Password};" +
+                                    $"database={mysqlConfig.Database}"
+                                );
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    options.ScanIn(typeof(Setup).Assembly).For.Migrations();
+                });
 
             switch (storagrConfig.Backend)
             {
                 case StoragrBackendType.Sqlite:
-                    services.AddConfig<SqliteOptions>(config);
-                    services.AddBackend<SqliteAdapter>();
+                    services
+                        .AddConfig<SqliteOptions>(config)
+                        .AddBackend<SqliteAdapter>();
+                    break;
+                
+                case StoragrBackendType.MySql:
+                    services
+                        .AddConfig<MysqlOptions>(config)
+                        .AddBackend<MysqlAdapter>();
                     break;
                 
                 default:
@@ -223,8 +244,9 @@ namespace Storagr
             switch (storagrConfig.Store)
             {
                 case StoragrStoreType.Storagr:
-                    services.AddConfig<StoragrStoreOptions>(config);
-                    services.AddStore<StoragrStore>();
+                    services
+                        .AddConfig<StoragrStoreOptions>(config)
+                        .AddStore<StoragrStore>();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

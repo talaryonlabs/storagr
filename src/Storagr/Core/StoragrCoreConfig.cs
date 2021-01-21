@@ -7,7 +7,8 @@ namespace Storagr
 {
     public enum StoragrBackendType
     {
-        Sqlite
+        Sqlite,
+        MySql
     }
 
     public enum StoragrStoreType
