@@ -3,7 +3,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using Storagr.Shared;
+using Storagr;
 
 namespace Storagr.CLI
 {

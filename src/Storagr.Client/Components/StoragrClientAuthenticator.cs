@@ -1,7 +1,8 @@
 ﻿using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
@@ -42,7 +43,7 @@ namespace Storagr.Client
             return false;
         }
 
-        IStoragrClientRunner<bool> IStoragrClientAuthenticator.With(string username, string password)
+        IStoragrRunner<bool> IStoragrClientAuthenticator.With(string username, string password)
         {
             _userdata = new StoragrAuthenticationRequest()
             {
@@ -52,7 +53,7 @@ namespace Storagr.Client
             return this;
         }
 
-        IStoragrClientRunner<bool> IStoragrClientAuthenticator.With(string token)
+        IStoragrRunner<bool> IStoragrClientAuthenticator.With(string token)
         {
             _token = token;
             return this;

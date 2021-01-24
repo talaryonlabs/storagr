@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -21,14 +22,24 @@ namespace Storagr.UI
         {
             var identity = new ClaimsIdentity();
             var token = await _localStorage.GetItemAsStringAsync(Constants.StorageTokenKey);
-            
-            if (token is not null && await _client.Authenticate().With(token).RunAsync())
+
+            try
             {
-                // TODO
-                // identity = new ClaimsIdentity(new[]  
-                // {  
-                //     // TODO new Claim(ClaimTypes.Name, _client.User.Username),
-                // }, "storagr");
+                if (token is not null)
+                {
+                    _client.UseToken(token);
+
+                    var user = await _client.User("admin").RunAsync();
+
+                    identity = new ClaimsIdentity(new[]  
+                    {  
+                        new Claim(ClaimTypes.Name, user.Username),
+                    }, "storagr");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
 
             return await Task.FromResult(

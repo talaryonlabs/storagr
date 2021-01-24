@@ -2,8 +2,8 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
@@ -30,25 +30,25 @@ namespace Storagr.Client
             );
         }
 
-        IStoragrClientList<StoragrRepository, IStoragrRepositoryParams> IStoragrClientList<StoragrRepository, IStoragrRepositoryParams>.Take(int count)
+        IStoragrListable<StoragrRepository, IStoragrRepositoryParams> IStoragrListable<StoragrRepository, IStoragrRepositoryParams>.Take(int count)
         {
             _listArgs.Limit = count;
             return this;
         }
 
-        IStoragrClientList<StoragrRepository, IStoragrRepositoryParams> IStoragrClientList<StoragrRepository, IStoragrRepositoryParams>.Skip(int count)
+        IStoragrListable<StoragrRepository, IStoragrRepositoryParams> IStoragrListable<StoragrRepository, IStoragrRepositoryParams>.Skip(int count)
         {
             _listArgs.Skip = count;
             return this;
         }
 
-        IStoragrClientList<StoragrRepository, IStoragrRepositoryParams> IStoragrClientList<StoragrRepository, IStoragrRepositoryParams>.SkipUntil(string cursor)
+        IStoragrListable<StoragrRepository, IStoragrRepositoryParams> IStoragrListable<StoragrRepository, IStoragrRepositoryParams>.SkipUntil(string cursor)
         {
             _listArgs.Cursor = cursor;
             return this;
         }
 
-        IStoragrClientList<StoragrRepository, IStoragrRepositoryParams> IStoragrClientList<StoragrRepository, IStoragrRepositoryParams>.Where(Action<IStoragrRepositoryParams> whereParams)
+        IStoragrListable<StoragrRepository, IStoragrRepositoryParams> IStoragrListable<StoragrRepository, IStoragrRepositoryParams>.Where(Action<IStoragrRepositoryParams> whereParams)
         {
             whereParams(this);
             return this;

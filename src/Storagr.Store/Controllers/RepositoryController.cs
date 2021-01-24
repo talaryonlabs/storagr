@@ -1,16 +1,18 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Store.Controllers
 {
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("/")]
+    [ApiRoute("repositories")]
     public class RepositoryController : StoragrController
     {
         private readonly IStoreService _storeService;
@@ -19,26 +21,22 @@ namespace Storagr.Store.Controllers
         {
             _storeService = storeService;
         }
-        
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StoreRepository>))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public IEnumerable<StoreRepository> List()
-        {
-            return _storeService.List();
-        }
+        public IEnumerable<StoreRepository> List() => _storeService
+            .Repositories()
+            .Select(repo => repo.Model());
 
         [HttpGet("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoreRepository))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public StoreRepository Get([FromRoute] string repositoryId)
-        {
-            if (!_storeService.Exists(repositoryId))
-                throw new RepositoryNotFoundError();
-            
-            return _storeService.Get(repositoryId);
-        }
+        public StoreRepository Get([FromRoute] string repositoryId) => _storeService
+            .Repository(repositoryId)
+            .Model();
+        
         
         [HttpDelete("{repositoryId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -46,10 +44,9 @@ namespace Storagr.Store.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public IActionResult Delete([FromRoute] string repositoryId)
         {
-            if (!_storeService.Exists(repositoryId))
-                throw new RepositoryNotFoundError();
-
-            _storeService.Delete(repositoryId);
+            _storeService
+                .Repository(repositoryId)
+                .Delete();
 
             return Ok();
         }

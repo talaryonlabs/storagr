@@ -1,65 +1,115 @@
 ﻿using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Store.Controllers
 {
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
-    [ApiRoute("{repositoryId}/transfer/{objectId}")]
+    [ApiRoute("transfer")]
     public class TransferController : StoragrController
     {
         private readonly IStoreService _storeService;
+        private readonly ITransferService _transferService;
+        private readonly IDistributedCache _cache;
+        private readonly ILogger<TransferController> _logger;
 
-        public TransferController(IStoreService storeService)
+        public TransferController(IStoreService storeService, ITransferService transferService, ILogger<TransferController> logger, IDistributedCache cache)
         {
             _storeService = storeService;
+            _transferService = transferService;
+            _logger = logger;
+            _cache = cache;
         }
 
-        [HttpGet]
+        [HttpPost]
+        public StoreTransferResponse RequestTransfer([FromBody] StoreTransferRequest transferRequest)
+        {
+            var repository = _storeService
+                .Repository(transferRequest.Repository.Id)
+                .CreateIfNotExists()
+                .SetName(transferRequest.Repository.Name);
+
+            var objects = repository.Objects();
+
+            return new StoreTransferResponse()
+            {
+                Objects = transferRequest.Type switch
+                {
+                    StoreTransferType.Download => objects
+                        .Where(o => transferRequest.Objects.Contains(o.Id))
+                        .Select(o => _transferService.AddRequest(repository.Id, o.Id)),
+
+                    StoreTransferType.Upload => transferRequest.Objects
+                        .Where(oid => objects.FirstOrDefault(v => v.Id == oid) is null)
+                        .Select(oid => _transferService.AddRequest(repository.Id, oid)),
+
+                    _ => throw new ArgumentOutOfRangeException()
+                }
+            };
+        }
+
+        [HttpGet("{transferId}")]
         [Produces("application/octet-stream")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task Download([FromRoute] string repositoryId, [FromRoute] string objectId)
+        public async Task Download([FromRoute] string transferId, CancellationToken cancellationToken)
         {
             try
             {
-                var obj = _storeService.Get(repositoryId, objectId);
+                var transferRequest = await _transferService.GetRequestAsync(transferId, cancellationToken) ??
+                                      throw new NotFoundError("Request not found");
+                
+                var obj = _storeService
+                    .Repository(transferRequest.RepositoryId)
+                    .Object(transferRequest.ObjectId);
 
-                Response.ContentLength = obj.Size;
+                Response.ContentLength = (long)obj.Size;
 
-                await using var stream = _storeService.GetDownloadStream(obj.RepositoryId, obj.ObjectId);
-                await stream.CopyToAsync(Response.Body, _storeService.BufferSize);
+                await using var stream = obj.GetDownloadStream();
+                await stream.CopyToAsync(Response.Body, _storeService.BufferSize, cancellationToken);
             }
             catch (NotFoundError)
             {
                 Response.StatusCode = StatusCodes.Status404NotFound;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Response.StatusCode = StatusCodes.Status500InternalServerError;
+                _logger.LogError(e.Message);
             }
         }
 
-        [HttpPut]
+        [HttpPut("{transferId}")]
         [Consumes("application/octet-stream")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task Upload([FromRoute] string repositoryId, [FromRoute] string objectId)
+        public async Task Upload([FromRoute] string transferId, CancellationToken cancellationToken)
         {
             Response.StatusCode = StatusCodes.Status200OK;
             try
             {
-                await using var stream = _storeService.GetUploadStream(repositoryId, objectId);
-                await Request.Body.CopyToAsync(stream, _storeService.BufferSize);
+                var transferRequest = await _transferService.GetRequestAsync(transferId, cancellationToken) ??
+                                      throw new NotFoundError("Request not found");
+                
+                await using var stream = _storeService
+                    .Repository(transferRequest.RepositoryId)
+                    .Object(transferRequest.ObjectId)
+                    .GetUploadStream();
+                
+                await Request.Body.CopyToAsync(stream, _storeService.BufferSize, cancellationToken);
             }
             catch (NotFoundError)
             {
@@ -69,24 +119,31 @@ namespace Storagr.Store.Controllers
             {
                 Response.StatusCode = StatusCodes.Status409Conflict;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Response.StatusCode = StatusCodes.Status500InternalServerError;
+                _logger.LogError(e.Message);
             }
         }
 
-        [HttpPost]
+        [HttpPost("{objectId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(NotFoundError))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public IActionResult Finish([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoreObject verifyObject)
+        public IActionResult Verify([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoreObject verifyObject)
         {
-            if (!_storeService.Exists(repositoryId))
-                throw new RepositoryNotFoundError();
+            var obj = _storeService
+                .Repository(repositoryId)
+                .Object(objectId);
 
-            _storeService.FinalizeUpload(verifyObject.RepositoryId, verifyObject.ObjectId, verifyObject.Size);
+            if (!obj.Exists())
+                throw new ObjectNotFoundError();
+
+            if (obj.Size == verifyObject.Size) 
+                return Ok();
             
-            return Ok();
+            obj.Delete();
+            throw new BadRequestError();
         }
     }
 }

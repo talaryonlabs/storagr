@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Storagr.Shared;
+using Storagr;
 using Storagr.Store.Services;
 
 namespace Storagr.Store
@@ -104,11 +104,10 @@ namespace Storagr.Store
 
         public static IServiceCollection AddStoreServices(this IServiceCollection services, StoragrConfig config)
         {
-            services.AddConfig<StoreConfig>(config);
-            services.AddSingleton<IStoreService, StoreService>();
-            services.AddHostedService<StoreService>();
-
-            return services;
+            return services
+                .AddConfig<StoreConfig>(config)
+                .AddSingleton<IStoreService, StoreService>()
+                .AddSingleton<ITransferService, TransferService>();
         }
     }
 }

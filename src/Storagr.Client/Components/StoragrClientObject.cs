@@ -1,13 +1,14 @@
 ﻿using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientObject : 
         StoragrClientHelper<StoragrObject>, 
-        IStoragrClientObject
+        IStoragrObject
     {
         private readonly string _repositoryIdOrName;
         private readonly string _objectId;
@@ -31,7 +32,7 @@ namespace Storagr.Client
                 cancellationToken);
         }
 
-        IStoragrClientRunner<StoragrObject> IStoragrClientDeletable<StoragrObject>.Delete(bool force)
+        IStoragrRunner<StoragrObject> IStoragrDeletable<StoragrObject>.Delete(bool force)
         {
             _deleteRequest = true;
             return this;

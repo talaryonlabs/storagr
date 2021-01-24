@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Net;
-using Storagr.Shared;
-using Storagr.Shared.Security;
+using Storagr;
+using Storagr.Security;
 
 namespace Storagr.Store
 {
+    public enum StoreCacheType
+    {
+        Memory,
+        Redis
+    }
+    
     [StoragrConfig]
     public class StoreConfig : StoragrOptions<StoreConfig>
     {
@@ -25,7 +31,7 @@ namespace Storagr.Store
         [StoragrConfigValue] public string Audience { get; set; }
         
         public static implicit operator StoragrTokenParameters(TokenConfig config) => 
-            new StoragrTokenParameters(config.Issuer, config.Audience, config.Secret);
+            new(config.Issuer, config.Audience, config.Secret);
     }
 
     [StoragrConfig("Redis")]

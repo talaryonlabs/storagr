@@ -2,8 +2,8 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
@@ -30,25 +30,25 @@ namespace Storagr.Client
             );
         }
 
-        public IStoragrClientList<StoragrUser, IStoragrUserParams> Take(int count)
+        public IStoragrListable<StoragrUser, IStoragrUserParams> Take(int count)
         {
             _listArgs.Limit = count;
             return this;
         }
 
-        public IStoragrClientList<StoragrUser, IStoragrUserParams> Skip(int count)
+        public IStoragrListable<StoragrUser, IStoragrUserParams> Skip(int count)
         {
             _listArgs.Skip = count;
             return this;
         }
 
-        public IStoragrClientList<StoragrUser, IStoragrUserParams> SkipUntil(string cursor)
+        public IStoragrListable<StoragrUser, IStoragrUserParams> SkipUntil(string cursor)
         {
             _listArgs.Cursor = cursor;
             return this;
         }
 
-        public IStoragrClientList<StoragrUser, IStoragrUserParams> Where(Action<IStoragrUserParams> whereParams)
+        public IStoragrListable<StoragrUser, IStoragrUserParams> Where(Action<IStoragrUserParams> whereParams)
         {
             whereParams(this);
             return this;

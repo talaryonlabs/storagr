@@ -1,6 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Parsing;
-using Storagr.Shared;
+using Storagr;
 
 namespace Storagr.CLI
 {

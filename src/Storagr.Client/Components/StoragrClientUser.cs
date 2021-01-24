@@ -2,15 +2,15 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientUser : 
         StoragrClientHelper<StoragrUser>, 
-        IStoragrClientParams<StoragrUser, IStoragrUserParams>, 
-        IStoragrClientUser, 
+        IStoragrParams<StoragrUser, IStoragrUserParams>, 
+        IStoragrUser, 
         IStoragrUserParams
     {
         private readonly string _userIdOrName;
@@ -53,25 +53,25 @@ namespace Storagr.Client
                 cancellationToken);
         }
 
-        public IStoragrClientRunner<StoragrUser> With(Action<IStoragrUserParams> withParams)
+        public IStoragrRunner<StoragrUser> With(Action<IStoragrUserParams> withParams)
         {
             withParams(this);
             return this;
         }
 
-        IStoragrClientParams<StoragrUser, IStoragrUserParams> IStoragrClientCreatable<StoragrUser, IStoragrUserParams>.Create()
+        IStoragrParams<StoragrUser, IStoragrUserParams> IStoragrCreatable<StoragrUser, IStoragrUserParams>.Create()
         {
             _createRequest = new StoragrRequest<StoragrUser>();
             return this;
         }
 
-        IStoragrClientParams<StoragrUser, IStoragrUserParams> IStoragrClientUpdatable<StoragrUser, IStoragrUserParams>.Update()
+        IStoragrParams<StoragrUser, IStoragrUserParams> IStoragrUpdatable<StoragrUser, IStoragrUserParams>.Update()
         {
             _updateRequest = new StoragrRequest<StoragrUser>();
             return this;
         }
 
-        IStoragrClientRunner<StoragrUser> IStoragrClientDeletable<StoragrUser>.Delete(bool force)
+        IStoragrRunner<StoragrUser> IStoragrDeletable<StoragrUser>.Delete(bool force)
         {
             _userDeleting = true;
             return this;

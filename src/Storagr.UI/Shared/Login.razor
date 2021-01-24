@@ -1,5 +1,5 @@
 ﻿@using System.ComponentModel.DataAnnotations
-@using Storagr.Shared
+@using Storagr
 
 <div class="is-flex is-flex-direction-column is-flex-grow-1 is-justify-content-center is-align-items-stretch">
     <div class="columns is-centered is-gapless">
@@ -8,7 +8,7 @@
                 <EditForm Model="@_loginModel" OnSubmit="CallbackAsync">
                     <header class="card-header">
                         <div class="card-header-title">
-                            Welcome to Storagr!
+                            Welcome to Storagr.Server!
                         </div>
                     </header>
                     <div class="card-content">
@@ -71,7 +71,7 @@
             await LocalStorageService.SetItemAsync(Constants.StorageTokenKey, StoragrClient.Token);
             NavigationManager.NavigateTo(NavigationManager.Uri, true);
         }
-        catch (UnauthorizedError)
+        catch (StoragrError)
         {
             // TODO
         }

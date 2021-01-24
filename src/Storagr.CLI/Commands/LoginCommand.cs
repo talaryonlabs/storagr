@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using Storagr.Shared;
+using Storagr;
 
 namespace Storagr.CLI
 {

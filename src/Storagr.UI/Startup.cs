@@ -46,7 +46,7 @@ namespace Storagr.UI
             
             services.AddStoragrClient(options =>
             {
-                options.Host = "localhost:5301";
+                options.Host = "http://localhost:5301";
             });
             services.AddScoped<StoragrService>();
             services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();

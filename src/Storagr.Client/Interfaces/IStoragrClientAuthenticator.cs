@@ -1,8 +1,10 @@
-﻿namespace Storagr.Client
+﻿using Storagr;
+
+namespace Storagr.Client
 {
     public interface IStoragrClientAuthenticator
     {
-        IStoragrClientRunner<bool> With(string username, string password);
-        IStoragrClientRunner<bool> With(string token);
+        IStoragrRunner<bool> With(string username, string password);
+        IStoragrRunner<bool> With(string token);
     }
 }

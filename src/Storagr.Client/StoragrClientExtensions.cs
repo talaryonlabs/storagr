@@ -2,7 +2,7 @@
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Storagr.Shared;
+using Storagr;
 
 namespace Storagr.Client
 {

@@ -2,14 +2,15 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientRepository : 
         StoragrClientHelper<StoragrRepository>, 
-        IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams>, 
-        IStoragrClientRepository, 
+        IStoragrParams<StoragrRepository, IStoragrRepositoryParams>, 
+        IStoragrRepository, 
         IStoragrRepositoryParams
     {
         private readonly IStoragrClientRequest _clientRequest;
@@ -52,46 +53,46 @@ namespace Storagr.Client
                 cancellationToken);
         }
 
-        IStoragrClientRunner<StoragrRepository> IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams>.With(Action<IStoragrRepositoryParams> withParams)
+        IStoragrRunner<StoragrRepository> IStoragrParams<StoragrRepository, IStoragrRepositoryParams>.With(Action<IStoragrRepositoryParams> withParams)
         {
             withParams(this);
             return this;
         }
 
-        IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams> IStoragrClientCreatable<StoragrRepository, IStoragrRepositoryParams>.Create()
+        IStoragrParams<StoragrRepository, IStoragrRepositoryParams> IStoragrCreatable<StoragrRepository, IStoragrRepositoryParams>.Create()
         {
             _createRequest = new StoragrRequest<StoragrRepository>();
             return this;
         }
 
-        IStoragrClientParams<StoragrRepository, IStoragrRepositoryParams> IStoragrClientUpdatable<StoragrRepository, IStoragrRepositoryParams>.Update()
+        IStoragrParams<StoragrRepository, IStoragrRepositoryParams> IStoragrUpdatable<StoragrRepository, IStoragrRepositoryParams>.Update()
         {
             _updateRequest = new StoragrRequest<StoragrRepository>();
             return this;
         }
 
-        IStoragrClientRunner<StoragrRepository> IStoragrClientDeletable<StoragrRepository>.Delete(bool force)
+        IStoragrRunner<StoragrRepository> IStoragrDeletable<StoragrRepository>.Delete(bool force)
         {
             _deleteRequest = true;
             return this;
         }
 
-        IStoragrClientObject IStoragrClientRepository.Object(string objectId)
+        IStoragrObject IStoragrObjectProvider.Object(string objectId)
         {
             return new StoragrClientObject(_clientRequest, _repositoryIdOrName, objectId);
         }
 
-        IStoragrClientObjectList IStoragrClientRepository.Objects()
+        IStoragrClientObjectList IStoragrObjectProvider.Objects()
         {
             return new StoragrClientObjectList(_clientRequest, _repositoryIdOrName);
         }
 
-        IStoragrClientLock IStoragrClientRepository.Lock(string lockIdOrPath)
+        IStoragrLock IStoragrLockProvider.Lock(string lockIdOrPath)
         {
             return new StoragrClientLock(_clientRequest, _repositoryIdOrName, lockIdOrPath);
         }
 
-        IStoragrClientLockList IStoragrClientRepository.Locks()
+        IStoragrClientLockList IStoragrLockProvider.Locks()
         {
             return new StoragrClientLockList(_clientRequest, _repositoryIdOrName);
         }

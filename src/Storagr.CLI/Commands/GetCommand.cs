@@ -4,8 +4,8 @@ using System.CommandLine.Invocation;
 using System.CommandLine.Rendering;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.CLI
 {

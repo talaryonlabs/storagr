@@ -3,19 +3,19 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientLogList : 
+    internal class StoragrClientClientLogList : 
         StoragrClientHelper<IStoragrList<StoragrLog>>, 
-        IStoragrLogList, 
+        IStoragrClientLogList, 
         IStoragrLogParams
     {
         private readonly StoragrLogListArgs _listArgs;
         
-        public StoragrClientLogList(IStoragrClientRequest clientRequest) 
+        public StoragrClientClientLogList(IStoragrClientRequest clientRequest) 
             : base(clientRequest)
         {
             _listArgs = new StoragrLogListArgs();
@@ -31,25 +31,25 @@ namespace Storagr.Client
             );
         }
 
-        IStoragrClientList<StoragrLog, IStoragrLogParams> IStoragrClientList<StoragrLog, IStoragrLogParams>.Take(int count)
+        IStoragrListable<StoragrLog, IStoragrLogParams> IStoragrListable<StoragrLog, IStoragrLogParams>.Take(int count)
         {
             _listArgs.Limit = count;
             return this;
         }
 
-        IStoragrClientList<StoragrLog, IStoragrLogParams> IStoragrClientList<StoragrLog, IStoragrLogParams>.Skip(int count)
+        IStoragrListable<StoragrLog, IStoragrLogParams> IStoragrListable<StoragrLog, IStoragrLogParams>.Skip(int count)
         {
             _listArgs.Skip = count;
             return this;
         }
 
-        IStoragrClientList<StoragrLog, IStoragrLogParams> IStoragrClientList<StoragrLog, IStoragrLogParams>.SkipUntil(string cursor)
+        IStoragrListable<StoragrLog, IStoragrLogParams> IStoragrListable<StoragrLog, IStoragrLogParams>.SkipUntil(string cursor)
         {
             _listArgs.Cursor = cursor;
             return this;
         }
 
-        IStoragrClientList<StoragrLog, IStoragrLogParams> IStoragrClientList<StoragrLog, IStoragrLogParams>.Where(Action<IStoragrLogParams> whereParams)
+        IStoragrListable<StoragrLog, IStoragrLogParams> IStoragrListable<StoragrLog, IStoragrLogParams>.Where(Action<IStoragrLogParams> whereParams)
         {
             whereParams(this);
             return this;

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using Storagr.Shared;
+using Storagr;
 
 namespace Storagr.CLI
 {

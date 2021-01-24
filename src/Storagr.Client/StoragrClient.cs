@@ -3,8 +3,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared;
-using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
@@ -83,12 +81,12 @@ namespace Storagr.Client
             return new StoragrClientAuthenticator(this, this);
         }
 
-        public IStoragrClientList<StoragrLog, IStoragrLogParams> Logs()
+        public IStoragrClientLogList Logs()
         {
-            return new StoragrClientLogList(this);
+            return new StoragrClientClientLogList(this);
         }
 
-        public IStoragrClientRepository Repository(string repositoryIdOrName)
+        public IStoragrRepository Repository(string repositoryIdOrName)
         {
             return new StoragrClientRepository(this, repositoryIdOrName);
         }
@@ -98,7 +96,7 @@ namespace Storagr.Client
             return new StoragrClientRepositoryList(this);
         }
 
-        public IStoragrClientUser User(string userIdOrName)
+        public IStoragrUser User(string userIdOrName)
         {
             return new StoragrClientUser(this, userIdOrName);
         }

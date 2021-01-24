@@ -2,8 +2,8 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
@@ -32,25 +32,25 @@ namespace Storagr.Client
             );
         }
 
-        IStoragrClientList<StoragrLock, IStoragrLockParams> IStoragrClientList<StoragrLock, IStoragrLockParams>.Take(int count)
+        IStoragrListable<StoragrLock, IStoragrLockParams> IStoragrListable<StoragrLock, IStoragrLockParams>.Take(int count)
         {
             _listArgs.Limit = count;
             return this;
         }
 
-        IStoragrClientList<StoragrLock, IStoragrLockParams> IStoragrClientList<StoragrLock, IStoragrLockParams>.Skip(int count)
+        IStoragrListable<StoragrLock, IStoragrLockParams> IStoragrListable<StoragrLock, IStoragrLockParams>.Skip(int count)
         {
             _listArgs.Skip = count;
             return this;
         }
 
-        IStoragrClientList<StoragrLock, IStoragrLockParams> IStoragrClientList<StoragrLock, IStoragrLockParams>.SkipUntil(string cursor)
+        IStoragrListable<StoragrLock, IStoragrLockParams> IStoragrListable<StoragrLock, IStoragrLockParams>.SkipUntil(string cursor)
         {
             _listArgs.Cursor = cursor;
             return this;
         }
 
-        IStoragrClientList<StoragrLock, IStoragrLockParams> IStoragrClientList<StoragrLock, IStoragrLockParams>.Where(Action<IStoragrLockParams> whereParams)
+        IStoragrListable<StoragrLock, IStoragrLockParams> IStoragrListable<StoragrLock, IStoragrLockParams>.Where(Action<IStoragrLockParams> whereParams)
         {
             whereParams(this);
             return this;

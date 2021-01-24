@@ -1,21 +1,10 @@
-﻿using Storagr.Shared.Data;
+﻿using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
-    public interface IStoragrObjectParams
-    {
-        IStoragrObjectParams Id(string objectId);
-    }
-    
-    public interface IStoragrClientObject :
-        IStoragrClientRunner<StoragrObject>,
-        IStoragrClientDeletable<StoragrObject>
-    {
-
-    }
-
     public interface IStoragrClientObjectList :
-        IStoragrClientList<StoragrObject, IStoragrObjectParams>
+        IStoragrListable<StoragrObject, IStoragrObjectParams>
     {
 
     }

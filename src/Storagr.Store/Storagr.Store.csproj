@@ -7,7 +7,7 @@
         <AssemblyVersion>1.0.0</AssemblyVersion>
         <FileVersion>1.0.0</FileVersion>
         <LangVersion>9</LangVersion>
-        <AssemblyName>storagrstore</AssemblyName>
+        <AssemblyName>storagr.store</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -15,10 +15,6 @@
       <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.1" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="4.2.0" />
       <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.2.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -35,6 +31,10 @@
 
     <ItemGroup>
       <Content Remove="store\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Storagr\Storagr.csproj" />
     </ItemGroup>
 
 

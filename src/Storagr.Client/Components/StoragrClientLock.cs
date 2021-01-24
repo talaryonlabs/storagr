@@ -1,13 +1,14 @@
 ﻿using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Shared.Data;
+using Storagr;
+using Storagr.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientLock :
         StoragrClientHelper<StoragrLock>,
-        IStoragrClientLock
+        IStoragrLock
     {
         private readonly string _repositoryIdOrName;
         private readonly string _lockIdOrPath;
@@ -47,7 +48,7 @@ namespace Storagr.Client
             );
         }
 
-        IStoragrClientRunner<StoragrLock> IStoragrClientCreatable<StoragrLock>.Create()
+        IStoragrRunner<StoragrLock> IStoragrCreatable<StoragrLock>.Create()
         {
             _lockRequest = new StoragrLockRequest()
             {
@@ -56,7 +57,7 @@ namespace Storagr.Client
             return this;
         }
 
-        IStoragrClientRunner<StoragrLock> IStoragrClientDeletable<StoragrLock>.Delete(bool force)
+        IStoragrRunner<StoragrLock> IStoragrDeletable<StoragrLock>.Delete(bool force)
         {
             _unlockRequest = new StoragrUnlockRequest()
             {

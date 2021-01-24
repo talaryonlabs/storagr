@@ -12,11 +12,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
+      <None Remove="appsettings.json" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="appsettings.json" />
+      <ProjectReference Include="..\Storagr\Storagr.csproj" />
     </ItemGroup>
 
 </Project>

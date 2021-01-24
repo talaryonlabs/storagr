@@ -1,9 +1,10 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Storagr;
 
 namespace Storagr.Client
 {
-    internal abstract class StoragrClientHelper<T> : IStoragrClientRunner<T>
+    internal abstract class StoragrClientHelper<T> : IStoragrRunner<T>
     {
         private readonly IStoragrClientRequest _clientRequest;
 
@@ -16,7 +17,7 @@ namespace Storagr.Client
         
         public T Run()
         {
-            var task = (this as IStoragrClientRunner<T>).RunAsync();
+            var task = (this as IStoragrRunner<T>).RunAsync();
             task.RunSynchronously();
             return task.Result;
         }
