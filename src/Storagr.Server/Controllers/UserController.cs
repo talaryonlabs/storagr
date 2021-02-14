@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.Controllers
 {
@@ -29,7 +32,10 @@ namespace Storagr.Server.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public async Task<StoragrUser> ViewMe(CancellationToken cancellationToken)
         {
-            return await _storagrService.GetAuthenticatedUser().RunAsync(cancellationToken);
+            return await _storagrService
+                .Authorization()
+                .GetAuthenticatedUser()
+                .RunAsync(cancellationToken);
         }
         
         [HttpPatch("me")]
@@ -54,38 +60,27 @@ namespace Storagr.Server.Controllers
             if (count == 0)
                 return new StoragrUserList();
 
-            ;
-
-
-            var users = await _storagrService
-                .Users()
-                .Where(userParams =>
-                {
-                    if (!string.IsNullOrEmpty(listArgs.Username))
-                        userParams.Username(listArgs.Username);
-                })
-                .RunAsync(cancellationToken);
+            var list = (
+                await _storagrService
+                    .Users()
+                    .Skip(listArgs.Skip)
+                    .SkipUntil(listArgs.Cursor)
+                    .Take(listArgs.Limit)
+                    .Where(userParams => userParams
+                        .Id(listArgs.Id)
+                        .Username(listArgs.Username)
+                        .IsAdmin(listArgs.IsAdmin)
+                        .IsEnabled(listArgs.IsEnabled)
+                    )
+                    .RunAsync(cancellationToken)
+            ).ToList();
             
-            var list = users.Items
-                .Select(v => (StoragrUser) v)
-                .ToList();
-
-            if (listArgs.Skip > 0)
-                list = list.Skip(listArgs.Skip).ToList();
-            
-            if (!string.IsNullOrEmpty(listArgs.Cursor))
-                list = list.SkipWhile(v => v.UserId != listArgs.Cursor).Skip(1).ToList();
-
-            list = list.Take(listArgs.Limit > 0
-                ? Math.Max(listArgs.Limit, StoragrConstants.MaxListLimit)
-                : StoragrConstants.DefaultListLimit).ToList();
-
             return !list.Any()
                 ? new StoragrUserList()
                 : new StoragrUserList()
                 {
-                    Items = list,
-                    NextCursor = list.Last().UserId,
+                    Items = list.Select(v => (StoragrUser) v),
+                    NextCursor = list.Last().Id,
                     TotalCount = count
                 };
         }
@@ -188,9 +183,11 @@ namespace Storagr.Server.Controllers
             _logger.LogInformation("hallo du!");
 
             var user = await _storagrService
-                .Authenticate(authenticationRequest.Username, authenticationRequest.Password)
+                .Authorization()
+                .Authenticate()
+                .With(authenticationRequest.Username, authenticationRequest.Password)
                 .RunAsync(cancellationToken);
-            
+
             return new StoragrAuthenticationResponse()
             {
                 Token = user.Token

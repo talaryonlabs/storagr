@@ -6,7 +6,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Storagr.Security;
+using Storagr.Shared.Security;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace Storagr.Server.Services

@@ -1,0 +1,17 @@
+﻿POST http://{{storagr}}/v1/users/authenticate
+Content-Type: application/vnd.git-lfs+json; charset=utf-8
+
+{"username": "{{username}}", "password": "{{password}}"}
+
+###
+
+GET http://{{storagr}}/
+Authorization: Basic {{basic}}
+
+###
+
+GET http://{{storagr}}/
+Authorization: Bearer {{token}}
+
+###
+

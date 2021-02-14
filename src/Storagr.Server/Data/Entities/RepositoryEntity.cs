@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.Data.Entities
 {
@@ -17,6 +17,8 @@ namespace Storagr.Server.Data.Entities
         public string Name { get; set; }
         public string OwnerId { get; set; }
         public ulong SizeLimit { get; set; }
+        
+        [Computed] public string OwnerName { get; set; }
 
         public static implicit operator StoragrRepository([NotNull] RepositoryEntity entity) => new()
         {

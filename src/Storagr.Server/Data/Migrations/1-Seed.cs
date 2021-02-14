@@ -7,11 +7,15 @@ namespace Storagr.Server.Data.Migrations
     {
         public override void Up()
         {
+            var uid = StoragrHelper.UUID();
+            
             // Initial Admin User
-            Insert.IntoTable("BackendAuth")
+            Insert.IntoTable("User")
                 .Row(new
                 {
-                    Id = StoragrHelper.UUID(),
+                    Id = uid,
+                    AuthId = uid,
+                    AuthAdapter = "default",
                     Username = "admin",
                     Password = "AQAAAAEAACcQAAAAEGTYFmFw+/mzx8Ef4yq2znUwkl5Y6Bs6ZV7NgINEG8GsomDerF2ZV0GfDIbmtBNhDw==", // _storagr
                 });
@@ -21,14 +25,14 @@ namespace Storagr.Server.Data.Migrations
                 {
                     Id = StoragrHelper.UUID(),
                     Name = "test",
-                    OwnerId = "_",
+                    OwnerId = uid,
                     SizeLimit = 0
                 });
         }
 
         public override void Down()
         {
-            Delete.FromTable("BackendAuth")
+            Delete.FromTable("User")
                 .Row(new
                 {
                     Username = "admin"

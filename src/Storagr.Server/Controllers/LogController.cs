@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Storagr.Server.Data.Entities;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.Controllers
 {
@@ -14,35 +16,47 @@ namespace Storagr.Server.Controllers
     [Authorize(Policy = StoragrConstants.ManagementPolicy)]
     public class LogController : StoragrController
     {
-        private readonly IDatabaseAdapter _database;
+        private readonly IStoragrService _storagrService;
 
-        public LogController(IDatabaseAdapter database)
+        public LogController(IStoragrService storagrService)
         {
-            _database = database;
+            _storagrService = storagrService;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragrLogList))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
-        public async Task<StoragrLogList> List([FromQuery] StoragrLogListArgs options, CancellationToken cancellationToken)
+        public async Task<StoragrLogList> List([FromQuery] StoragrLogListArgs listArgs, CancellationToken cancellationToken)
         {
-            const int max = 100;
+            var count = await _storagrService
+                .Repositories()
+                .Count()
+                .RunAsync(cancellationToken);
+            
+            if (count == 0)
+                return new StoragrLogList();
 
-            var logs = await _database.GetMany<LogEntity>(x =>
-            {
-                x.OrderBy(o => o.Column("Date", DatabaseOrderType.Desc));
-                x.Limit(options.Limit > max ? max : options.Limit);
-                x.Offset(options.Skip);
-            }, cancellationToken);
+            var list = (
+                await _storagrService
+                    .Logs()
+                    .Skip(listArgs.Skip)
+                    .SkipUntil(listArgs.Cursor)
+                    .Take(listArgs.Limit)
+                    .Where(whereParams => whereParams
+                        .Category(listArgs.Category)
+                        .Level(listArgs.Level)
+                        .Message(listArgs.Message)
+                    )
+                    .RunAsync(cancellationToken)
+            ).ToList();
 
-            var list = logs.ToList();
             return !list.Any()
                 ? new StoragrLogList()
                 : new StoragrLogList()
                 {
-                    Items = list.Select(v => (StoragrLog) v).ToList(),
-                    // NextCursor = options.Cursor + list.Count, // TODO
-                    TotalCount = await _database.Count<LogEntity>(cancellationToken)
+                    Items = list.Select(v => (StoragrLog) v),
+                    NextCursor = null,
+                    TotalCount = count
                 };
         }
     }

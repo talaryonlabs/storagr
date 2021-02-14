@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Storagr.Server.Security.Tokens;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.IO
 {
@@ -16,20 +18,60 @@ namespace Storagr.Server.IO
         [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan TransferExpiration { get; set; }
     }
 
+    public sealed class StoragrStore2 : IStoreAdapter, IStoreAdapterRepository, IStoreAdapterObject
+    {
+        public IStoreAdapterRepository Repository(string repositoryId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IStoragrEnumerable<StoreRepository> Repositories()
+        {
+            throw new NotImplementedException();
+        }
+
+        StoreRepository IStoragrRunner<StoreRepository>.Run() => (this as IStoragrRunner<StoreRepository>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+
+        Task<StoreRepository> IStoragrRunner<StoreRepository>.RunAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        IStoragrRunner<bool> IStoragrExistable.Exists()
+        {
+            throw new NotImplementedException();
+        }
+
+        IStoreAdapterObject IStoreAdapterRepository.Object(string objectId)
+        {
+            throw new NotImplementedException();
+        }
+
+        IStoragrEnumerable<StoreObject> IStoreAdapterRepository.Objects()
+        {
+            throw new NotImplementedException();
+        }
+
+        IStoragrRunner IStoragrDeletable.Delete(bool force)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public sealed class StoragrStore : IStoreAdapter
     {
         private readonly ITokenService _tokenService;
-        private readonly IUserService _userService;
         private readonly IHttpClientFactory _clientFactory;
         private readonly StoragrMediaType _mediaType;
         private readonly StoragrStoreOptions _options;
         private readonly StoreToken _token;
 
-        public StoragrStore(IOptions<StoragrStoreOptions> optionsAccessor, ITokenService tokenService, IUserService userService, IHttpClientFactory clientFactory)
+        public StoragrStore(IOptions<StoragrStoreOptions> optionsAccessor, ITokenService tokenService, IHttpClientFactory clientFactory)
         {
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoragrStoreOptions));
             _tokenService = tokenService;
-            _userService = userService;
             _clientFactory = clientFactory;
             _mediaType = new StoragrMediaType();
             _token = new StoreToken() {UniqueId = "storagr-api"};

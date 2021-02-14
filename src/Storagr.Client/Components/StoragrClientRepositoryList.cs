@@ -3,27 +3,32 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientRepositoryList : 
-        StoragrClientHelper<IStoragrList<StoragrRepository>>, 
         IStoragrClientRepositoryList, 
         IStoragrRepositoryParams
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly StoragrRepositoryListArgs _listArgs;
 
-        public StoragrClientRepositoryList(IStoragrClientRequest clientRequest) 
-            : base(clientRequest)
+        public StoragrClientRepositoryList(IStoragrClientRequest clientRequest)
         {
+            _clientRequest = clientRequest;
             _listArgs = new StoragrRepositoryListArgs();
         }
+        
+        IStoragrList<StoragrRepository> IStoragrRunner<IStoragrList<StoragrRepository>>.Run() => (this as IStoragrRunner<IStoragrList<StoragrRepository>>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override async Task<IStoragrList<StoragrRepository>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        async Task<IStoragrList<StoragrRepository>> IStoragrRunner<IStoragrList<StoragrRepository>>.RunAsync(CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return await clientRequest.Send<StoragrRepositoryList>(
+            return await _clientRequest.Send<StoragrRepositoryList>(
                 $"repositories?{query}",
                 HttpMethod.Get,
                 cancellationToken

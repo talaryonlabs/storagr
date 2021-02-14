@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Store.Services
 {

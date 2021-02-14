@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.Data.Entities
 {

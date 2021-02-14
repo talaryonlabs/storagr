@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.Data.Entities
 {
@@ -13,6 +13,8 @@ namespace Storagr.Server.Data.Entities
         public bool IsEnabled { get; set; }
         public bool IsAdmin { get; set; }
         public string Username { get; set; }
+        
+        public string Password { get; set; }
         
         [Computed] public string Token { get; set; }
         

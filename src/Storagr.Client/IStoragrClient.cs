@@ -3,13 +3,10 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
 
 namespace Storagr.Client
 {
     public interface IStoragrClient :
-        IStoragrRepositoryProvider,
-        IStoragrUserProvider,
         IDisposable
     {
         string Token { get; }
@@ -23,6 +20,12 @@ namespace Storagr.Client
         IStoragrClientAuthenticator Authenticate();
 
         IStoragrClientLogList Logs();
+
+        IStoragrClientUser User(string userIdOrName);
+        IStoragrClientUserList Users();
+        
+        IStoragrClientRepository Repository(string repositoryIdOrName);
+        IStoragrClientRepositoryList Repositories();
     }
     
     public interface IStoragrClientRequest

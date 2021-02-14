@@ -1,27 +1,30 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr.Server.Data.Entities;
-using Storagr.Server.Shared;
-using Storagr.Server.Shared.Data;
+using Storagr.Shared;
 
 namespace Storagr.Server.Services
 {
     public partial class StoragrService
     {
-        private class StoragrRepositoryService :
-            IRepositoryServiceItem,
-            IStoragrParams<RepositoryEntity, IStoragrRepositoryParams>,
-            IStoragrRepositoryParams
+        private class RepositoryItem :
+            IStoragrServiceRepository,
+            IRepositoryParams,
+            IStoragrRunner<bool>,
+            IStoragrParams<RepositoryEntity, IRepositoryParams>
         {
             private readonly StoragrService _storagrService;
             private readonly string _repositoryIdOrName;
+            
+            private RepositoryEntity _createRequest;
+            private Dictionary<string, object> _updateRequest;
+            private bool _deleteRequest;
 
-            private RepositoryEntity _repository;
-            private bool _create, _update, _delete;
-
-            public StoragrRepositoryService(StoragrService storagrService, string repositoryIdOrName)
+            public RepositoryItem(StoragrService storagrService, string repositoryIdOrName)
             {
                 _storagrService = storagrService;
                 _repositoryIdOrName = repositoryIdOrName;
@@ -31,151 +34,244 @@ namespace Storagr.Server.Services
                 .RunAsync()
                 .RunSynchronouslyWithResult();
 
-
             async Task<RepositoryEntity> IStoragrRunner<RepositoryEntity>.RunAsync(CancellationToken cancellationToken)
             {
-                var user = await (_storagrService as IUserService)
-                    .User(_repository.OwnerId)
+                var cachedRepository = await _storagrService
+                    .Cache
+                    .Key<RepositoryEntity>(StoragrCaching.GetRepositoryKey(_repositoryIdOrName))
                     .RunAsync(cancellationToken);
 
-                var repository = await (_storagrService as IRepositoryService)
-                    .Repository(_repositoryIdOrName)
-                    .Exists()
+                var repositoryEntity = cachedRepository ?? await _storagrService
+                    .Database
+                    .First<RepositoryEntity>()
+                    .Join<UserEntity>(nameof(RepositoryEntity.OwnerId), nameof(UserEntity.Id))
+                    .With(select => select
+                        .Column<UserEntity>(nameof(UserEntity.Username), nameof(RepositoryEntity.OwnerName))
+                    )
+                    .Where(filter => filter
+                        .Is(nameof(RepositoryEntity.Id))
+                        .EqualTo(_repositoryIdOrName)
+                        .Or()
+                        .Is(nameof(RepositoryEntity.Name))
+                        .EqualTo(_repositoryIdOrName)
+                    )
                     .RunAsync(cancellationToken);
-                
-                
+
                 if (_createRequest is not null)
                 {
-                    _createRequest.Id = StoragrHelper.UUID();
-                    
-                    _storagrService.Database.Update(_createRequest, cancellationToken);
+                    if (repositoryEntity is not null)
+                        throw new RepositoryAlreadyExistsError(repositoryEntity);
+
+                    _createRequest.OwnerId = (
+                        _createRequest.OwnerId is not null
+                            ? await _storagrService
+                                .User(_createRequest.OwnerId)
+                                .RunAsync(cancellationToken)
+                            : await _storagrService
+                                .Authorization()
+                                .GetAuthenticatedUser()
+                                .RunAsync(cancellationToken)
+                    ).Id;
+
+                    repositoryEntity = await _storagrService
+                        .Database
+                        .Insert(_createRequest)
+                        .RunAsync(cancellationToken);
                 }
-                if (_repository is not null) _storagrService.Database.Update(_repository, cancellationToken);
+
+                if (repositoryEntity is null)
+                    throw new RepositoryNotFoundError();
+
+                if (_updateRequest is not null)
+                {
+                    if (_updateRequest.ContainsKey("name"))
+                        repositoryEntity.Name = (string) _updateRequest["name"];
+
+                    if (_updateRequest.ContainsKey("size_limit"))
+                        repositoryEntity.SizeLimit = (ulong) _updateRequest["size_limit"];
+
+                    if (_updateRequest.ContainsKey("owner"))
+                        repositoryEntity.OwnerId = (
+                            await _storagrService
+                                .User((string) _updateRequest["owner"])
+                                .RunAsync(cancellationToken)
+                        ).Id;
+
+                    await Task.WhenAll(
+                        _storagrService
+                            .Cache
+                            .RemoveMany(new[]
+                            {
+                                StoragrCaching.GetRepositoryKey(repositoryEntity.Id),
+                                StoragrCaching.GetRepositoryKey(repositoryEntity.Name)
+                            })
+                            .RunAsync(cancellationToken),
+                        _storagrService
+                            .Database
+                            .Update(repositoryEntity)
+                            .RunAsync(cancellationToken)
+                    );
+                }
+
+                if (_deleteRequest)
+                {
+                    await Task.WhenAll(
+                        _storagrService
+                            .Cache
+                            .RemoveMany(new[]
+                            {
+                                StoragrCaching.GetRepositoryKey(repositoryEntity.Id),
+                                StoragrCaching.GetRepositoryKey(repositoryEntity.Name)
+                            })
+                            .RunAsync(cancellationToken),
+                        _storagrService
+                            .Database
+                            .Delete(repositoryEntity)
+                            .RunAsync(cancellationToken)
+                    );
+                }
+                else if (cachedRepository is null)
+                {
+                    await Task.WhenAll(
+                        _storagrService
+                            .Cache
+                            .Key<RepositoryEntity>(StoragrCaching.GetRepositoryKey(repositoryEntity.Id))
+                            .Set(repositoryEntity)
+                            .RunAsync(cancellationToken),
+                        _storagrService
+                            .Cache
+                            .Key<RepositoryEntity>(StoragrCaching.GetRepositoryKey(repositoryEntity.Name))
+                            .Set(repositoryEntity)
+                            .RunAsync(cancellationToken)
+                    );
+                }
+                return repositoryEntity;
             }
 
-            IStoragrParams<RepositoryEntity, IStoragrRepositoryParams> IStoragrCreatable<RepositoryEntity, IStoragrRepositoryParams>.Create()
+            IStoragrParams<RepositoryEntity, IRepositoryParams> IStoragrCreatable<RepositoryEntity, IRepositoryParams>.Create()
             {
-                _create = true;
-                _repository = new RepositoryEntity()
+                _createRequest = new RepositoryEntity()
                 {
                     Id = StoragrHelper.UUID()
                 };
                 return this;
             }
 
-            IStoragrParams<RepositoryEntity, IStoragrRepositoryParams> IStoragrUpdatable<RepositoryEntity, IStoragrRepositoryParams>.Update()
+            IStoragrParams<RepositoryEntity, IRepositoryParams> IStoragrUpdatable<RepositoryEntity, IRepositoryParams>.Update()
             {
-                _update = true;
-                _repository = new RepositoryEntity();
+                _updateRequest = new Dictionary<string, object>();
                 return this;
             }
 
             IStoragrRunner<RepositoryEntity> IStoragrDeletable<RepositoryEntity>.Delete(bool force)
             {
-                _delete = true;
+                _deleteRequest = true;
                 return this;
             }
+            
+            IStoragrRunner<bool> IStoragrExistable.Exists() => this;
 
-            IObjectServiceItem IObjectService.Object(string objectId)
+            bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+                .RunAsync()
+                .RunSynchronouslyWithResult();
+
+            async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
             {
-                throw new System.NotImplementedException();
+                try
+                {
+                    await (this as IStoragrRunner<RepositoryEntity>).RunAsync(cancellationToken);
+                }
+                catch (RepositoryNotFoundError)
+                {
+                    return false;
+                }
+
+                return true;
             }
 
-            IObjectServiceList IObjectService.Objects()
-            {
-                throw new System.NotImplementedException();
-            }
-
-            ILockServiceItem ILockService.Lock(string lockIdOrPath)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            ILockServiceList ILockService.Locks()
-            {
-                throw new System.NotImplementedException();
-            }
-
-            IStoragrRunner<bool> IRepositoryServiceItem.Exists()
-            {
-                throw new System.NotImplementedException();
-            }
-
-            IStoragrRunner IRepositoryServiceItem.GrantAccess(string userId, RepositoryAccessType accessType)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            IStoragrRunner IRepositoryServiceItem.RevokeAccess(string userId)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            IStoragrRunner<bool> IRepositoryServiceItem.HasAccess(string userId, RepositoryAccessType accessType)
-            {
-                throw new System.NotImplementedException();
-            }
-
-
-            IStoragrRepositoryParams IStoragrRepositoryParams.Id(string repositoryId)
-            {
-                // skip - cannot change id
-                return this;
-            }
-
-            IStoragrRepositoryParams IStoragrRepositoryParams.Name(string name)
-            {
-                _repository.Name = name;
-                return this;
-            }
-
-            IStoragrRepositoryParams IStoragrRepositoryParams.Owner(string owner)
-            {
-                _repository.OwnerId = owner;
-                return this;
-            }
-
-            IStoragrRepositoryParams IStoragrRepositoryParams.SizeLimit(ulong sizeLimit)
-            {
-                _repository.SizeLimit = sizeLimit;
-                return this;
-            }
-
-            public IStoragrRunner<RepositoryEntity> With(Action<IStoragrRepositoryParams> withParams)
+            IStoragrRunner<RepositoryEntity> IStoragrParams<RepositoryEntity, IRepositoryParams>.With(
+                Action<IRepositoryParams> withParams)
             {
                 withParams(this);
                 return this;
             }
-        }
-
-        private class StoragrRepositoryServiceList :
-            IRepositoryServiceList,
-            IStoragrRepositoryParams,
-            IStoragrRunner<int>
-        {
-            private readonly StoragrService _storagrService;
-            private readonly StoragrRepositoryListArgs _listArgs;
-
-            public StoragrRepositoryServiceList(StoragrService storagrService)
+            
+            IRepositoryParams IRepositoryParams.Id(string repositoryId)
             {
-                _storagrService = storagrService;
-                _listArgs = new StoragrRepositoryListArgs();
-            }
-
-            IStoragrRunner<int> IStoragrCountable.Count()
-            {
+                // skipping - cannot modifiy id
                 return this;
             }
 
-            int IStoragrRunner<int>.Run() => (this as IStoragrRunner<int>)
-                .RunAsync()
-                .RunSynchronouslyWithResult();
-
-            Task<int> IStoragrRunner<int>.RunAsync(CancellationToken cancellationToken)
+            IRepositoryParams IRepositoryParams.Name(string name)
             {
-                return _storagrService
-                    .Database
-                    .Count<RepositoryEntity>(cancellationToken);
+                if (_createRequest is not null)
+                    _createRequest.Name = name;
+
+                _updateRequest?.Add("name", name);
+                return this;
+            }
+
+            IRepositoryParams IRepositoryParams.Owner(string owner)
+            {
+                if (_createRequest is not null)
+                    _createRequest.OwnerId = owner;
+
+                _updateRequest?.Add("owner", owner);
+                return this;
+            }
+
+            IRepositoryParams IRepositoryParams.SizeLimit(ulong sizeLimit)
+            {
+                if (_createRequest is not null)
+                    _createRequest.SizeLimit = sizeLimit;
+
+                _updateRequest?.Add("size_limit", sizeLimit);
+                return this;
+            }
+
+            public IStoragrServiceLock Lock(string lockIdOrPath) =>
+                new LockItem(_storagrService, _repositoryIdOrName, lockIdOrPath);
+
+            public IStoragrServiceLocks Locks() => 
+                new LockList(_storagrService, _repositoryIdOrName);
+
+            public IStoragrServiceObject Object(string objectId) =>
+                new ObjectItem(_storagrService, _repositoryIdOrName, objectId);
+
+            public IStoragrServiceObjects Objects() =>
+                new ObjectList(_storagrService, _repositoryIdOrName);
+
+            
+            IStoragrRunner IStoragrServiceRepository.GrantAccess(string userId, RepositoryAccessType accessType)
+            {
+                return new RepositoryPermissions(_storagrService, _repositoryIdOrName);
+            }
+
+            IStoragrRunner IStoragrServiceRepository.RevokeAccess(string userId)
+            {
+                throw new NotImplementedException();
+            }
+
+            IStoragrRunner<bool> IStoragrServiceRepository.HasAccess(string userId, RepositoryAccessType accessType)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private class RepositoryList :
+            IStoragrServiceRepositories,
+            IRepositoryParams
+        {
+            private readonly StoragrService _storagrService;
+            private readonly RepositoryEntity _entity;
+
+            private int _take, _skip;
+            private string _skipUntil;
+
+            public RepositoryList(StoragrService storagrService)
+            {
+                _storagrService = storagrService;
+                _entity = new RepositoryEntity();
             }
 
             IEnumerable<RepositoryEntity> IStoragrRunner<IEnumerable<RepositoryEntity>>.Run() =>
@@ -183,82 +279,132 @@ namespace Storagr.Server.Services
                 .RunAsync()
                 .RunSynchronouslyWithResult();
 
-            Task<IEnumerable<RepositoryEntity>> IStoragrRunner<IEnumerable<RepositoryEntity>>.RunAsync(
+            async Task<IEnumerable<RepositoryEntity>> IStoragrRunner<IEnumerable<RepositoryEntity>>.RunAsync(
                 CancellationToken cancellationToken)
             {
-                return _storagrService
+                var repositories = await _storagrService
                     .Database
-                    .GetMany<RepositoryEntity>(query => query
-                            .Limit(_listArgs.Limit)
-                            .Offset(_listArgs.Skip)
-                            .Where(filter =>
-                            {
-                                if (_listArgs.Id is not null)
-                                {
-                                    filter.Like(nameof(RepositoryEntity.Id), $"%{_listArgs.Id}%").Or();
-                                }
+                    .Many<RepositoryEntity>()
+                    .Join<UserEntity>(nameof(RepositoryEntity.OwnerId), nameof(UserEntity.Id))
+                    .With(select => select
+                        .Column<UserEntity>(nameof(UserEntity.Username), nameof(RepositoryEntity.OwnerName))
+                    )
+                    .Where(filter =>
+                    {
+                        if (_entity.Id is not null)
+                        {
+                            filter
+                                .Is(nameof(RepositoryEntity.Id))
+                                .Like(_entity.Id)
+                                .Or();
+                        }
 
-                                if (_listArgs.Name is not null)
-                                {
-                                    filter.Like(nameof(RepositoryEntity.Name), $"%{_listArgs.Name}%").Or();
-                                }
-                            }),
-                        cancellationToken
-                    );
+                        if (_entity.Name is not null)
+                        {
+                            filter
+                                .Is(nameof(RepositoryEntity.Name))
+                                .Like(_entity.Name)
+                                .Or();
+                        }
+
+                        if (_entity.OwnerId is not null)
+                        {
+                            filter
+                                .Is<UserEntity>(nameof(UserEntity.Id))
+                                .Like(_entity.OwnerId)
+                                .Or()
+                                .Is<UserEntity>(nameof(UserEntity.Username))
+                                .Like(_entity.OwnerId)
+                                .Or();
+                        }
+                    })
+                    .RunAsync(cancellationToken);
+
+                return repositories
+                    .Skip(_skip)
+                    .SkipWhile(e => _skipUntil is not null && e.Id != _skipUntil)
+                    .Take(_take)
+                    .Select(v => (RepositoryEntity) v);
             }
 
+            IStoragrRunner<int> IStoragrCountable.Count() => _storagrService
+                .Database
+                .Count<RepositoryEntity>();
 
-
-            IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>
-                IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>.Take(int count)
+            IStoragrEnumerable<RepositoryEntity, IRepositoryParams>
+                IStoragrEnumerable<RepositoryEntity, IRepositoryParams>.Take(int count)
             {
-                _listArgs.Limit = count;
+                _take = count;
                 return this;
             }
 
-            IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>
-                IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>.Skip(int count)
+            IStoragrEnumerable<RepositoryEntity, IRepositoryParams>
+                IStoragrEnumerable<RepositoryEntity, IRepositoryParams>.Skip(int count)
             {
-                _listArgs.Skip = count;
+                _skip = count;
                 return this;
             }
 
-            IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>
-                IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>.SkipUntil(string cursor)
+            IStoragrEnumerable<RepositoryEntity, IRepositoryParams>
+                IStoragrEnumerable<RepositoryEntity, IRepositoryParams>.SkipUntil(string cursor)
             {
-                _listArgs.Cursor = cursor;
+                _skipUntil = cursor;
                 return this;
             }
 
-            IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>
-                IStoragrEnumerable<RepositoryEntity, IStoragrRepositoryParams>.Where(Action<IStoragrRepositoryParams> whereParams)
+            IStoragrEnumerable<RepositoryEntity, IRepositoryParams>
+                IStoragrEnumerable<RepositoryEntity, IRepositoryParams>.Where(
+                    Action<IRepositoryParams> whereParams)
             {
                 whereParams(this);
                 return this;
             }
 
-            IStoragrRepositoryParams IStoragrRepositoryParams.Id(string repositoryId)
+
+            IRepositoryParams IRepositoryParams.Id(string repositoryId)
             {
-                _listArgs.Id = repositoryId;
+                _entity.Id = repositoryId;
                 return this;
             }
 
-            IStoragrRepositoryParams IStoragrRepositoryParams.Name(string name)
+            IRepositoryParams IRepositoryParams.Name(string name)
             {
-                _listArgs.Name = name;
+                _entity.Name = name;
                 return this;
             }
 
-            IStoragrRepositoryParams IStoragrRepositoryParams.Owner(string owner)
+            IRepositoryParams IRepositoryParams.Owner(string owner)
             {
-                _listArgs.Owner = owner;
+                _entity.OwnerId = owner;
                 return this;
             }
 
-            IStoragrRepositoryParams IStoragrRepositoryParams.SizeLimit(ulong sizeLimit)
+            IRepositoryParams IRepositoryParams.SizeLimit(ulong sizeLimit)
             {
-                _listArgs.SizeLimit = sizeLimit;
+                _entity.SizeLimit = sizeLimit;
                 return this;
+            }
+        }
+
+        private class RepositoryPermissions : 
+            IStoragrRunner
+        {
+            private readonly StoragrService _storagrService;
+            private readonly string _repositoryIdOrName;
+
+            public RepositoryPermissions(StoragrService storagrService, string repositoryIdOrName)
+            {
+                _storagrService = storagrService;
+                _repositoryIdOrName = repositoryIdOrName;
+            }
+
+            void IStoragrRunner.Run() => (this as IStoragrRunner)
+                .RunAsync()
+                .RunSynchronously();
+
+            Task IStoragrRunner.RunAsync(CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
             }
         }
     }

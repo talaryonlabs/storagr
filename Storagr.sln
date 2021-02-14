@@ -8,7 +8,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Client", "src\Stora
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Store", "src\Storagr.Store\Storagr.Store.csproj", "{9C41EB8B-E3DF-4EE5-8077-9ADF7884C714}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr", "src\Storagr\Storagr.csproj", "{EE2D661E-9C37-4421-8C49-250A1BE720E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.Shared", "src\Storagr.Shared\Storagr.Shared.csproj", "{EE2D661E-9C37-4421-8C49-250A1BE720E7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storagr.UI", "src\Storagr.UI\Storagr.UI.csproj", "{17CCA4C3-4561-4426-9F5F-6E254219C387}"
 EndProject

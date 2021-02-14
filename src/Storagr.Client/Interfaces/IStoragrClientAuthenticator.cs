@@ -1,4 +1,4 @@
-﻿using Storagr;
+﻿using Storagr.Shared;
 
 namespace Storagr.Client
 {

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.Store
 {

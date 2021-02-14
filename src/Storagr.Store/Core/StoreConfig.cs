@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using Storagr;
-using Storagr.Security;
+using Storagr.Shared.Security;
 
 namespace Storagr.Store
 {

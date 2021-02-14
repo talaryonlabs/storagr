@@ -1,5 +1,5 @@
-﻿using Storagr;
-using Storagr.Data;
+﻿using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {

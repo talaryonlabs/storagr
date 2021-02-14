@@ -34,7 +34,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Storagr\Storagr.csproj" />
+      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
     </ItemGroup>
 
 

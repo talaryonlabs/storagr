@@ -1,5 +1,5 @@
 ﻿using System;
-using Storagr.Security;
+using Storagr.Shared.Security;
 
 namespace Storagr.Server
 {

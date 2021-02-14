@@ -2,29 +2,35 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientObject : 
-        StoragrClientHelper<StoragrObject>, 
-        IStoragrObject
+        IStoragrClientObject,
+        IStoragrRunner<bool>
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly string _repositoryIdOrName;
         private readonly string _objectId;
 
         private bool _deleteRequest;
 
         public StoragrClientObject(IStoragrClientRequest clientRequest, string repositoryIdOrName, string objectId) 
-            : base(clientRequest)
         {
+            _clientRequest = clientRequest;
             _repositoryIdOrName = repositoryIdOrName;
             _objectId = objectId;
         }
 
-        protected override Task<StoragrObject> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        StoragrObject IStoragrRunner<StoragrObject>.Run() => (this as IStoragrRunner<StoragrObject>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+        
+        Task<StoragrObject> IStoragrRunner<StoragrObject>.RunAsync(CancellationToken cancellationToken)
         {
-            return clientRequest.Send<StoragrObject>(
+            return _clientRequest.Send<StoragrObject>(
                 $"repositories/{_repositoryIdOrName}/objects/{_objectId}",
                 _deleteRequest
                     ? HttpMethod.Delete
@@ -36,6 +42,26 @@ namespace Storagr.Client
         {
             _deleteRequest = true;
             return this;
+        }
+        
+        public IStoragrRunner<bool> Exists() => this;
+
+        bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+
+        async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await (this as IStoragrRunner<StoragrObject>).RunAsync(cancellationToken);
+            }
+            catch (UserNotFoundError)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.Store
 {

@@ -7,18 +7,14 @@ namespace Storagr.Server.Data.Migrations
     {
         public override void Up()
         {
-            Create.Table("BackendAuth")
-                .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
-                .WithColumn("Username").AsString().NotNullable().Unique()
-                .WithColumn("Password").AsString().NotNullable();
-
             Create.Table("User")
                 .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
                 .WithColumn("AuthId").AsString().NotNullable()
                 .WithColumn("AuthAdapter").AsString().NotNullable()
                 .WithColumn("IsEnabled").AsBoolean().WithDefaultValue(true)
                 .WithColumn("IsAdmin").AsBoolean().WithDefaultValue(false)
-                .WithColumn("Username").AsString().NotNullable().Unique();
+                .WithColumn("Username").AsString().NotNullable().Unique()
+                .WithColumn("Password").AsString().NotNullable();
 
             Create.Table("Repository")
                 .WithColumn("Id").AsString().NotNullable().Unique().PrimaryKey()
@@ -70,7 +66,6 @@ namespace Storagr.Server.Data.Migrations
             Delete.ForeignKey("FK_Lock_User");
             Delete.ForeignKey("FK_Lock_Repository");
             
-            Delete.Table("BackendAuth");
             Delete.Table("User");
             Delete.Table("Repository");
             Delete.Table("Object");

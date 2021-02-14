@@ -1,88 +1,101 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.FileProviders;
+using Storagr.Shared;
 
 namespace Storagr.Server
 {
     public interface IDatabaseAdapter
     {
-        IDatabaseAdapter UseConnection(IDbConnection connection);
+        IDatabaseCount<TItem> Count<TItem>() where TItem : class;
+
+        IStoragrRunner<TItem> Get<TItem>(string id) where TItem : class;
+        IDatabaseQuery<TItem> First<TItem>() where TItem : class;
+        IDatabaseQueryList<TItem> Many<TItem>() where TItem : class;
+
+        IStoragrRunner<TItem> Insert<TItem>(TItem item) where TItem : class;
+        IStoragrRunner<TItem> Update<TItem>(TItem item) where TItem : class;
+        IStoragrRunner<TItem> Delete<TItem>(TItem item) where TItem : class;
         
-        Task<int> Count<T>(CancellationToken cancellationToken = default) where T : class => Count<T>(null, cancellationToken);
-        Task<int> Count<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class;
-
-        Task<bool> Exists<T>(string id, CancellationToken cancellationToken = default) where T : class;
-        Task<bool> Exists<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class;
-
-        Task<T> Get<T>(string id, CancellationToken cancellationToken = default) where T : class;
-        Task<T> Get<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class;
-        Task<T> Get<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken = default) where T : class;
-        Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseQuery> queryBuilder, CancellationToken cancellationToken = default) where T : class;
-        Task<IEnumerable<T>> GetMany<T>(Action<IDatabaseFilter> filterBuilder, CancellationToken cancellationToken = default) where T : class;
-        Task<IEnumerable<T>> GetAll<T>(CancellationToken cancellationToken = default) where T : class;
-
-        Task<int> Insert<T>(T data, CancellationToken cancellationToken = default) where T : class;
-        Task Update<T>(T data, CancellationToken cancellationToken = default) where T : class;
-
-        Task<bool> Delete<T>(T data, CancellationToken cancellationToken = default) where T : class;
-        Task<bool> Delete<T>(IEnumerable<T> list, CancellationToken cancellationToken = default) where T : class;
+        
+        
+        IStoragrRunner<IEnumerable<TItem>> DeleteMany<TItem>(IEnumerable<TItem> items) where TItem : class;
+        
+        IDatabaseQuery<TItem> Delete<TItem>() where TItem : class;
+        IDatabaseQuery<IEnumerable<TItem>> DeleteMany<TItem>() where TItem : class;
     }
 
-    public interface IDatabaseQuery
+    public interface IDatabaseCount<TItem> :
+        IStoragrRunner<int>
     {
-        IDatabaseQuery Select(params string[] columns);
-        IDatabaseQuery Distinct();
-        IDatabaseQuery Where(Action<IDatabaseFilter> filterBuilder);
-        IDatabaseQuery Limit(int limit);
-        IDatabaseQuery Offset(int offset);
-        IDatabaseQuery OrderBy(Action<IDatabaseOrder> orderByBuilder);
+        IDatabaseCount<TItem> Join<TJoinItem>(string column, string joinedColumn);
+        IDatabaseCount<TItem> Where(Action<IDatabaseFilter<TItem>> filter);
     }
 
-    public enum DatabaseOrderType
+    public interface IDatabaseQuery<TItem> :
+        IStoragrRunner<TItem>
     {
-        /// <summary>
-        /// Ascending Order
-        /// </summary>
-        Asc,
-        
-        /// <summary>
-        /// Descending Order
-        /// </summary>
-        Desc
+        IDatabaseQuery<TItem> With(Action<IDatabaseSelector<TItem>> select);
+        IDatabaseQuery<TItem> Join<TJoinItem>(string column, string joinedColumn);
+        IDatabaseQuery<TItem> Where(Action<IDatabaseFilter<TItem>> filter);
+    }
+
+    public interface IDatabaseQueryList<TItem> :
+        IStoragrRunner<IEnumerable<TItem>>
+    {
+        IDatabaseQueryList<TItem> Distinct();
+        IDatabaseQueryList<TItem> With(Action<IDatabaseSelector<TItem>> select);
+        IDatabaseQueryList<TItem> Join<TJoinItem>(string column, string joinedColumn);
+        IDatabaseQueryList<TItem> Where(Action<IDatabaseFilter<TItem>> filter);
+        IDatabaseQueryList<TItem> OrderBy(Action<IDatabaseOrder<TItem>> order);
+        IDatabaseQueryList<TItem> Limit(int count);
+        IDatabaseQueryList<TItem> Offset(int count);
+    }
+
+    public interface IDatabaseSelector<TItem>
+    {
+        IDatabaseSelector<TItem> Column(string column, string alias = null) => Column<TItem>(column, alias);
+        IDatabaseSelector<TItem> Column<TJoinItem>(string column, string alias = null);
+    }
+
+    public interface IDatabaseOrder<TItem>
+    {
+        IDatabaseOrder<TItem> Asc(string column) => Asc<TItem>(column);
+        IDatabaseOrder<TItem> Asc<TJoinItem>(string column);
+
+        IDatabaseOrder<TItem> Desc(string column) => Desc<TItem>(column);
+        IDatabaseOrder<TItem> Desc<TJoinItem>(string column);
     }
     
-    public interface IDatabaseOrder
+    public interface IDatabaseFilter<TItem>
     {
-        IDatabaseOrder Column(string name) => Column(name, DatabaseOrderType.Asc);
-        IDatabaseOrder Column(string name, DatabaseOrderType type);
+        IDatabaseFilterColumn<TItem> Is(string column) => Is<TItem>(column);
+        IDatabaseFilterColumn<TItem> Is<TJoinItem>(string column);
+
+        IDatabaseFilterColumn<TItem> IsNot(string column) => IsNot<TItem>(column);
+        IDatabaseFilterColumn<TItem> IsNot<TJoinItem>(string column);
+        
+        IDatabaseFilterOperator<TItem> Clamp(Action<IDatabaseFilter<TItem>> filter);
+    }
+
+    public interface IDatabaseFilterColumn<TItem>
+    {
+        IDatabaseFilterOperator<TItem> EqualTo(object value);
+        IDatabaseFilterOperator<TItem> Like(object value, DatabasePatternType patternType = DatabasePatternType.Any);
+        IDatabaseFilterOperator<TItem> In(IEnumerable<object> values);
+        IDatabaseFilterOperator<TItem> Between(object value1, object value2);
     }
     
-    public interface IDatabaseFilter
+    public interface IDatabaseFilterOperator<TItem>
     {
-        bool HasItems { get; }
-        
-        IDatabaseFilter Clamp(Action<IDatabaseFilter> filterBuilder);
+        IDatabaseFilter<TItem> Or();
+        IDatabaseFilter<TItem> And();
+    }
 
-        IDatabaseFilter Or();
-        IDatabaseFilter And();
-        IDatabaseFilter Not();
-        
-        IDatabaseFilter Equal(string column, string value);
-        IDatabaseFilter Like(string column, string pattern);
-        IDatabaseFilter In(string column, IEnumerable<string> values);
-        IDatabaseFilter Between(string column, string value1, string value2);
-
-        IDatabaseFilter GreaterThan(string column, string value);
-        IDatabaseFilter GreaterThan(string column, int value) => GreaterThan(column, value.ToString());
-        IDatabaseFilter GreaterThanOrEqual(string column, string value);
-        IDatabaseFilter GreaterThanOrEqual(string column, int value) => GreaterThan(column, value.ToString());
-        
-        IDatabaseFilter LessThan(string column, string value);
-        IDatabaseFilter LessThan(string column, int value) => GreaterThan(column, value.ToString());
-        IDatabaseFilter LessThanOrEqual(string column, string value);
-        IDatabaseFilter LessThanOrEqual(string column, int value) => GreaterThan(column, value.ToString());
+    public enum DatabasePatternType
+    {
+        Any,
+        StartsWith,
+        EndsWith
     }
 }

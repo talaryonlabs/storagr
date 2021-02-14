@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.Store.Services
 {

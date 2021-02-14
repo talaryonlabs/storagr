@@ -2,25 +2,31 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientAuthenticator : 
-        StoragrClientHelper<bool>, 
-        IStoragrClientAuthenticator
+        IStoragrClientAuthenticator,
+        IStoragrRunner<bool>
     {
         private readonly IStoragrClient _client;
+        private readonly IStoragrClientRequest _clientRequest;
         private StoragrAuthenticationRequest _userdata;
         private string _token;
         
-        public StoragrClientAuthenticator(IStoragrClient client, IStoragrClientRequest clientRequest) 
-            : base(clientRequest)
+        public StoragrClientAuthenticator(IStoragrClient client, IStoragrClientRequest clientRequest)
         {
             _client = client;
+            _clientRequest = clientRequest;
         }
+        
+        bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override async Task<bool> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
         {
             if (_token is not null)
             {
@@ -29,7 +35,7 @@ namespace Storagr.Client
 
             if (_userdata is not null)
             {
-                var request = await clientRequest.Send<StoragrAuthenticationResponse, StoragrAuthenticationRequest>(
+                var request = await _clientRequest.Send<StoragrAuthenticationResponse, StoragrAuthenticationRequest>(
                     $"users/authenticate",
                     HttpMethod.Post,
                     _userdata,

@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Storagr.Security;
+using Storagr.Shared.Security;
 
 namespace Storagr.Server.Security.Tokens
 {

@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientUser : 
-        StoragrClientHelper<StoragrUser>, 
         IStoragrParams<StoragrUser, IStoragrUserParams>, 
-        IStoragrUser, 
-        IStoragrUserParams
+        IStoragrClientUser, 
+        IStoragrUserParams,
+        IStoragrRunner<bool>
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly string _userIdOrName;
 
         private bool _userDeleting;
@@ -20,17 +23,20 @@ namespace Storagr.Client
         private StoragrRequest<StoragrUser> _createRequest;
         private StoragrRequest<StoragrUser> _updateRequest;
         
-        public StoragrClientUser(IStoragrClientRequest clientRequest, string userIdOrName) : 
-            base(clientRequest)
+        public StoragrClientUser(IStoragrClientRequest clientRequest, string userIdOrName)
         {
+            _clientRequest = clientRequest;
             _userIdOrName = userIdOrName;
-            
         }
-
-        protected override Task<StoragrUser> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        
+        StoragrUser IStoragrRunner<StoragrUser>.Run() => (this as IStoragrRunner<StoragrUser>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+        
+        Task<StoragrUser> IStoragrRunner<StoragrUser>.RunAsync(CancellationToken cancellationToken)
         {
             if (_createRequest is not null)
-                return clientRequest.Send<StoragrUser, StoragrRequest<StoragrUser>>(
+                return _clientRequest.Send<StoragrUser, StoragrRequest<StoragrUser>>(
                     $"users",
                     HttpMethod.Post,
                     _createRequest,
@@ -38,14 +44,14 @@ namespace Storagr.Client
                 );
 
             if (_updateRequest is not null)
-                return clientRequest.Send<StoragrUser, StoragrRequest<StoragrUser>>(
+                return _clientRequest.Send<StoragrUser, StoragrRequest<StoragrUser>>(
                     $"users/{_userIdOrName}",
                     HttpMethod.Patch,
                     _updateRequest,
                     cancellationToken
                 );
 
-            return clientRequest.Send<StoragrUser>(
+            return _clientRequest.Send<StoragrUser>(
                 $"users/{_userIdOrName}",
                 _userDeleting
                     ? HttpMethod.Delete
@@ -105,6 +111,27 @@ namespace Storagr.Client
         {
             (_createRequest ?? _updateRequest).Items.Add("is_admin", isAdmin);
             return this;
+        }
+
+
+        public IStoragrRunner<bool> Exists() => this;
+
+        bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+
+        async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await (this as IStoragrRunner<StoragrUser>).RunAsync(cancellationToken);
+            }
+            catch (UserNotFoundError)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

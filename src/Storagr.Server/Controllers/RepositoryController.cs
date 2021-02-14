@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Server.Controllers
 {
@@ -25,32 +28,35 @@ namespace Storagr.Server.Controllers
         public async Task<StoragrRepositoryList> List([FromQuery] StoragrRepositoryListArgs listArgs,
             CancellationToken cancellationToken)
         {
-            var count = await _repositoryService.Count(cancellationToken: cancellationToken);
+            var count = await _storagrService
+                .Repositories()
+                .Count()
+                .RunAsync(cancellationToken);
             if (count == 0)
                 return new StoragrRepositoryList();
 
-            var list = (string.IsNullOrEmpty(listArgs.Id)
-                    ? await _repositoryService.GetAll(cancellationToken)
-                    : await _repositoryService.GetMany(listArgs.Id, cancellationToken: cancellationToken))
-                .Select(v => (StoragrRepository) v)
-                .ToList();
 
-            if (listArgs.Skip > 0)
-                list = list.Skip(listArgs.Skip).ToList();
-
-            if (!string.IsNullOrEmpty(listArgs.Cursor))
-                list = list.SkipWhile(v => v.RepositoryId != listArgs.Cursor).Skip(1).ToList();
-
-            list = list.Take(listArgs.Limit > 0
-                ? Math.Max(listArgs.Limit, StoragrConstants.MaxListLimit)
-                : StoragrConstants.DefaultListLimit).ToList();
+            var list = (
+                await _storagrService
+                    .Repositories()
+                    .Skip(listArgs.Skip)
+                    .SkipUntil(listArgs.Cursor)
+                    .Take(listArgs.Limit)
+                    .Where(whereParams => whereParams
+                        .Id(listArgs.Id)
+                        .Name(listArgs.Name)
+                        .Owner(listArgs.Owner)
+                        .SizeLimit(listArgs.SizeLimit)
+                    )
+                    .RunAsync(cancellationToken)
+            ).ToList();
 
             return !list.Any()
                 ? new StoragrRepositoryList()
                 : new StoragrRepositoryList()
                 {
-                    Items = list,
-                    NextCursor = list.Last().RepositoryId,
+                    Items = list.Select(v => (StoragrRepository) v),
+                    NextCursor = list.Last().Id,
                     TotalCount = count
                 };
         }

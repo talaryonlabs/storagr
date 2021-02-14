@@ -2,14 +2,16 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientLock :
-        StoragrClientHelper<StoragrLock>,
-        IStoragrLock
+        IStoragrClientLock,
+        IStoragrRunner<bool>
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly string _repositoryIdOrName;
         private readonly string _lockIdOrPath;
 
@@ -17,16 +19,20 @@ namespace Storagr.Client
         private StoragrUnlockRequest _unlockRequest;
         
         public StoragrClientLock(IStoragrClientRequest clientRequest, string repositoryIdOrName, string lockIdOrPath) 
-            : base(clientRequest)
         {
+            _clientRequest = clientRequest;
             _repositoryIdOrName = repositoryIdOrName;
             _lockIdOrPath = lockIdOrPath;
         }
+        
+        StoragrLock IStoragrRunner<StoragrLock>.Run() => (this as IStoragrRunner<StoragrLock>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override Task<StoragrLock> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        Task<StoragrLock> IStoragrRunner<StoragrLock>.RunAsync(CancellationToken cancellationToken)
         {
             if (_lockRequest is not null)
-                return clientRequest.Send<StoragrLock, StoragrLockRequest>(
+                return _clientRequest.Send<StoragrLock, StoragrLockRequest>(
                     $"repositories/{_repositoryIdOrName}/locks",
                     HttpMethod.Post,
                     _lockRequest,
@@ -34,14 +40,14 @@ namespace Storagr.Client
                 );
             
             if (_unlockRequest is not null)
-                return clientRequest.Send<StoragrLock, StoragrUnlockRequest>(
+                return _clientRequest.Send<StoragrLock, StoragrUnlockRequest>(
                     $"repositories/{_repositoryIdOrName}/locks/{_lockIdOrPath}/unlock",
                     HttpMethod.Post,
                     _unlockRequest,
                     cancellationToken
                 );
 
-            return clientRequest.Send<StoragrLock>(
+            return _clientRequest.Send<StoragrLock>(
                 $"repositories/{_repositoryIdOrName}/locks/{_lockIdOrPath}",
                 HttpMethod.Get,
                 cancellationToken
@@ -64,6 +70,26 @@ namespace Storagr.Client
                 Force = force
             };
             return this;
+        }
+        
+        public IStoragrRunner<bool> Exists() => this;
+
+        bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+
+        async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await (this as IStoragrRunner<StoragrLock>).RunAsync(cancellationToken);
+            }
+            catch (UserNotFoundError)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

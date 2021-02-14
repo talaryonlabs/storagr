@@ -4,27 +4,32 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
-    internal class StoragrClientClientLogList : 
-        StoragrClientHelper<IStoragrList<StoragrLog>>, 
+    internal class StoragrClientLogList : 
         IStoragrClientLogList, 
         IStoragrLogParams
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly StoragrLogListArgs _listArgs;
         
-        public StoragrClientClientLogList(IStoragrClientRequest clientRequest) 
-            : base(clientRequest)
+        public StoragrClientLogList(IStoragrClientRequest clientRequest)
         {
+            _clientRequest = clientRequest;
             _listArgs = new StoragrLogListArgs();
         }
+        
+        IStoragrList<StoragrLog> IStoragrRunner<IStoragrList<StoragrLog>>.Run() => (this as IStoragrRunner<IStoragrList<StoragrLog>>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override async Task<IStoragrList<StoragrLog>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        async Task<IStoragrList<StoragrLog>> IStoragrRunner<IStoragrList<StoragrLog>>.RunAsync(CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return await clientRequest.Send<StoragrLogList>(
+            return await _clientRequest.Send<StoragrLogList>(
                 $"logs?{query}",
                 HttpMethod.Get,
                 cancellationToken

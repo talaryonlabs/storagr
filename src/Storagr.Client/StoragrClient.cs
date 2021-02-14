@@ -83,10 +83,10 @@ namespace Storagr.Client
 
         public IStoragrClientLogList Logs()
         {
-            return new StoragrClientClientLogList(this);
+            return new StoragrClientLogList(this);
         }
 
-        public IStoragrRepository Repository(string repositoryIdOrName)
+        public IStoragrClientRepository Repository(string repositoryIdOrName)
         {
             return new StoragrClientRepository(this, repositoryIdOrName);
         }
@@ -96,7 +96,7 @@ namespace Storagr.Client
             return new StoragrClientRepositoryList(this);
         }
 
-        public IStoragrUser User(string userIdOrName)
+        public IStoragrClientUser User(string userIdOrName)
         {
             return new StoragrClientUser(this, userIdOrName);
         }

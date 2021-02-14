@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -61,35 +58,6 @@ namespace Storagr.Server
                 .Configure(configureOptions)
                 .AddSingleton<TAuthentication>()
                 .AddSingleton<IAuthenticationAdapter>(x => x.GetRequiredService<TAuthentication>());
-        }
-    }
-
-    public static class StoragrCacheExtensions
-    {
-        public static async Task<bool> ExistsAsync(this IDistributedCache cache, string key, CancellationToken cancellationToken = default) =>
-            (await cache.GetAsync(key, cancellationToken)) is not null;
-
-        public static async Task<T> GetObjectAsync<T>(this IDistributedCache cache, string key, CancellationToken cancellationToken = default)
-        {
-            var value = await cache.GetAsync(key, cancellationToken);
-            return value is null || cancellationToken.IsCancellationRequested ? default : StoragrHelper.DeserializeObject<T>(value);
-        }
-        
-        public static Task SetObjectAsync<T>(this IDistributedCache cache, string key, T value, DistributedCacheEntryOptions cacheEntryOptions = default, CancellationToken cancellationToken = default) =>
-            cache.SetAsync(
-                key,
-                StoragrHelper.SerializeObject(value),
-                cacheEntryOptions,
-                cancellationToken
-            );
-    }
-    
-    public static class StoragrTaskExtensions
-    {
-        public static T RunSynchronouslyWithResult<T>(this Task<T> task)
-        {
-            task.RunSynchronously();
-            return task.Result;
         }
     }
 }

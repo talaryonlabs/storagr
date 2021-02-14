@@ -22,7 +22,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Storagr.Client\Storagr.Client.csproj" />
-      <ProjectReference Include="..\Storagr\Storagr.csproj" />
+      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Storagr;
+using Storagr.Shared;
 using Storagr.Store.Services;
 
 namespace Storagr.Store

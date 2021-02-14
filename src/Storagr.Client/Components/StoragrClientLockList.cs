@@ -3,29 +3,35 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Client.Params;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientLockList : 
-        StoragrClientHelper<IStoragrList<StoragrLock>>, 
         IStoragrClientLockList, 
         IStoragrLockParams
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly string _repositoryId;
         private readonly StoragrLockListArgs _listArgs;
 
         public StoragrClientLockList(IStoragrClientRequest clientRequest, string repositoryId) 
-            : base(clientRequest)
         {
+            _clientRequest = clientRequest;
             _repositoryId = repositoryId;
             _listArgs = new StoragrLockListArgs();
         }
+        
+        IStoragrList<StoragrLock> IStoragrRunner<IStoragrList<StoragrLock>>.Run() => (this as IStoragrRunner<IStoragrList<StoragrLock>>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override async Task<IStoragrList<StoragrLock>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        async Task<IStoragrList<StoragrLock>> IStoragrRunner<IStoragrList<StoragrLock>>.RunAsync(CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return await clientRequest.Send<StoragrLockList>(
+            return await _clientRequest.Send<StoragrLockList>(
                 $"repositories/{_repositoryId}/locks?{query}",
                 HttpMethod.Get,
                 cancellationToken
@@ -65,6 +71,12 @@ namespace Storagr.Client
         IStoragrLockParams IStoragrLockParams.Path(string lockedPath)
         {
             _listArgs.Path = lockedPath;
+            return this;
+        }
+
+        IStoragrLockParams IStoragrLockParams.Owner(string owner)
+        {
+            _listArgs.Owner = owner;
             return this;
         }
     }

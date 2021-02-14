@@ -3,15 +3,16 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientRepository : 
-        StoragrClientHelper<StoragrRepository>, 
         IStoragrParams<StoragrRepository, IStoragrRepositoryParams>, 
-        IStoragrRepository, 
-        IStoragrRepositoryParams
+        IStoragrClientRepository, 
+        IStoragrRepositoryParams,
+        IStoragrRunner<bool>
     {
         private readonly IStoragrClientRequest _clientRequest;
         private readonly string _repositoryIdOrName;
@@ -21,16 +22,19 @@ namespace Storagr.Client
         private StoragrRequest<StoragrRepository> _updateRequest;
         
         public StoragrClientRepository(IStoragrClientRequest clientRequest, string repositoryIdOrName) 
-            : base(clientRequest)
         {
             _clientRequest = clientRequest;
             _repositoryIdOrName = repositoryIdOrName;
         }
-
-        protected override Task<StoragrRepository> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        
+        StoragrRepository IStoragrRunner<StoragrRepository>.Run() => (this as IStoragrRunner<StoragrRepository>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+        
+        Task<StoragrRepository> IStoragrRunner<StoragrRepository>.RunAsync(CancellationToken cancellationToken)
         {
             if (_createRequest is not null)
-                return clientRequest.Send<StoragrRepository, StoragrRequest<StoragrRepository>>(
+                return _clientRequest.Send<StoragrRepository, StoragrRequest<StoragrRepository>>(
                     $"repositories",
                     HttpMethod.Post,
                     _createRequest,
@@ -38,14 +42,14 @@ namespace Storagr.Client
                 );
 
             if (_updateRequest is not null)
-                return clientRequest.Send<StoragrRepository, StoragrRequest<StoragrRepository>>(
+                return _clientRequest.Send<StoragrRepository, StoragrRequest<StoragrRepository>>(
                     $"repositories/{_repositoryIdOrName}",
                     HttpMethod.Patch,
                     _updateRequest,
                     cancellationToken
                 );
 
-            return clientRequest.Send<StoragrRepository>(
+            return _clientRequest.Send<StoragrRepository>(
                 $"repositories/{_repositoryIdOrName}",
                 _deleteRequest
                     ? HttpMethod.Delete
@@ -77,22 +81,22 @@ namespace Storagr.Client
             return this;
         }
 
-        IStoragrObject IStoragrObjectProvider.Object(string objectId)
+        IStoragrClientObject IStoragrClientRepository.Object(string objectId)
         {
             return new StoragrClientObject(_clientRequest, _repositoryIdOrName, objectId);
         }
 
-        IStoragrClientObjectList IStoragrObjectProvider.Objects()
+        IStoragrClientObjectList IStoragrClientRepository.Objects()
         {
             return new StoragrClientObjectList(_clientRequest, _repositoryIdOrName);
         }
 
-        IStoragrLock IStoragrLockProvider.Lock(string lockIdOrPath)
+        IStoragrClientLock IStoragrClientRepository.Lock(string lockIdOrPath)
         {
             return new StoragrClientLock(_clientRequest, _repositoryIdOrName, lockIdOrPath);
         }
 
-        IStoragrClientLockList IStoragrLockProvider.Locks()
+        IStoragrClientLockList IStoragrClientRepository.Locks()
         {
             return new StoragrClientLockList(_clientRequest, _repositoryIdOrName);
         }
@@ -119,6 +123,26 @@ namespace Storagr.Client
         {
             (_createRequest ?? _updateRequest).Items.Add("size_limit", sizeLimit);
             return this;
+        }
+
+        public IStoragrRunner<bool> Exists() => this;
+
+        bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+
+        async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await (this as IStoragrRunner<StoragrRepository>).RunAsync(cancellationToken);
+            }
+            catch (UserNotFoundError)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -5,7 +5,7 @@ using System.CommandLine.Rendering;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared.Data;
 
 namespace Storagr.CLI
 {

@@ -3,27 +3,32 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientUserList : 
-        StoragrClientHelper<IStoragrList<StoragrUser>>, 
         IStoragrClientUserList, 
         IStoragrUserParams
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly StoragrUserListArgs _listArgs;
         
-        public StoragrClientUserList(IStoragrClientRequest clientRequest) 
-            : base(clientRequest)
+        public StoragrClientUserList(IStoragrClientRequest clientRequest)
         {
+            _clientRequest = clientRequest;
             _listArgs = new StoragrUserListArgs();
         }
+        
+        IStoragrList<StoragrUser> IStoragrRunner<IStoragrList<StoragrUser>>.Run() => (this as IStoragrRunner<IStoragrList<StoragrUser>>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override async Task<IStoragrList<StoragrUser>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        async Task<IStoragrList<StoragrUser>> IStoragrRunner<IStoragrList<StoragrUser>>.RunAsync(CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return await clientRequest.Send<StoragrUserList>(
+            return await _clientRequest.Send<StoragrUserList>(
                 $"users?{query}",
                 HttpMethod.Get,
                 cancellationToken

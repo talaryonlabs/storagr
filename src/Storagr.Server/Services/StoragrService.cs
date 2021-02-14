@@ -1,49 +1,49 @@
-﻿using Storagr.Server.Data.Entities;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Storagr.Server.Services
 {
-    public partial class StoragrService : IStoragrService
+    public partial class StoragrService : 
+        IStoragrService 
     {
         private IDatabaseAdapter Database { get; }
-
-        public StoragrService(IDatabaseAdapter database)
-        {
-            Database = database;
-        }
+        private IAuthenticationAdapter Authenticator { get; }
+        private IStoreAdapter Store { get; }
+        private ICacheService Cache { get; }
+        public ITokenService TokenService { get; }
+        private DistributedCacheEntryOptions CacheEntryOptions { get; }
         
-        IUserServiceItem IUserService.User(string userIdOrName)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public StoragrService(IDatabaseAdapter database, IAuthenticationAdapter authenticator, IStoreAdapter store,
+            ICacheService cache, ITokenService tokenService, IHttpContextAccessor httpContextAccessor)
         {
-            throw new System.NotImplementedException();
+            _httpContextAccessor = httpContextAccessor;
+
+            Authenticator = authenticator;
+            Store = store;
+            Database = database;
+            Cache = cache;
+            TokenService = tokenService;
+            CacheEntryOptions = new DistributedCacheEntryOptions();
         }
 
-        IUserServiceList IUserService.Users()
-        {
-            throw new System.NotImplementedException();
-        }
+        public IStoragrServiceRepository Repository(string repositoryIdOrName) =>
+            new RepositoryItem(this, repositoryIdOrName);
 
-        IStoragrRunner<UserEntity> IUserService.GetAuthenticatedUser()
-        {
-            throw new System.NotImplementedException();
-        }
+        public IStoragrServiceRepositories Repositories() =>
+            new RepositoryList(this);
 
-        IStoragrRunner<string> IUserService.GetAuthenticatedToken()
-        {
-            throw new System.NotImplementedException();
-        }
+        public IStoragrServiceUser User(string userIdOrName) => 
+            new UserItem(this, userIdOrName);
 
-        IStoragrRunner<UserEntity> IUserService.Authenticate(string username, string password)
-        {
-            throw new System.NotImplementedException();
-        }
+        public IStoragrServiceUsers Users() =>
+            new UserList(this);
 
-        IRepositoryServiceItem IRepositoryService.Repository(string repositoryIdOrName)
-        {
-            return new StoragrRepositoryService(this, repositoryIdOrName);
-        }
+        public IStoragrLogList Logs() =>
+            new LogList(this);
 
-        IRepositoryServiceList IRepositoryService.Repositories()
-        {
-            throw new System.NotImplementedException();
-        }
+        public IStoragrServiceAuthorization Authorization() =>
+            new Authentication(this, _httpContextAccessor);
     }
 }

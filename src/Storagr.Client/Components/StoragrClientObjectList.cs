@@ -3,29 +3,34 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Storagr;
-using Storagr.Data;
+using Storagr.Shared;
+using Storagr.Shared.Data;
 
 namespace Storagr.Client
 {
     internal class StoragrClientObjectList : 
-        StoragrClientHelper<IStoragrList<StoragrObject>>, 
         IStoragrClientObjectList, 
         IStoragrObjectParams
     {
+        private readonly IStoragrClientRequest _clientRequest;
         private readonly string _repositoryIdOrName;
         private readonly StoragrObjectListArgs _listArgs;
 
         public StoragrClientObjectList(IStoragrClientRequest clientRequest, string repositoryIdOrName) 
-            : base(clientRequest)
         {
+            _clientRequest = clientRequest;
             _repositoryIdOrName = repositoryIdOrName;
             _listArgs = new StoragrObjectListArgs();
         }
+        
+        IStoragrList<StoragrObject> IStoragrRunner<IStoragrList<StoragrObject>>.Run() => (this as IStoragrRunner<IStoragrList<StoragrObject>>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
 
-        protected override async Task<IStoragrList<StoragrObject>> RunAsync(IStoragrClientRequest clientRequest, CancellationToken cancellationToken = default)
+        async Task<IStoragrList<StoragrObject>> IStoragrRunner<IStoragrList<StoragrObject>>.RunAsync(CancellationToken cancellationToken)
         {
             var query = StoragrHelper.ToQueryString(_listArgs);
-            return await clientRequest.Send<StoragrObjectList>(
+            return await _clientRequest.Send<StoragrObjectList>(
                 $"repositories/{_repositoryIdOrName}/objects?{query}",
                 HttpMethod.Get,
                 cancellationToken

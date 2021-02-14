@@ -18,6 +18,7 @@ using Storagr.Server.IO;
 using Storagr.Server.Security;
 using Storagr.Server.Security.Authenticators;
 using Storagr.Server.Services;
+using Storagr.Shared;
 
 namespace Storagr.Server
 {
@@ -75,7 +76,9 @@ namespace Storagr.Server
                 });
 
             return services
-                .AddSingleton<IStoragrService, StoragrService>();
+                .AddSingleton<IStoragrService, StoragrService>()
+                .AddSingleton<ICacheService, CacheService>()
+                .AddScoped<IBatchService, BatchService>();
         }
 
         public static IServiceCollection AddStoragrSecurity(this IServiceCollection services, StoragrConfig config)
@@ -146,7 +149,7 @@ namespace Storagr.Server
                 .AddConfig<TokenOptions>(config)
                 .AddSingleton<ITokenService, TokenService>();
 
-            services.AddAuthentication<BackendAuthenticator>();
+            services.AddAuthentication<DefaultAuthenticator>();
 
             return services;
         }

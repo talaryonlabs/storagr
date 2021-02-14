@@ -1,0 +1,60 @@
+﻿// List Repositories
+GET http://{{store}}/
+Authorization: Bearer {{token}}
+
+###
+
+// Get Repository
+GET http://{{store}}/{{repository}}
+Authorization: Bearer {{token}}
+
+###
+
+// Delete Repository
+DELETE http://{{store}}/{{repository}}
+Authorization: Bearer {{token}}
+
+###
+
+// List Objects
+GET http://{{store}}/{{repository}}/objects
+Authorization: Bearer {{token}}
+
+###
+
+// Get Object
+GET http://{{store}}/{{repository}}/objects/12345ab
+Authorization: Bearer {{token}}
+
+###
+
+// Delete Object
+DELETE http://{{store}}/{{repository}}/objects/12345ab
+Authorization: Bearer {{token}}
+
+###
+
+
+// Upload
+PUT http://{{store}}/{{repository}}/transfer/{{oid}}
+Content-Type: application/octet-stream
+Authorization: Bearer {{token}}
+
+{{text}}
+
+###
+
+// Verify
+POST http://{{storagr}}/{{repository}}/objects/{{oid}}
+Content-Type: application/vnd.git-lfs+json; charset=utf-8
+Authorization: Bearer {{token}}
+
+{"rid": "{{repository}}", "oid": "{{oid}}", "size": "{{size}}"}
+
+###
+
+// Download
+GET http://{{store}}/{{repository}}/transfer/{{oid}}
+Content-Type: application/octet-stream
+Authorization: Bearer {{token}}
+

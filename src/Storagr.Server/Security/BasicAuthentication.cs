@@ -84,10 +84,12 @@ namespace Storagr.Server.Security
                 return AuthenticateResult.Fail(e);
             }
 
-            var user = await _storagrService
-                .Authenticate(credentialParams[0], credentialParams[1])
+            var authorizationResult = await _storagrService
+                .Authorization()
+                .Authenticate()
+                .With(credentialParams[0], credentialParams[1])
                 .RunAsync();
-            if (user is null)
+            if (authorizationResult is null)
             {
                 return AuthenticateResult.Fail("Username or Password invalid.");
             }
@@ -95,13 +97,13 @@ namespace Storagr.Server.Security
             var properties = new AuthenticationProperties();
             properties.StoreTokens(new[]
             {
-                new AuthenticationToken {Name = "access_token", Value = user.Token}
+                new AuthenticationToken {Name = "access_token", Value = authorizationResult.Token}
             });
 
             var identity = new ClaimsIdentity(new[]
             {
-                new Claim(StoragrConstants.TokenUnqiueId, user.Id),
-                new Claim(ClaimTypes.Role, user.IsAdmin ? StoragrConstants.ManagementRole : "")
+                new Claim(StoragrConstants.TokenUnqiueId, authorizationResult.User.Id),
+                new Claim(ClaimTypes.Role, authorizationResult.User.IsAdmin ? StoragrConstants.ManagementRole : "")
             }, Scheme.Name);
             
             var principal = new ClaimsPrincipal(identity);

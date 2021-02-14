@@ -43,6 +43,7 @@
 
     <ItemGroup>
       <None Remove=".github\**" />
+      <Compile Remove="Services\RepositoryService.cs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,7 +52,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Storagr\Storagr.csproj" />
+      <ProjectReference Include="..\Storagr.Shared\Storagr.Shared.csproj" />
     </ItemGroup>
 
 
