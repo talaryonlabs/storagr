@@ -9,7 +9,7 @@ namespace Storagr.Shared.Data
     {
         [JsonProperty("oid")] public string ObjectId { get; set; }
         [JsonProperty("rid")] public string RepositoryId { get; set; }
-        [JsonProperty("size")] public ulong Size { get; set; }
+        [JsonProperty("size")] public long Size { get; set; }
     }
     
     [JsonObject]

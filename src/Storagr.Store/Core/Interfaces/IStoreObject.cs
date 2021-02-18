@@ -1,15 +1,14 @@
 ﻿using System.IO;
-using Storagr.Shared.Data;
 
 namespace Storagr.Store
 {
-    public interface IStoreObject :
-        IStoreModel<StoreObject>,
-        IStoreMeta,
-        IStoreDeletable,
-        IStoreExistable
+    public interface IStoreObject
     {
-        Stream GetDownloadStream();
-        Stream GetUploadStream();
+        bool Exists { get; }
+        string Id { get; }
+        long Size { get; }
+
+        Stream GetStream();
+        void Delete();
     }
 }

@@ -32,7 +32,7 @@ namespace Storagr.Shared.Data
     public class StoragrBatchObject
     {
         [JsonProperty("oid")] public string ObjectId { get; set; }
-        [JsonProperty("size")] public ulong Size { get; set; }
+        [JsonProperty("size")] public long Size { get; set; }
         [JsonProperty("authenticated")] public bool Authenticated { get; set; }
         [JsonProperty("actions")] public StoragrActions Actions { get; set; }
         [JsonProperty("error")] public StoragrError Error { get; set; }

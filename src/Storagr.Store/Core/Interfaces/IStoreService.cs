@@ -1,40 +1,15 @@
 ﻿using System.Collections.Generic;
+using Storagr.Shared.Data;
 
 namespace Storagr.Store
 {
     public interface IStoreService
     {
         int BufferSize { get; }
-        
-        IStoreRepository Repository(string repositoryId);
-        IEnumerable<IStoreRepository> Repositories();
-    }
+        long UsedSpace { get; }
+        long AvailableSpace { get; }
 
-    public interface IStoreExistable
-    {
-        bool Exists();
+        IStoreObject Object(string objectId);
+        IEnumerable<StoreObject> Objects();
     }
-    
-    public interface IStoreDeletable
-    {
-        void Delete();
-    }
-
-    public interface IStoreModel<out T>
-    {
-        T Model();
-    }
-
-    public interface IStoreMeta
-    {
-        string Id { get; }
-        ulong Size { get; }
-    }
-    
-    public interface IStoreMetaName
-    {
-        string Name { get; }
-    }
-
-
 }

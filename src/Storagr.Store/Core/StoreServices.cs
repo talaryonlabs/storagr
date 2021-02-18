@@ -78,37 +78,11 @@ namespace Storagr.Store
             return services;
         }
 
-        public static IServiceCollection AddStoreCache(this IServiceCollection services, StoragrConfig config)
-        {
-            var storeConfig = config.Get<StoreConfig>();
-            switch (storeConfig.Cache)
-            {
-                case StoreCacheType.Memory:
-                    services.AddDistributedMemoryCache();
-                    break;
-                
-                case StoreCacheType.Redis:
-                    var redisConfig = config.Get<RedisConfig>();
-                        
-                    services.AddDistributedRedisCache(options =>
-                    {
-                        options.InstanceName = "redis";
-                        options.Configuration = redisConfig.Host;
-                    });
-                    break;
-                
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            return services;
-        }
-
         public static IServiceCollection AddStoreServices(this IServiceCollection services, StoragrConfig config)
         {
             return services
                 .AddConfig<StoreConfig>(config)
-                .AddSingleton<IStoreService, StoreService>()
-                .AddSingleton<ITransferService, TransferService>();
+                .AddSingleton<IStoreService, StoreService>();
         }
     }
 }
