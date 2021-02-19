@@ -9,7 +9,7 @@ namespace Storagr.Server.Data.Entities
     {
         [ExplicitKey] public string Id { get; set; }
         [ExplicitKey] public string RepositoryId { get; set; }
-        public ulong Size { get; set; }
+        public long Size { get; set; }
         
         public static implicit operator StoragrObject([NotNull] ObjectEntity entity) => new ()
         {

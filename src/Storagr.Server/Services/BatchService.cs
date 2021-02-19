@@ -17,8 +17,8 @@ namespace Storagr.Server.Services
         IBatchServiceOperation,
         IBatchParams
     {
-        private IDatabaseAdapter _database;
-        private IStoreAdapter _store;
+        private readonly IDatabaseAdapter _database;
+        private readonly IStoreAdapter _store;
         private readonly IStoragrService _storagrService;
 
         private IEnumerable<StoragrObject> _objects;
@@ -69,7 +69,7 @@ namespace Storagr.Server.Services
                     .In(_objects.Select(o => o.ObjectId))
                 )
                 .RunAsync(cancellationToken);
-
+            
             return _objects.Select(storagrObject =>
             {
                 var batchObject = new StoragrBatchObject()
@@ -82,6 +82,7 @@ namespace Storagr.Server.Services
 
                 if (_upload && e is not null) // already uploaded, ignore actions request
                     return batchObject;
+
                 
                 
                 if (_download)
@@ -90,14 +91,26 @@ namespace Storagr.Server.Services
                         batchObject.Error = new ObjectNotFoundError();
                     else
                     {
-                        batchObject.Actions = null; // TODO request Store
+                        batchObject.Actions = new StoragrActions()
+                        {
+                            Download = _store
+                                .Object(storagrObject.ObjectId)
+                                .Download()
+                                .Run()
+                        };
                     }
                 }
                 else if(_upload)
                 {
-                    batchObject.Actions = null; // TODO request Store
+                    batchObject.Actions = new StoragrActions()
+                    {
+                        Upload = _store
+                            .Object(storagrObject.ObjectId)
+                            .Upload()
+                            .Run(),
+                        Verify = null // TODO
+                    };
                 }
-                
                 
                 return batchObject;
             });

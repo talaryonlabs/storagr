@@ -4,6 +4,6 @@
     {
         IObjectParams Id(string objectId);
         IObjectParams RepositoryId(string repositoryId);
-        IObjectParams Size(ulong sizeLimit);
+        IObjectParams Size(long sizeLimit);
     }
 }

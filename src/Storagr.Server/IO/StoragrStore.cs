@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,61 +16,27 @@ namespace Storagr.Server.IO
     public sealed class StoragrStoreOptions : StoragrOptions<StoragrStoreOptions>
     {
         [StoragrConfigValue] public string Host { get; set; }
-        [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan DefaultExpiration { get; set; }
-        [StoragrConfigValue(IsNamedDelay = true)] public TimeSpan TransferExpiration { get; set; }
+
+        [StoragrConfigValue(IsNamedDelay = true)]
+        public TimeSpan RequestExpiration { get; set; }
+
+        [StoragrConfigValue(IsNamedDelay = true)]
+        public TimeSpan TransferExpiration { get; set; }
     }
 
-    public sealed class StoragrStore2 : IStoreAdapter, IStoreAdapterRepository, IStoreAdapterObject
+    public sealed class StoragrStore2 :
+        IStoreAdapter,
+        IStoragrRunner<StoreInformation>
     {
-        public IStoreAdapterRepository Repository(string repositoryId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IStoragrEnumerable<StoreRepository> Repositories()
-        {
-            throw new NotImplementedException();
-        }
-
-        StoreRepository IStoragrRunner<StoreRepository>.Run() => (this as IStoragrRunner<StoreRepository>)
-            .RunAsync()
-            .RunSynchronouslyWithResult();
-
-        Task<StoreRepository> IStoragrRunner<StoreRepository>.RunAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        IStoragrRunner<bool> IStoragrExistable.Exists()
-        {
-            throw new NotImplementedException();
-        }
-
-        IStoreAdapterObject IStoreAdapterRepository.Object(string objectId)
-        {
-            throw new NotImplementedException();
-        }
-
-        IStoragrEnumerable<StoreObject> IStoreAdapterRepository.Objects()
-        {
-            throw new NotImplementedException();
-        }
-
-        IStoragrRunner IStoragrDeletable.Delete(bool force)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public sealed class StoragrStore : IStoreAdapter
-    {
+        private readonly StoragrStoreOptions _options;
         private readonly ITokenService _tokenService;
         private readonly IHttpClientFactory _clientFactory;
         private readonly StoragrMediaType _mediaType;
-        private readonly StoragrStoreOptions _options;
         private readonly StoreToken _token;
 
-        public StoragrStore(IOptions<StoragrStoreOptions> optionsAccessor, ITokenService tokenService, IHttpClientFactory clientFactory)
+
+        public StoragrStore2(IOptions<StoragrStoreOptions> optionsAccessor, ITokenService tokenService,
+            IHttpClientFactory clientFactory)
         {
             _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(StoragrStoreOptions));
             _tokenService = tokenService;
@@ -77,139 +45,182 @@ namespace Storagr.Server.IO
             _token = new StoreToken() {UniqueId = "storagr-api"};
         }
 
+        private string GenerateToken() => _tokenService.Generate(_token, _options.RequestExpiration);
+        private string GenerateTransferToken() => _tokenService.Generate(_token, _options.TransferExpiration);
+
         private HttpClient CreateClient()
         {
-            var token = _tokenService.Generate(_token, _options.DefaultExpiration);
+            var token = GenerateToken();
             var client = _clientFactory.CreateClient();
             client.BaseAddress = new Uri($"https://{_options.Host}/v1/");
-            client.DefaultRequestHeaders.Add("Accept", $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
+            client.DefaultRequestHeaders.Add("Accept",
+                $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
             return client;
         }
 
-        private HttpRequestMessage CreateRequest(string uri) =>
-            CreateRequest(uri, HttpMethod.Get);
-        private HttpRequestMessage CreateRequest(string uri, HttpMethod method) =>
-            new HttpRequestMessage(method, uri);
-
-        private HttpRequestMessage CreateRequest<T>(string uri, HttpMethod method, T data)
+        private async Task<HttpResponseMessage> Head(string uri, CancellationToken cancellationToken)
         {
+            var client = CreateClient();
+            var request = new HttpRequestMessage(HttpMethod.Head, uri);
+            var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            return response;
+        }
+
+        private async Task<TResponse> Send<TResponse>(string uri, HttpMethod method, CancellationToken cancellationToken)
+        {
+            var client = CreateClient();
+            var request = new HttpRequestMessage(method, uri);
+            var response = await client.SendAsync(request, cancellationToken);
+            var responseData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                throw StoragrHelper.DeserializeObject<StoragrError>(responseData);
+
+            return StoragrHelper.DeserializeObject<TResponse>(responseData);
+        }
+
+        private async Task<TResponse> Send<TResponse, TRequestData>(string uri, HttpMethod method, TRequestData requestData,
+            CancellationToken cancellationToken)
+        {
+            var client = CreateClient();
             var request = new HttpRequestMessage(method, uri)
             {
                 Content = new ByteArrayContent(
-                    StoragrHelper.SerializeObject(data)
+                    StoragrHelper.SerializeObject(requestData)
                 )
             };
-            request.Content.Headers.Add("Content-Type", $"{_mediaType.MediaType.Value}; charset=utf-8");
+            request.Content.Headers.Add("Content-Type",
+                $"{_mediaType.MediaType.Value}; charset=utf-8"); // application/vnd.git-lfs+json
 
-            return request;
+            var response = await client.SendAsync(request, cancellationToken);
+            var responseData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                throw StoragrHelper.DeserializeObject<StoragrError>(responseData);
+
+            return StoragrHelper.DeserializeObject<TResponse>(responseData);
         }
 
-        public async Task<bool> Finalize(string repositoryId, string objectId, ulong expectedSize, CancellationToken cancellationToken)
+
+        public IStoragrRunner<StoreInformation> Info() => this;
+
+        StoreInformation IStoragrRunner<StoreInformation>.Run() => (this as IStoragrRunner<StoreInformation>)
+            .RunAsync()
+            .RunSynchronouslyWithResult();
+
+        async Task<StoreInformation> IStoragrRunner<StoreInformation>.RunAsync(CancellationToken cancellationToken) =>
+            await Send<StoreInformation>("info", HttpMethod.Get, cancellationToken);
+
+
+        public IStoreAdapterObject Object(string objectId) => 
+            new StoragrStoreObject(this, objectId);
+
+        private class StoragrStoreObject :
+            IStoreAdapterObject,
+            IStoragrRunner,
+            IStoragrRunner<bool>,
+            IStoragrRunner<StoragrAction>
         {
-            var request = CreateRequest($"{repositoryId}/transfer/{objectId}", HttpMethod.Post, new StoreObject()
+            private readonly StoragrStore2 _store;
+            private readonly string _objectId;
+            private bool _downloadRequest;
+            private bool _uploadRequest;
+
+            public StoragrStoreObject(StoragrStore2 store, string objectId)
             {
-                RepositoryId = repositoryId, ObjectId = objectId, Size = expectedSize
-            });
-            
-            return (await CreateClient().SendAsync(request, cancellationToken)).IsSuccessStatusCode;
-        }
+                _store = store;
+                _objectId = objectId;
+            }
 
-        public async Task<StoreRepository> Get(string repositoryId, CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            var request = CreateRequest($"{repositoryId}");
-            var response = await client.SendAsync(request, cancellationToken);
+            public IStoragrRunner<bool> Exists() => this;
 
-            if (!response.IsSuccessStatusCode) return null;
+            bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
+                .RunAsync()
+                .RunSynchronouslyWithResult();
 
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return StoragrHelper.DeserializeObject<StoreRepository>(data);
-
-        }
-        public async Task<StoreObject> Get(string repositoryId, string objectId, CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            var request = CreateRequest($"{repositoryId}/objects/{objectId}");
-            var response = await client.SendAsync(request, cancellationToken);
-
-            if (!response.IsSuccessStatusCode) return null;
-
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return StoragrHelper.DeserializeObject<StoreObject>(data);
-        }
-
-        public async Task<IEnumerable<StoreRepository>> GetAll(CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            var request = CreateRequest($"");
-            var response = await client.SendAsync(request, cancellationToken);
-
-            if (!response.IsSuccessStatusCode) return null;
-
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return StoragrHelper.DeserializeObject<IEnumerable<StoreRepository>>(data);
-        }
-        public async Task<IEnumerable<StoreObject>> GetAll(string repositoryId, CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            var request = CreateRequest($"objects?r={repositoryId}");
-            var response = await client.SendAsync(request, cancellationToken);
-
-            if (!response.IsSuccessStatusCode) return null;
-
-            var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return StoragrHelper.DeserializeObject<IEnumerable<StoreObject>>(data);
-        }
-
-        public async Task Delete(string repositoryId, CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            var request = CreateRequest($"{repositoryId}", HttpMethod.Delete);
-
-            await client.SendAsync(request, cancellationToken);
-        }
-
-        public async Task Delete(string repositoryId, string objectId, CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            var request = CreateRequest($"{repositoryId}/objects/{objectId}", HttpMethod.Delete);
-            
-            await client.SendAsync(request, cancellationToken);
-        }
-
-        public async Task<StoragrAction> NewDownloadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
-        {
-            var obj = await Get(repositoryId, objectId, cancellationToken);
-            if (obj is null)
-                return null;
-
-            var token = _tokenService.Generate(_token, _options.TransferExpiration);
-            
-            return new StoragrAction
+            async Task<bool> IStoragrRunner<bool>.RunAsync(CancellationToken cancellationToken)
             {
-                Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},
-                ExpiresAt = default,
-                ExpiresIn = 3600, // 1 hour
-                Href = $"{repositoryId}/transfer/{objectId}"
-            };
-        }
+                var response = await _store.Head($"objects/{_objectId}", cancellationToken);
 
-        public async Task<StoragrAction> NewUploadAction(string repositoryId, string objectId, CancellationToken cancellationToken)
-        {
-            var obj = await Get(repositoryId, objectId, cancellationToken);
-            if (obj is not null) 
-                return null;
+                return !response.IsSuccessStatusCode;
+            }
 
-            var token = _tokenService.Generate(_token, _options.TransferExpiration);
-            return new StoragrAction
+            StoreObject IStoragrRunner<StoreObject>.Run() => (this as IStoragrRunner<StoreObject>)
+                .RunAsync()
+                .RunSynchronouslyWithResult();
+
+            async Task<StoreObject> IStoragrRunner<StoreObject>.RunAsync(CancellationToken cancellationToken)
             {
-                Header = new Dictionary<string, string>() {{"Authorization", $"Bearer {token}"}},
-                ExpiresAt = default,
-                ExpiresIn = 3600, // 1 hour
-                Href = $"{repositoryId}/transfer/{objectId}"
-            };
+                var response = await _store.Head($"objects/{_objectId}", cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    throw response.StatusCode switch
+                    {
+                        HttpStatusCode.NotFound => new ObjectNotFoundError(),
+                        _ => new InternalServerError()
+                    };
+
+                var contentLength = response.Headers.GetValues("Content-Length").First();
+                return new StoreObject()
+                {
+                    ObjectId = _objectId,
+                    Size = long.Parse(contentLength)
+                };
+            }
+
+            public IStoragrRunner Delete(bool force = false) => this;
+            void IStoragrRunner.Run() => (this as IStoragrRunner)
+                .RunAsync()
+                .RunSynchronously();
+
+            async Task IStoragrRunner.RunAsync(CancellationToken cancellationToken)
+            {
+                var client = _store.CreateClient();
+                var request = new HttpRequestMessage(HttpMethod.Delete, $"objects/{_objectId}");
+                var response = await client.SendAsync(request, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    throw StoragrHelper.DeserializeObject<StoragrError>(
+                        await response.Content.ReadAsByteArrayAsync(cancellationToken)
+                    );
+            }
+
+            public IStoragrRunner<StoragrAction> Download()
+            {
+                _downloadRequest = true;
+                return this;
+            }
+
+            public IStoragrRunner<StoragrAction> Upload()
+            {
+                _uploadRequest = true;
+                return this;
+            }
+
+            StoragrAction IStoragrRunner<StoragrAction>.Run() => (this as IStoragrRunner<StoragrAction>)
+                .RunAsync()
+                .RunSynchronouslyWithResult();
+
+            Task<StoragrAction> IStoragrRunner<StoragrAction>.RunAsync(CancellationToken cancellationToken)
+            {
+                var token = _store.GenerateTransferToken();
+                var action = new StoragrAction()
+                {
+                    Href = $"objects/{_objectId}",
+                    Header = new Dictionary<string, string>()
+                    {
+                        {"Authorization", $"Bearer {token}"}
+                    },
+                    ExpiresIn = (int)_store._options.TransferExpiration.TotalSeconds
+                };
+                
+                return Task.FromResult(action);
+            }
+
+            
         }
     }
 }

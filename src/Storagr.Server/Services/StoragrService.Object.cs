@@ -159,7 +159,7 @@ namespace Storagr.Server.Services
                 return this;
             }
 
-            IObjectParams IObjectParams.Size(ulong sizeLimit)
+            IObjectParams IObjectParams.Size(long sizeLimit)
             {
                 _createRequest.Size = sizeLimit;
                 return this;
@@ -268,7 +268,7 @@ namespace Storagr.Server.Services
                 return this;
             }
 
-            IObjectParams IObjectParams.Size(ulong size)
+            IObjectParams IObjectParams.Size(long size)
             {
                 _entity.Size = size;
                 return this;

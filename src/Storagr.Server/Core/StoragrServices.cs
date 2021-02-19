@@ -244,7 +244,7 @@ namespace Storagr.Server
                 case StoragrStoreType.Storagr:
                     services
                         .AddConfig<StoragrStoreOptions>(config)
-                        .AddStore<StoragrStore>();
+                        .AddStore<StoragrStore2>();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
