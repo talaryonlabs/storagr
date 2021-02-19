@@ -180,8 +180,6 @@ namespace Storagr.Server.Controllers
             if (string.IsNullOrEmpty(authenticationRequest.Username) || string.IsNullOrEmpty(authenticationRequest.Password))
                 throw new UsernameOrPasswordMissingError();
 
-            _logger.LogInformation("hallo du!");
-
             var user = await _storagrService
                 .Authorization()
                 .Authenticate()

@@ -52,8 +52,7 @@ namespace Storagr.Server.Services
 
         private class ServiceEntry<T> :
             ICacheServiceEntry<T>,
-            IStoragrRunner,
-            IStoragrRunner<bool>
+            IStoragrRunner
         {
             private readonly CacheService _service;
             private readonly string _key;
@@ -128,8 +127,22 @@ namespace Storagr.Server.Services
                                 cancellationToken
                             );
 
-            IStoragrRunner<bool> IStoragrExistable.Exists() => this;
+            IStoragrRunner<bool> IStoragrExistable.Exists() => 
+                new ServiceEntryCheck(_service, _key);
+        }
 
+        private class ServiceEntryCheck :
+            IStoragrRunner<bool>
+        {
+            private readonly CacheService _service;
+            private readonly string _key;
+
+            public ServiceEntryCheck(CacheService service, string key)
+            {
+                _service = service ?? throw new NullReferenceException();
+                _key = key ?? throw new NullReferenceException();
+            }
+            
             bool IStoragrRunner<bool>.Run() => (this as IStoragrRunner<bool>)
                 .RunAsync()
                 .RunSynchronouslyWithResult();

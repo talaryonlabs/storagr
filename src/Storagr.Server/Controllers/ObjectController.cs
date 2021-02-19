@@ -84,15 +84,18 @@ namespace Storagr.Server.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(InternalServerError))]
         public async Task<StoragrObject> Verify([FromRoute] string repositoryId, [FromRoute] string objectId, [FromBody] StoragrObject expectedObject, CancellationToken cancellationToken)
         {
-            // TODO
-            // if (objectId != expectedObject.ObjectId)
-            //     throw new BadRequestError();
-            //
-            // if (!await _repositoryService.Exists(repositoryId, cancellationToken))
-            //     throw new RepositoryNotFoundError();
-            //
-            // return await _objectService.Add(repositoryId, expectedObject, cancellationToken);
-            return null;
+            if (objectId != expectedObject.ObjectId)
+                throw new BadRequestError();
+            
+            var obj = await _storagrService
+                .Repository(repositoryId)
+                .Object(objectId)
+                .RunAsync(cancellationToken);
+
+            if (obj.Size != expectedObject.Size)
+                throw new ObjectNotFoundError();
+            
+            return obj;
         }
 
         [HttpDelete("{objectId}")]

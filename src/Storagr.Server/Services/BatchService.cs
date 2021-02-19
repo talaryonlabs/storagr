@@ -24,7 +24,6 @@ namespace Storagr.Server.Services
         private IEnumerable<StoragrObject> _objects;
         private bool _download;
         private bool _upload;
-        private IEnumerable<string> _transfers;
         private string _ref;
         private string _repositoryIdOrName;
 
@@ -108,7 +107,14 @@ namespace Storagr.Server.Services
                             .Object(storagrObject.ObjectId)
                             .Upload()
                             .Run(),
-                        Verify = null // TODO
+                        Verify = new StoragrAction()
+                        {
+                            Href = $"objects/{storagrObject.ObjectId}",
+                            Header = new Dictionary<string, string>()
+                            {
+                                {"Authorization", $"Bearer {authenticatedUser.Token}"}
+                            }
+                        }
                     };
                 }
                 
@@ -149,7 +155,6 @@ namespace Storagr.Server.Services
 
         IBatchParams IBatchParams.Transfers(IEnumerable<string> transfers)
         {
-            _transfers = transfers;
             return this;
         }
 

@@ -126,8 +126,6 @@ namespace Storagr.Server.IO
         {
             private readonly StoragrStore2 _store;
             private readonly string _objectId;
-            private bool _downloadRequest;
-            private bool _uploadRequest;
 
             public StoragrStoreObject(StoragrStore2 store, string objectId)
             {
@@ -190,13 +188,13 @@ namespace Storagr.Server.IO
 
             public IStoragrRunner<StoragrAction> Download()
             {
-                _downloadRequest = true;
+                // NOTE: Specify options if download differs from upload
                 return this;
             }
 
             public IStoragrRunner<StoragrAction> Upload()
             {
-                _uploadRequest = true;
+                // NOTE: Specify options if upload differs from download
                 return this;
             }
 
